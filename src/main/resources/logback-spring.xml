@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--配置文件说明：
+共有一个父标签、两种属性、三个节点:
+1.一个父标签：configuration
+2. 两种属性：contextName和property
+3. 三个节点：appender、root、logger
+
+主要就是appender追加到哪里：控制台/文件，然后采用哪种pattern（在property定义了pattern格式）
+然后就是logger和root配置，指定日志输出级别，以及引用哪种appender
+-->
+<configuration>
+    <!--根节点<configuration>包含的属性：
+        scan:当此属性设置为true时，配置文件如果发生改变，将会被重新加载，默认值为true。
+        scanPeriod:设置监测配置文件是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。当scan为true时，此属性生效。默认的时间间隔为1分钟。
+        debug:当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。
+    -->
+    <contextName>logback-spring-magicbean</contextName>
+    <property name="pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg %n"/>
+    <property name="pattern-color"
+              value="%yellow(%d{yyyy-MM-dd HH:mm:ss.SSS}) [%thread] %highlight(%-5level) %green(%logger{50}) - %highlight(%msg) %n"/>
+    <!--文件路径输出说明，会自动生成文件夹及log文件，但是由于我这个是多模块，默认生成在父目录下的logs文件夹下面，所以要在子模块下生成要再加一个路径-->
+    <property name="LOG_HOME" value="./springboot_log/logs"/>
+
+    <!-- 控制台输出 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!--ThresholdFilter为系统定义的拦截器，例如我们用ThresholdFilter来过滤掉ERROR级别以下的日志不输出到文件中。如果不用记得注释掉，不然你控制台会发现没日志~-->
+        <!--<filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
+        <!--<level>ERROR</level>-->
+        <!--</filter>-->
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 控制台输出-带颜色 -->
+    <appender name="CONSOLE-WITH-COLOR" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${pattern-color}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 文件输出 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/%d.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!--相当于全局的配置-->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE-WITH-COLOR"/>
+        <!--<appender-ref ref="FILE"/>-->
+    </root>
+    <!--1. root和logger是父子的关系。
+       Logger的appender根据参数additivity决定是否要叠加root的appender，logger的级别是其自身定义的级别，和root的级别没什么关系。
+        2. logger对单个包或类添加配置，相当于局部配置，root相当于全局配置
+       如果logger里面配置了additivity="false"，就会覆盖root的，只打印一遍；
+       但是additivity="true"，就会向上层再次传递，不会覆盖，而是打印两遍！
+    -->
+
+
+</configuration>
