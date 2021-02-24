@@ -6,7 +6,7 @@ import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.client.RequestOptions;
 import com.binance.client.SubscriptionClient;
 import com.binance.client.SyncRequestClient;
-import com.furiousTidy.magicbean.constant.BeanConfig;
+import com.furiousTidy.magicbean.config.BeanConfig;
 
 public class BinanceClient {
 

@@ -6,12 +6,12 @@ import com.binance.api.client.BinanceApiRestClient;
 import com.binance.client.RequestOptions;
 import com.binance.client.SyncRequestClient;
 import com.binance.client.model.market.SymbolOrderBook;
-import com.furiousTidy.magicbean.constant.BeanConfig;
+import com.furiousTidy.magicbean.config.BeanConfig;
 
 import java.math.BigDecimal;
 
 //计算下持仓情况
-public class BeanCalcuate {
+public class PositionClose {
 
     //合约客户端
     private static SyncRequestClient syncRequestClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,

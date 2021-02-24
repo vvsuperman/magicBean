@@ -1,4 +1,4 @@
-package com.furiousTidy.magicbean.constant;
+package com.furiousTidy.magicbean.util;
 
 public class BeanConstant {
 

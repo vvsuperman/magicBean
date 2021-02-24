@@ -4,7 +4,6 @@ package com.furiousTidy.magicbean.Subscription;
 * 工具类，缓存行情
 * */
 
-import com.binance.client.model.enums.*;
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
@@ -12,7 +11,7 @@ import com.binance.client.model.trade.Position;
 import com.binance.client.model.user.BalanceUpdate;
 import com.binance.client.model.user.OrderUpdate;
 import com.binance.client.model.user.PositionUpdate;
-import com.furiousTidy.magicbean.constant.BeanConstant;
+import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
