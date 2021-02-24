@@ -14,6 +14,8 @@ import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.constant.BeanConfig;
 import com.furiousTidy.magicbean.constant.BeanConstant;
+import com.furiousTidy.magicbean.util.MarketCache;
+import com.furiousTidy.magicbean.Subscription.FutureSubscription;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -24,16 +26,16 @@ import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 
 public class BeanEarner {
     //合约客户端
-    private static SyncRequestClient syncRequestClient = SyncRequestClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY,
+    private static SyncRequestClient syncRequestClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,
             new RequestOptions());
 
     //现货客户端
-    private static BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+    private static BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY);
     private static BinanceApiRestClient client = factory.newRestClient();
 
     //监听所有标的
     public void earnMoney(){
-        SubscriptionClient client = SubscriptionClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+        SubscriptionClient client = SubscriptionClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY);
 
         client.subscribeMarkPricesEvent(((event) -> {
             //将MarkPriceEvent排成有序
@@ -82,8 +84,8 @@ public class BeanEarner {
     * */
     public void doTrade(String symbol, BigDecimal cost) throws InterruptedException {
 
-        BigDecimal bidPrice = MarketSubscription.tickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-        BigDecimal askPrice = MarketSubscription.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+        BigDecimal bidPrice = MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+        BigDecimal askPrice = MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
 
         //价差不够则不执行
         if(bidPrice.divide(askPrice,4).compareTo(new BigDecimal(BeanConfig.priceGap))<0){
@@ -116,7 +118,7 @@ public class BeanEarner {
                 Thread.sleep(1000);
                 BigDecimal orignBidPrice = new BigDecimal(bidPrice.toString());
 
-                bidPrice =  MarketSubscription.tickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                bidPrice =  MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                 futureQty = orignBidPrice.multiply(order.getOrigQty().subtract(order.getExecutedQty())).divide(bidPrice,4);
             }
         }
@@ -134,14 +136,14 @@ public class BeanEarner {
                 Thread.sleep(500);
                 BigDecimal orignAskPrice = new BigDecimal(askPrice.toString());
 
-                askPrice = MarketSubscription.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                askPrice = MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                 spotQty = orignAskPrice.multiply(spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()))).divide(askPrice,4);
             }
         }
     }
 
     public static void main(String[] args) throws InterruptedException {
-        MarketSubscription.bookTickerSubscription();
+        FutureSubscription.bookTickerSubscription();
         Thread.sleep(10000);
         BeanEarner beanEarner = new BeanEarner();
         beanEarner.doTrade("BNBUSDT", new BigDecimal(100));

@@ -14,11 +14,11 @@ import java.math.BigDecimal;
 public class BeanCalcuate {
 
     //合约客户端
-    private static SyncRequestClient syncRequestClient = SyncRequestClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY,
+    private static SyncRequestClient syncRequestClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,
             new RequestOptions());
 
     //现货客户端
-    private static BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+    private static BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY);
     private static BinanceApiRestClient client = factory.newRestClient();
 
 
