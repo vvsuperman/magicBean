@@ -9,6 +9,7 @@ import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 
@@ -16,9 +17,12 @@ import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUp
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ORDER_TRADE_UPDATE;
 
 //现货订阅类
+@Service
 public class SpotSubscription {
 
     static Logger logger = LoggerFactory.getLogger(SpotSubscription.class);
+
+
 
     //订阅现货最新价格
     public void allBookTickSubscription(){
@@ -28,11 +32,11 @@ public class SpotSubscription {
             map.put(BeanConstant.BEST_ASK_Qty,bookTickerEvent.getAskQuantity());
             map.put(BeanConstant.BEST_BID_PRICE,bookTickerEvent.getBidPrice());
             map.put(BeanConstant.BEST_BID_QTY,bookTickerEvent.getBidQuantity());
-            MarketCache.tickerMap.put(bookTickerEvent.getSymbol(),map);
+            MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
 
             String symbol = "AVAXUSDT";
-            if(MarketCache.tickerMap.containsKey(symbol))
-              System.out.println(MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE));
+            if(MarketCache.spotTickerMap.containsKey(symbol))
+              System.out.println(MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE));
         });
     }
 

@@ -5,6 +5,7 @@ package com.furiousTidy.magicbean.util;
 
 
 import com.binance.client.model.event.MarkPriceEvent;
+import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
 import com.binance.client.model.user.UserDataUpdateEvent;
@@ -15,10 +16,10 @@ import java.util.*;
 public class MarketCache {
 
     //合约最佳挂单
-    public static Map<String,HashMap<String,BigDecimal>> tickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
+    public static Map<String,HashMap<String,BigDecimal>> futureTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
 
     //实时资金费率
-    public static List<MarkPriceEvent> markPriceList = new LinkedList<>();
+    public static List<MarkPrice> markPriceList = new LinkedList<>();
 
     // 合约balance信息
     public static TreeMap futureBalanceCache = new TreeMap();
@@ -28,6 +29,10 @@ public class MarketCache {
 
     // 合约订单信息
     public static HashMap futureOrderCache = new HashMap();
+
+
+    //现货最佳挂单
+    public static Map<String,HashMap<String,BigDecimal>> spotTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
 
 
     // 现货用户持仓信息

@@ -4,7 +4,6 @@ package com.furiousTidy.magicbean.Subscription;
 * 工具类，缓存行情
 * */
 
-import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
 import com.binance.client.model.trade.Position;
@@ -16,19 +15,18 @@ import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 
-
+@Service
 public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
 
     //存储合约最佳挂单行情
-    public static void bookTickerSubscription(){
+    public void bookTickerSubscription(){
 
         BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent)->{
             HashMap map = new HashMap();
@@ -36,31 +34,13 @@ public class FutureSubscription {
             map.put(BeanConstant.BEST_ASK_Qty,symbolBookTickerEvent.getBestAskQty());
             map.put(BeanConstant.BEST_BID_PRICE,symbolBookTickerEvent.getBestBidPrice());
             map.put(BeanConstant.BEST_BID_QTY,symbolBookTickerEvent.getBestBidQty());
-            MarketCache.tickerMap.put(symbolBookTickerEvent.getSymbol(),map);
+            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),map);
             logger.info(symbolBookTickerEvent.toString());
         },null);
     }
 
-    //存储实时资金费率
-    public static void marketPricesSubscription(){
 
-        BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(((event) -> {
-            //将MarkPriceEvent排成有序
-            Collections.sort(event, new Comparator<MarkPriceEvent>() {
-                public int compare(MarkPriceEvent o1, MarkPriceEvent o2) {
-                    return o1.getFundingRate().compareTo(o2.getFundingRate());
-                }
-            });
-            MarketCache.markPriceList = event;
-        }), null);
-    }
-
-    //存储账户的实时合约持仓，没有订阅接口，只能主动查
-//    public void getBalance(){
-//        MarketCache.accountInfo = BinanceClient.futureSyncClient.getAccountInformation();
-//    }
-
-    public static void processFutureCache(){
+    public void processFutureCache(){
         //初始化合约缓存
         AccountInformation accountInformation = BinanceClient.futureSyncClient.getAccountInformation();
         for(Asset asset: accountInformation.getAssets()){
@@ -82,7 +62,7 @@ public class FutureSubscription {
     }
 
     //订阅合约的用户状态更新事件，生成合约相关缓存
-    public static void userDataUpdateSubscription(){
+    public  void userDataUpdateSubscription(){
 
 
         // Start user data stream
@@ -114,23 +94,16 @@ public class FutureSubscription {
         }), null);
     }
 
-    //构造持仓
-    public void spotOrderUpdateSubscription(){
-
-    }
-
-
 
     public static void main(String[] args) throws InterruptedException {
-        FutureSubscription.bookTickerSubscription();
 //        FutureSubscription.userDataUpdateSubscription();
 //        Thread.sleep(5000);
 //        String symbol = "LTCUSDT";
 //
 //        System.out.println(BinanceClient.futureSyncClient.postOrder(symbol, OrderSide.SELL, null, OrderType.LIMIT, TimeInForce.GTC,
-//                "1", MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE).toString(), null, null, null, null, NewOrderRespType.RESULT));
+//                "1", MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE).toString(), null, null, null, null, NewOrderRespType.RESULT));
 //        System.out.println(BinanceClient.futureSyncClient.postOrder(symbol, OrderSide.BUY, null, OrderType.LIMIT, TimeInForce.GTC,
-//                "1", MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE).toString(), null, null, null, null, NewOrderRespType.RESULT));
+//                "1", MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE).toString(), null, null, null, null, NewOrderRespType.RESULT));
     }
 
 

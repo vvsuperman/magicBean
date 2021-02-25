@@ -10,15 +10,20 @@ import com.binance.client.RequestOptions;
 import com.binance.client.SyncRequestClient;
 import com.binance.client.model.enums.*;
 import com.binance.client.model.event.MarkPriceEvent;
+import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
@@ -30,6 +35,8 @@ import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 * */
 @Service
 public class PositionOpen {
+    static Logger logger = LoggerFactory.getLogger(PositionOpen.class);
+
     //合约客户端
     private static SyncRequestClient syncRequestClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,
             new RequestOptions());
@@ -39,6 +46,18 @@ public class PositionOpen {
     private static BinanceApiRestClient client = factory.newRestClient();
 
 
+    //处理资金费率
+    public void processFundingRate(){
+        MarketCache.markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
+        Collections.sort( MarketCache.markPriceList, new Comparator<MarkPrice>() {
+            public int compare(MarkPrice o1, MarkPrice o2) {
+                return o2.getLastFundingRate().compareTo(o1.getLastFundingRate());
+            }
+        });
+        for(MarkPrice markPrice : MarketCache.markPriceList){
+            logger.info(markPrice.getLastFundingRate().toString()+":"+markPrice.getSymbol());
+        }
+    }
 
 
     //处理list，获取资金费率最高的深度行情
@@ -76,8 +95,8 @@ public class PositionOpen {
     * */
     public void doTrade(String symbol, BigDecimal cost) throws InterruptedException {
 
-        BigDecimal bidPrice = MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-        BigDecimal askPrice = MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+        BigDecimal bidPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+        BigDecimal askPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
 
         while(cost.intValue() > 0){
             //价差不够则不执行
@@ -113,7 +132,7 @@ public class PositionOpen {
                 Thread.sleep(1000);
                 BigDecimal orignBidPrice = new BigDecimal(bidPrice.toString());
 
-                bidPrice =  MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                bidPrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                 futureQty = orignBidPrice.multiply(order.getOrigQty().subtract(order.getExecutedQty())).divide(bidPrice,4);
             }
         }
@@ -131,7 +150,7 @@ public class PositionOpen {
                 Thread.sleep(500);
                 BigDecimal orignAskPrice = new BigDecimal(askPrice.toString());
 
-                askPrice = MarketCache.tickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                askPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                 spotQty = orignAskPrice.multiply(spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()))).divide(askPrice,4);
             }
         }
@@ -139,6 +158,7 @@ public class PositionOpen {
 
 
     public static void main(String[] args) throws InterruptedException {
-
+        PositionOpen positionOpen = new PositionOpen();
+        positionOpen.processFundingRate();
     }
 }
