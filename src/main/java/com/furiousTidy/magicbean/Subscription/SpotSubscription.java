@@ -22,6 +22,28 @@ public class SpotSubscription {
 
     static Logger logger = LoggerFactory.getLogger(SpotSubscription.class);
 
+    //订阅现货最新价格
+    public void symbolBookTickSubscription(String symbol){
+        BinanceClient.spotSubsptClient.onBookTickerEvent(symbol,bookTickerEvent -> {
+            HashMap map = new HashMap();
+            map.put(BeanConstant.BEST_ASK_PRICE,bookTickerEvent.getAskPrice());
+            map.put(BeanConstant.BEST_ASK_Qty,bookTickerEvent.getAskQuantity());
+            map.put(BeanConstant.BEST_BID_PRICE,bookTickerEvent.getBidPrice());
+            map.put(BeanConstant.BEST_BID_QTY,bookTickerEvent.getBidQuantity());
+            MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
+
+            logger.info("spot info:" + bookTickerEvent.toString());
+//            logger.info(" spot info:"+MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE));
+        });
+    }
+
+    public void onDepthEvent(String symbol){
+        BinanceClient.spotSubsptClient.onDepthEvent(symbol,event->{
+            System.out.println("depthEventP:"+event);
+        });
+    }
+
+
 
 
     //订阅现货最新价格
@@ -34,9 +56,10 @@ public class SpotSubscription {
             map.put(BeanConstant.BEST_BID_QTY,bookTickerEvent.getBidQuantity());
             MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
 
-            String symbol = "AVAXUSDT";
-            if(MarketCache.spotTickerMap.containsKey(symbol))
-              System.out.println(MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE));
+            String symbol = "BNBUSDT";
+            if(MarketCache.spotTickerMap.containsKey(symbol)){
+                logger.info(" spot price:"+MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE));
+            }
         });
     }
 
@@ -86,7 +109,9 @@ public class SpotSubscription {
 
      public static void main(String[] args) throws InterruptedException {
          SpotSubscription spotSubscription = new SpotSubscription();
-         spotSubscription.allBookTickSubscription();
+         String symbol = "btcusdt";
+         spotSubscription.symbolBookTickSubscription(symbol);
+//         spotSubscription.onDepthEvent(symbol);
 //         spotSubscription.processBalanceCache();
 //
 //         Thread.sleep(5000);

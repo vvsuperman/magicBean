@@ -94,9 +94,9 @@ public class PositionOpen {
     *
     * */
     public void doTrade(String symbol, BigDecimal cost) throws InterruptedException {
-
+        logger.info("start do trade");
         BigDecimal bidPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-        BigDecimal askPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+        BigDecimal askPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
 
         while(cost.intValue() > 0){
             //价差不够则不执行

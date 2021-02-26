@@ -25,9 +25,23 @@ public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
 
-    //存储合约最佳挂单行情
-    public void bookTickerSubscription(){
+    //存储单合约最佳挂单行情
+    public void symbolBookTickerSubscription(String symbol){
+        BinanceClient.futureSubsptClient.subscribeSymbolBookTickerEvent(symbol,(symbolBookTickerEvent)->{
+            HashMap map = new HashMap();
+            map.put(BeanConstant.BEST_ASK_PRICE,symbolBookTickerEvent.getBestAskPrice());
+            map.put(BeanConstant.BEST_ASK_Qty,symbolBookTickerEvent.getBestAskQty());
+            map.put(BeanConstant.BEST_BID_PRICE,symbolBookTickerEvent.getBestBidPrice());
+            map.put(BeanConstant.BEST_BID_QTY,symbolBookTickerEvent.getBestBidQty());
+            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),map);
 
+            logger.info("future price:"+symbolBookTickerEvent.toString());
+
+        },null);
+    }
+
+    //存储合约最佳挂单行情
+    public void allBookTickerSubscription(){
         BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent)->{
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,symbolBookTickerEvent.getBestAskPrice());
@@ -35,7 +49,12 @@ public class FutureSubscription {
             map.put(BeanConstant.BEST_BID_PRICE,symbolBookTickerEvent.getBestBidPrice());
             map.put(BeanConstant.BEST_BID_QTY,symbolBookTickerEvent.getBestBidQty());
             MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),map);
-            logger.info(symbolBookTickerEvent.toString());
+            logger.info("future price:"+symbolBookTickerEvent.toString());
+
+            String symbol = "BNBUSDT";
+            if(MarketCache.futureTickerMap.containsKey(symbol)){
+                logger.info("future price:"+symbolBookTickerEvent.toString());
+            }
         },null);
     }
 
