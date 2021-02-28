@@ -3,9 +3,7 @@ package com.furiousTidy.magicbean;
 
 import com.furiousTidy.magicbean.Subscription.FutureSubscription;
 import com.furiousTidy.magicbean.Subscription.SpotSubscription;
-import com.furiousTidy.magicbean.trader.PositionOpen;
-import com.furiousTidy.magicbean.util.MarketCache;
-import javafx.scene.effect.Light;
+import com.furiousTidy.magicbean.trader.PositionOpenService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +17,7 @@ import java.math.BigDecimal;
 public class MagicbeanApplicationTests {
 
     @Autowired
-    PositionOpen positionOpen;
+    PositionOpenService positionOpenService;
 
     @Autowired
     FutureSubscription futureSubscription;
@@ -29,11 +27,13 @@ public class MagicbeanApplicationTests {
 
 	@Test
 	public void positionTest() throws InterruptedException {
-	    futureSubscription.bookTickerSubscription();
-        spotSubscription.allBookTickSubscription();
-        String symbol = "BCHUSDT";
+	    futureSubscription.allBookTickerSubscription();
+//        spotSubscription.allBookTickSubscription();
+        String symbol = "bnbusdt";
+        spotSubscription.symbolBookTickSubscription(symbol);
+
         Thread.sleep(3000);
-        positionOpen.doTrade(symbol,BigDecimal.valueOf(100));
+        positionOpenService.doTrade(symbol,BigDecimal.valueOf(100));
         while(true){}
 	}
 

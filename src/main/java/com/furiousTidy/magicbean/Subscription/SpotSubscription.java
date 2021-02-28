@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.Map;
 
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ACCOUNT_POSITION_UPDATE;
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ORDER_TRADE_UPDATE;
@@ -22,11 +24,9 @@ public class SpotSubscription {
 
     static Logger logger = LoggerFactory.getLogger(SpotSubscription.class);
 
+    public void symbolBookTickSubscription(String symbol){
 
-
-    //订阅现货最新价格
-    public void allBookTickSubscription(){
-        BinanceClient.spotSubsptClient.onAllBookTickersEvent(bookTickerEvent -> {
+        BinanceClient.spotSubsptClient.onBookTickerEvent(symbol,bookTickerEvent -> {
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,bookTickerEvent.getAskPrice());
             map.put(BeanConstant.BEST_ASK_Qty,bookTickerEvent.getAskQuantity());
@@ -34,10 +34,37 @@ public class SpotSubscription {
             map.put(BeanConstant.BEST_BID_QTY,bookTickerEvent.getBidQuantity());
             MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
 
-            String symbol = "AVAXUSDT";
-            if(MarketCache.spotTickerMap.containsKey(symbol))
-              System.out.println(MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE));
+//            System.out.println("spot event"+bookTickerEvent.toString());
         });
+    }
+
+    //init booktick cache
+    public void getAllBookTicks(){
+        BinanceClient.spotSyncClient.getBookTickers().forEach(bookTicker -> {
+            HashMap map = new HashMap();
+            map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTicker.getAskPrice()));
+            map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTicker.getAskQty()));
+            map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTicker.getBidPrice()));
+            map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTicker.getBidQty()));
+            MarketCache.spotTickerMap.put(bookTicker.getSymbol(),map);
+
+        });
+    }
+
+    //订阅现货最新价格
+    public void allBookTickSubscription(){
+
+        getAllBookTicks();
+
+        //subscribe bookticker
+        BinanceClient.spotSubsptClient.onAllBookTickersEvent(bookTickerEvent -> {
+            HashMap map = new HashMap();
+            map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTickerEvent.getAskPrice()));
+            map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTickerEvent.getAskQuantity()));
+            map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTickerEvent.getBidPrice()));
+            map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTickerEvent.getBidQuantity()));
+            MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
+            });
     }
 
     /**
@@ -73,11 +100,13 @@ public class SpotSubscription {
                 for (AssetBalance assetBalance : response.getAccountUpdateEvent().getBalances()) {
                     MarketCache.spotBalanceCache.put(assetBalance.getAsset(), assetBalance);
                 }
+                logger.info("spot account_update event:type={},response={}",response.getAccountUpdateEvent().getEventType(),response.toString());
+
             } else if(response.getEventType() == ORDER_TRADE_UPDATE) {
                 OrderTradeUpdateEvent orderTradeUpdateEvent = response.getOrderTradeUpdateEvent();
                 MarketCache.spotOrderCache.put(orderTradeUpdateEvent.getOrderId(), orderTradeUpdateEvent);
-
-                // We can keep alive the user data stream
+                logger.info("spot order_update event:type={},orderid={},response={}"+response.getOrderTradeUpdateEvent().getEventType(),
+                        orderTradeUpdateEvent.getOrderId(),response.toString());
             }
             logger.info("Waiting for spot balance or order events......");
             BinanceClient.spotSyncClient.keepAliveUserDataStream(listenKey);
@@ -85,8 +114,10 @@ public class SpotSubscription {
      }
 
      public static void main(String[] args) throws InterruptedException {
+        String symbol = "btcusdt";
          SpotSubscription spotSubscription = new SpotSubscription();
-         spotSubscription.allBookTickSubscription();
+         spotSubscription.getAllBookTicks();
+//         spotSubscription.symbolBookTickSubscription(symbol);
 //         spotSubscription.processBalanceCache();
 //
 //         Thread.sleep(5000);
