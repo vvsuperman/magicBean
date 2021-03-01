@@ -3,6 +3,9 @@ package com.furiousTidy.magicbean.trader;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.account.request.AllOrdersRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
+import com.binance.api.client.domain.market.BookTicker;
+import com.binance.client.model.market.SymbolOrderBook;
+import com.binance.client.model.market.SymbolPrice;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
@@ -36,6 +39,16 @@ public class PositionOpenController {
     @Autowired
     PreTradeService preTradeService;
 
+    @RequestMapping("spotbookticker/{symbol}")
+    public @ResponseBody BookTicker getSpotBookTicker(@PathVariable String symbol){
+        return BinanceClient.spotSyncClient.getBookTicker(symbol);
+    }
+
+    @RequestMapping("futurebookticker/{symbol}")
+    public @ResponseBody List<SymbolOrderBook>  getFutureBookTicker(@PathVariable String symbol){
+        return BinanceClient.futureSyncClient.getSymbolOrderBookTicker(symbol);
+    }
+
 
     @RequestMapping("spotorder/{symbol}/{orderId}")
     public @ResponseBody Order getOrderStatusSpot(@PathVariable String symbol, @PathVariable Long orderId){
@@ -60,12 +73,17 @@ public class PositionOpenController {
 
     @RequestMapping("docache")
     public @ResponseBody String doCache(){
+        //get symbol info
         preTradeService.futureExchangeInfo();
         preTradeService.spotExchangeInfo();
+
+        //subscribe order update info
         futureSubscription.processFutureCache();
+        spotSubscription.processBalanceCache();
+
+        //subscribe bookticker info
         futureSubscription.allBookTickerSubscription();
         spotSubscription.allBookTickSubscription();
-        spotSubscription.processBalanceCache();
         return "success";
     }
 

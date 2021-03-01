@@ -24,6 +24,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -166,6 +168,7 @@ public class PositionOpenService {
                 if (binanceApiException.getMessage().contains("Unknown order sent")) {
                         //order has been filled but subscription not receive, do nothing
                         logger.info("future order has been filled,no need to cancel,orderid={}",orderId);
+                        return;
                     }
             }
 
@@ -173,53 +176,51 @@ public class PositionOpenService {
                 return;
             }else{
                 Thread.sleep(200);
-                BigDecimal orignBidPrice = new BigDecimal(bidPrice.toString());
-
                 bidPrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                futureQty = orignBidPrice.multiply(order.getOrigQty().subtract(order.getExecutedQty())).divide(bidPrice,
-                       futureStepSize);
-                logger.info("future's order info,bidPrice={}, futureQty={}",bidPrice,futureQty);
+                futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize,RoundingMode.HALF_UP));
+                logger.info("future's next order info,bidPrice={}, futureQty={}",bidPrice,futureQty);
             }
         }
     }
 
     @Async
     public void doSpotAsk(String symbol, BigDecimal askPrice, BigDecimal spotQty,int spotStepSize) throws InterruptedException{
-        while(spotQty.compareTo(BigDecimal.ZERO)>0 && askPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0){
-            NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC, spotQty.toString(),
-                    askPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
+        while(spotQty.compareTo(BigDecimal.ZERO)>0 &&
+                askPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+
+            NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
+                    limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
+                            spotQty.toString(),
+                            askPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
             Long orderId = newOrderResponse.getOrderId();
-            logger.info("new spot order,orderid={}",orderId);
+            logger.info("new spot order,orderid={}", orderId);
             Thread.sleep(BeanConfig.orderExpireTime);
-            if(MarketCache.spotOrderCache.containsKey(orderId) &&
-                    MarketCache.spotOrderCache.get(orderId).getOrderStatus() == OrderStatus.FILLED){
-                logger.info("spot order has been filled, orderId={}" ,orderId);
+            if (MarketCache.spotOrderCache.containsKey(orderId) &&
+                    MarketCache.spotOrderCache.get(orderId).getOrderStatus() == OrderStatus.FILLED) {
+                logger.info("spot order has been filled, orderId={}", orderId);
                 return;
             }
             CancelOrderResponse cancelOrderResponse = null;
-
-            try{
+            //cancel the order
+            try {
                 cancelOrderResponse = BinanceClient.spotSyncClient.cancelOrder(new CancelOrderRequest(symbol, orderId));
-            }catch (Exception exception){
+            } catch (Exception exception) {
                 if (exception.getMessage().contains("Unknown order sent")) {
                     //order has been filled but subscription not receive, do nothing
-                    logger.info("spot order has been filled,no need to cancel,orderid={}",orderId);
+                    logger.info("spot order has been filled,no need to cancel,orderid={}", orderId);
+                    return;
                 }
             }
 
-
-            if(cancelOrderResponse.getExecutedQty() == spotQty.toString()){
+            //new order again
+            if (cancelOrderResponse.getExecutedQty() == spotQty.toString()) {
                 return;
-            }else{
+            } else {
                 Thread.sleep(200);
-                BigDecimal orignAskPrice = new BigDecimal(askPrice.toString());
-
                 askPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                spotQty = orignAskPrice.multiply(spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()))).divide(askPrice,
-                        spotStepSize);
-                logger.info("spot's order info,bidPrice={}, futureQty={}",askPrice,spotQty);
-
-
+                spotQty = spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
+                logger.info("spot's order info,bidPrice={}, spotQty={}", askPrice, spotQty);
+                doSpotAsk(symbol, askPrice, spotQty, spotStepSize);
             }
         }
     }
@@ -227,6 +228,8 @@ public class PositionOpenService {
 
     public static void main(String[] args) {
        String value = "0.0001";
-       System.out.println(new BigDecimal(value));
+        MathContext mathContext = new MathContext(2,RoundingMode.HALF_UP);
+        System.out.println(new BigDecimal(value));
+
     }
 }
