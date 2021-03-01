@@ -3,9 +3,11 @@ package com.furiousTidy.magicbean.trader;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.account.request.AllOrdersRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
-import com.furiousTidy.magicbean.Subscription.FutureSubscription;
-import com.furiousTidy.magicbean.Subscription.PreTradeService;
-import com.furiousTidy.magicbean.Subscription.SpotSubscription;
+import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
+import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
+import com.furiousTidy.magicbean.subscription.FutureSubscription;
+import com.furiousTidy.magicbean.subscription.PreTradeService;
+import com.furiousTidy.magicbean.subscription.SpotSubscription;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import retrofit2.http.Path;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -35,6 +35,7 @@ public class PositionOpenController {
 
     @Autowired
     PreTradeService preTradeService;
+
 
     @RequestMapping("spotorder/{symbol}/{orderId}")
     public @ResponseBody Order getOrderStatusSpot(@PathVariable String symbol, @PathVariable Long orderId){

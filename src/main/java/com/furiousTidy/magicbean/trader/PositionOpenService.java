@@ -1,7 +1,5 @@
 package com.furiousTidy.magicbean.trader;
 
-import com.binance.api.client.BinanceApiClientFactory;
-import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
@@ -9,30 +7,26 @@ import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.CancelOrderResponse;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.client.RequestOptions;
-import com.binance.client.SyncRequestClient;
 import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.enums.*;
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.Order;
-import com.furiousTidy.magicbean.Subscription.FutureSubscription;
-import com.furiousTidy.magicbean.Subscription.SpotSubscription;
+import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import sun.jvm.hotspot.oops.Mark;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 
@@ -45,11 +39,14 @@ import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 public class PositionOpenService {
     static Logger logger = LoggerFactory.getLogger(PositionOpenService.class);
 
+    @Autowired
+    SpotSyncClientProxy spotSyncClientProxy;
 
     //处理资金费率
     public void processFundingRate(){
         MarketCache.markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
         Collections.sort( MarketCache.markPriceList, new Comparator<MarkPrice>() {
+            @Override
             public int compare(MarkPrice o1, MarkPrice o2) {
                 return o2.getLastFundingRate().compareTo(o1.getLastFundingRate());
             }
@@ -189,7 +186,7 @@ public class PositionOpenService {
     @Async
     public void doSpotAsk(String symbol, BigDecimal askPrice, BigDecimal spotQty,int spotStepSize) throws InterruptedException{
         while(spotQty.compareTo(BigDecimal.ZERO)>0 && askPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0){
-            NewOrderResponse newOrderResponse = BinanceClient.spotSyncClient.newOrder(limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC, spotQty.toString(),
+            NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC, spotQty.toString(),
                     askPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
             Long orderId = newOrderResponse.getOrderId();
             logger.info("new spot order,orderid={}",orderId);

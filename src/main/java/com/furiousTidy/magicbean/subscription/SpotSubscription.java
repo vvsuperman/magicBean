@@ -1,19 +1,20 @@
-package com.furiousTidy.magicbean.Subscription;
+package com.furiousTidy.magicbean.subscription;
 
 
 import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
+import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.Map;
 
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ACCOUNT_POSITION_UPDATE;
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ORDER_TRADE_UPDATE;
@@ -23,6 +24,9 @@ import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUp
 public class SpotSubscription {
 
     static Logger logger = LoggerFactory.getLogger(SpotSubscription.class);
+
+    @Autowired
+    SpotSyncClientProxy spotSyncClientProxy;
 
     public void symbolBookTickSubscription(String symbol){
 
@@ -40,14 +44,13 @@ public class SpotSubscription {
 
     //init booktick cache
     public void getAllBookTicks(){
-        BinanceClient.spotSyncClient.getBookTickers().forEach(bookTicker -> {
+        spotSyncClientProxy.getAllBookTickers().forEach(bookTicker -> {
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTicker.getAskPrice()));
             map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTicker.getAskQty()));
             map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTicker.getBidPrice()));
             map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTicker.getBidQty()));
             MarketCache.spotTickerMap.put(bookTicker.getSymbol(),map);
-
         });
     }
 

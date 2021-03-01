@@ -1,10 +1,9 @@
-package com.furiousTidy.magicbean.Subscription;
+package com.furiousTidy.magicbean.subscription;
 
 /*
 * 工具类，缓存行情
 * */
 
-import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
 import com.binance.client.model.trade.Position;
@@ -20,13 +19,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
-import java.util.List;
 
 @Service
 public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
-
 
     public void getAllBookTikcers(){
         BinanceClient.futureSyncClient.getSymbolOrderBookTicker(null).forEach(symbolOrderBook -> {

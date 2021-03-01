@@ -1,8 +1,8 @@
 package com.furiousTidy.magicbean;
 
 
-import com.furiousTidy.magicbean.Subscription.FutureSubscription;
-import com.furiousTidy.magicbean.Subscription.SpotSubscription;
+import com.furiousTidy.magicbean.subscription.FutureSubscription;
+import com.furiousTidy.magicbean.subscription.SpotSubscription;
 import com.furiousTidy.magicbean.trader.PositionOpenService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
