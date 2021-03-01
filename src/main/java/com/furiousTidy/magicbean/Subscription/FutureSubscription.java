@@ -4,6 +4,7 @@ package com.furiousTidy.magicbean.Subscription;
 * 工具类，缓存行情
 * */
 
+import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
 import com.binance.client.model.trade.Position;
@@ -19,29 +20,30 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 
 @Service
 public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
 
-    //存储单合约最佳挂单行情
-    public void symbolBookTickerSubscription(String symbol){
-        BinanceClient.futureSubsptClient.subscribeSymbolBookTickerEvent(symbol,(symbolBookTickerEvent)->{
+
+    public void getAllBookTikcers(){
+        BinanceClient.futureSyncClient.getSymbolOrderBookTicker(null).forEach(symbolOrderBook -> {
             HashMap map = new HashMap();
-            map.put(BeanConstant.BEST_ASK_PRICE,symbolBookTickerEvent.getBestAskPrice());
-            map.put(BeanConstant.BEST_ASK_Qty,symbolBookTickerEvent.getBestAskQty());
-            map.put(BeanConstant.BEST_BID_PRICE,symbolBookTickerEvent.getBestBidPrice());
-            map.put(BeanConstant.BEST_BID_QTY,symbolBookTickerEvent.getBestBidQty());
-            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),map);
-
-            logger.info("future price:"+symbolBookTickerEvent.toString());
-
-        },null);
+            map.put(BeanConstant.BEST_ASK_PRICE,symbolOrderBook.getAskPrice());
+            map.put(BeanConstant.BEST_ASK_Qty,symbolOrderBook.getAskQty());
+            map.put(BeanConstant.BEST_BID_PRICE,symbolOrderBook.getBidPrice());
+            map.put(BeanConstant.BEST_BID_QTY,symbolOrderBook.getBidQty());
+            MarketCache.futureTickerMap.put(symbolOrderBook.getSymbol(),map);
+        });
     }
 
     //存储合约最佳挂单行情
     public void allBookTickerSubscription(){
+
+        getAllBookTikcers();
+
         BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent)->{
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,symbolBookTickerEvent.getBestAskPrice());
@@ -49,12 +51,7 @@ public class FutureSubscription {
             map.put(BeanConstant.BEST_BID_PRICE,symbolBookTickerEvent.getBestBidPrice());
             map.put(BeanConstant.BEST_BID_QTY,symbolBookTickerEvent.getBestBidQty());
             MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),map);
-            logger.info("future price:"+symbolBookTickerEvent.toString());
 
-            String symbol = "BNBUSDT";
-            if(MarketCache.futureTickerMap.containsKey(symbol)){
-                logger.info("future price:"+symbolBookTickerEvent.toString());
-            }
         },null);
     }
 
@@ -83,7 +80,6 @@ public class FutureSubscription {
     //订阅合约的用户状态更新事件，生成合约相关缓存
     public  void userDataUpdateSubscription(){
 
-
         // Start user data stream
         String listenKey = BinanceClient.futureSyncClient.startUserDataStream();
         logger.info("获得listenKey: " + listenKey);
@@ -98,16 +94,18 @@ public class FutureSubscription {
                 for(PositionUpdate positionUpdate:event.getAccountUpdate().getPositions()){
                     MarketCache.futurePositionCache.put(positionUpdate.getSymbol(),positionUpdate);
                 }
+                logger.info("future accout_update event:{}",event);
                 //更新订单信息
             }else if(event.getEventType().equals("ORDER_TRADE_UPDATE")){
                 OrderUpdate orderUpdate = event.getOrderUpdate();
                 MarketCache.futureOrderCache.put(orderUpdate.getOrderId(),orderUpdate);
+                logger.info("future trade_update event: orderid={},orderstatus={},event={}",orderUpdate.getOrderId(),
+                        orderUpdate.getOrderStatus(),event);
             }else if(event.getEventType().equals("LISTEN_KEY_EXPIRED")){
                 //Listen key 失效了
                 logger.error("listen key expired");
                 userDataUpdateSubscription();
             }
-
             BinanceClient.futureSyncClient.keepUserDataStream(listenKey);
 
         }), null);
@@ -115,6 +113,9 @@ public class FutureSubscription {
 
 
     public static void main(String[] args) throws InterruptedException {
+        FutureSubscription futureSubscription = new FutureSubscription();
+        futureSubscription.getAllBookTikcers();
+
 //        FutureSubscription.userDataUpdateSubscription();
 //        Thread.sleep(5000);
 //        String symbol = "LTCUSDT";

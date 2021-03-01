@@ -18,9 +18,8 @@ public class BinanceClient {
     public static SubscriptionClient futureSubsptClient = SubscriptionClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY);
 
 
-  //  private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.SPOT_API_KEY, BeanConfig.SPOT_SECRET_KEY);
-    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance();
-
+    //binance spot client
+    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.SPOT_API_KEY, BeanConfig.SPOT_SECRET_KEY);
     public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
 
     public static BinanceApiWebSocketClient spotSubsptClient = clientFactory.newWebSocketClient();

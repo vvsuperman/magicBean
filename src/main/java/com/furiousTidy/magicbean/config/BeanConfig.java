@@ -1,10 +1,12 @@
 package com.furiousTidy.magicbean.config;
 
+import java.math.BigDecimal;
+
 public class BeanConfig {
 
-    public static final String priceGap="1.003"; //交易条件，千分之三
+    public static final String priceGap="0.001"; //交易条件，千分之三
     public static final String standardTradeUnit="10"; //标准交易单元，默认为100usdt
-    public static final String orderExpireTime ="20000";// 订单失效时间: 20s
+    public static final long orderExpireTime =2000;// 订单失效时间: 20s
 
 
     public static final String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";
@@ -13,6 +15,9 @@ public class BeanConfig {
     //现货测试
     public static final String SPOT_API_KEY = "AI349hcSE7HLymNLXTrpNfeCFptoqrhpAzblO0DPiRPj67Kq7QLG9AfEHBaObpH8";
     public static final String SPOT_SECRET_KEY = "LmPr3JxEeNbbcSEtJ6KCtXKCMXBmLc0LWDGKvEXdlk7xDhs4nFnWzOYTqcPNLfIk";
+
+    //最小下单单元
+    public static final BigDecimal MIN_OPEN_UNIT = new BigDecimal(5);
 
     //现货生产
 //    public static final String SPOT_API_KEY = "4bXoFQbvoe18Xy2B7dWJxqfRTU78DPduiBDHScIHQ0aFXI6tNYeVEIsdNwfTjmX9";
