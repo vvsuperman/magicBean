@@ -33,7 +33,7 @@ public class MagicbeanApplicationTests {
         spotSubscription.symbolBookTickSubscription(symbol);
 
         Thread.sleep(3000);
-        positionOpenService.doTrade(symbol,BigDecimal.valueOf(100));
+//        positionOpenService.doTrade(symbol,BigDecimal.valueOf(100));
         while(true){}
 	}
 

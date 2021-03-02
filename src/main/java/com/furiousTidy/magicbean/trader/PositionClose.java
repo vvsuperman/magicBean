@@ -13,29 +13,6 @@ import java.math.BigDecimal;
 //计算下持仓情况
 public class PositionClose {
 
-    //合约客户端
-    private static SyncRequestClient syncRequestClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,
-            new RequestOptions());
-
-    //现货客户端
-    private static BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY);
-    private static BinanceApiRestClient client = factory.newRestClient();
 
 
-    public void calculateSymbol(String symbol, BigDecimal spotQuantity, BigDecimal futureQuantity){
-
-
-        //获取合约最佳价格
-        SymbolOrderBook futureOrder=syncRequestClient.getSymbolOrderBookTicker(symbol).get(0);
-
-
-        //获取现货持仓
-
-
-        //获取现货价格
-
-
-        //计算目前盈亏
-
-    }
 }

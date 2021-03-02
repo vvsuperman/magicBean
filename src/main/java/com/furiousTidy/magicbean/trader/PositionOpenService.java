@@ -5,8 +5,6 @@ import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.CancelOrderResponse;
-import com.binance.api.client.domain.general.FilterType;
-import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.enums.*;
 import com.binance.client.model.event.MarkPriceEvent;
@@ -31,6 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
+import static com.binance.api.client.domain.account.NewOrder.limitSell;
 
 
 /*
@@ -43,6 +42,9 @@ public class PositionOpenService {
 
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
+
+    @Autowired
+    TradeUtil tradeUtil;
 
     //处理资金费率
     public void processFundingRate(){
@@ -76,85 +78,75 @@ public class PositionOpenService {
     *
     * 实际下单数量，用最小交易单元来交易
     * */
-    public void doTradeTotal(String symbol, BigDecimal totalCost) throws InterruptedException {
+    public void doTradeTotal(String symbol, BigDecimal totalCost, String direct) throws InterruptedException {
         BigDecimal standardTradeUnit = new BigDecimal(BeanConfig.standardTradeUnit);
         while(totalCost.compareTo(standardTradeUnit)>0){
-            doTrade(symbol,standardTradeUnit);
+            doTrade(symbol,standardTradeUnit,direct);
             totalCost = totalCost.subtract(standardTradeUnit);
             Thread.sleep(1000);
         }
-        doTrade(symbol,totalCost);
+        doTrade(symbol,totalCost,direct);
     }
 
     /*
-    * 下单，总价为cost
+    * 下单，总价为cost, divide the total cost
     * @Param symbol 标的
     * @Param cost 下单量的usdt
     *
     * */
-    public void doTrade(String symbol, BigDecimal cost) throws InterruptedException {
+    public void doTrade(String symbol, BigDecimal cost, String direct) throws InterruptedException {
         logger.info("doTrade start...........");
-        BigDecimal bidPrice, askPrice;
+        BigDecimal futurePrice, spotPrice = BigDecimal.ZERO;
 
-        do{
-            //re-get the price in the cache
-           bidPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-           askPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-           logger.info("askPrice："+askPrice+" bidprice："+bidPrice);
-           Thread.sleep(200);
-        } while(bidPrice.subtract(askPrice).abs().divide(askPrice,4).compareTo(new BigDecimal(BeanConfig.priceGap))<0);
-
-        //计算合约最小下单位数
-        final String[] stepSize = {"",""};
-        MarketCache.futureInfoCache.get(symbol).getFilters().forEach(list->{
-            final boolean[] lotSizeFilter = {false};
-            list.forEach(stringStringMap -> {
-                if(stringStringMap.containsKey("filterType") && stringStringMap.get("filterType").equals("LOT_SIZE")){
-                            lotSizeFilter[0] = true;
-                }
-            });
-
-            if(lotSizeFilter[0]){
-                list.forEach(stringStringMap -> {
-                    if(stringStringMap.containsKey("stepSize")){
-                        stepSize[0] = stringStringMap.get("stepSize");
-                    }
-                });
-            }
-        });
-
-        int futureStepSize = stepSize[0].lastIndexOf("1")-stepSize[0].indexOf(".");
-
-        //现货最小下单位数
-        for (SymbolFilter symbolFilter : MarketCache.spotInfoCache.get(symbol).getFilters()) {
-            if (symbolFilter.getFilterType() == FilterType.LOT_SIZE) {
-                stepSize[1] = symbolFilter.getStepSize();
-                break;
-            }
+        if(direct.equals(BeanConstant.FUTURE_SELL)){
+            do{
+                //re-compare the price in the cache
+                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice);
+                Thread.sleep(200);
+                //TODO not support pairs now
+            } while(futurePrice.subtract(spotPrice).abs().divide(spotPrice,4).compareTo(new BigDecimal(BeanConfig.priceGap))<0);
+        }else{
+            do{
+                //re-compare the price in the cache
+                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice);
+                Thread.sleep(200);
+                //TODO not support pairs now
+            } while(futurePrice.subtract(spotPrice).abs().divide(spotPrice,4).compareTo(new BigDecimal(BeanConfig.priceGap))<0);
         }
-        int spotStepSize = stepSize[1].lastIndexOf("1")-stepSize[1].indexOf(".");
 
-
-        //计算合约卖单数量
-        BigDecimal futureQuantity =  cost.divide(bidPrice, futureStepSize,BigDecimal.ROUND_HALF_UP);
-        //计算现货买单数量
-        BigDecimal spotQuantity = cost.divide(bidPrice, spotStepSize,BigDecimal.ROUND_HALF_UP);
-
-        //do the order
-        doFutureBid(symbol, bidPrice, futureQuantity, futureStepSize);
-        doSpotAsk(symbol, askPrice, spotQuantity, spotStepSize);
-
-
+          doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
     }
 
+    //do paris trade
+    private void doPairsTrade(String symbol, BigDecimal cost, BigDecimal futurePrice, BigDecimal spotPrice, String direct) throws InterruptedException {
+        //计算合约最小下单位数
+        Integer[] stepSize = tradeUtil.getStepSize(symbol);
+        //计算合约卖单数量
+        BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
+        //计算现货买单数量
+        BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
+
+        //do the order
+        doFutureTrade(symbol, futurePrice, futureQuantity, stepSize[0], direct);
+        doSpotTrade(symbol, spotPrice, spotQuantity, stepSize[1], direct);
+    }
+
+
     @Async
-    public void doFutureBid(String symbol, BigDecimal bidPrice, BigDecimal futureQty, int futureStepSize) throws InterruptedException{
-        while (futureQty.compareTo(BigDecimal.ZERO)>0 && bidPrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+    public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize, String direct) throws InterruptedException{
+
+        OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL))? OrderSide.SELL:OrderSide.BUY;
+
+        while (futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             //下单
-            Order order = BinanceClient.futureSyncClient.postOrder(symbol,OrderSide.SELL,null, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
-                    bidPrice.toString(),null,null,null,null,NewOrderRespType.RESULT);
+            Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,null, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
+                    futurePrice.toString(),null,null,null,null,NewOrderRespType.RESULT);
             Long orderId = order.getOrderId();
-            logger.info("futrue open order: orderid=" + orderId);
+            logger.info("futrue new order: orderid=" + orderId);
             Thread.sleep(BeanConfig.orderExpireTime);
             if(MarketCache.futureOrderCache.containsKey(orderId) &&
                     MarketCache.futureOrderCache.get(orderId).getOrderStatus().equals("FILLED")){
@@ -166,32 +158,46 @@ public class PositionOpenService {
                 order = BinanceClient.futureSyncClient.cancelOrder(symbol, order.getOrderId(), null);
             }catch (BinanceApiException binanceApiException){
                 if (binanceApiException.getMessage().contains("Unknown order sent")) {
-                        //order has been filled but subscription not receive, do nothing
+                        //order has been filled but no subscription received, do nothing
                         logger.info("future order has been filled,no need to cancel,orderid={}",orderId);
                         return;
                     }
             }
 
-            if(order.getExecutedQty() == futureQty){
+            if(order.getExecutedQty().equals(futureQty)){
                 return;
             }else{
                 Thread.sleep(200);
-                bidPrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                if(direct.equals(BeanConstant.FUTURE_SELL)){
+                    futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                }else{
+                    futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                }
+
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize,RoundingMode.HALF_UP));
-                logger.info("future's next order info,bidPrice={}, futureQty={}",bidPrice,futureQty);
+                logger.info("future's next order info,bidPrice={}, futureQty={}",futurePrice,futureQty);
             }
         }
     }
 
     @Async
-    public void doSpotAsk(String symbol, BigDecimal askPrice, BigDecimal spotQty,int spotStepSize) throws InterruptedException{
+    public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct) throws InterruptedException{
         while(spotQty.compareTo(BigDecimal.ZERO)>0 &&
-                askPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+                spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+            NewOrderResponse newOrderResponse = null;
+            if(direct.equals(BeanConstant.FUTURE_SELL)){
+                 newOrderResponse = spotSyncClientProxy.newOrder(
+                        limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
+                                spotQty.toString(),
+                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
+            }else{
+                newOrderResponse = spotSyncClientProxy.newOrder(
+                        limitSell(symbol, com.binance.api.client.domain.TimeInForce.GTC,
+                                spotQty.toString(),
+                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
+            }
 
-            NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
-                    limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
-                            spotQty.toString(),
-                            askPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
+
             Long orderId = newOrderResponse.getOrderId();
             logger.info("new spot order,orderid={}", orderId);
             Thread.sleep(BeanConfig.orderExpireTime);
@@ -217,10 +223,14 @@ public class PositionOpenService {
                 return;
             } else {
                 Thread.sleep(200);
-                askPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                if(direct.equals(BeanConstant.FUTURE_SELL)){
+                    spotPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                }else{
+                    spotPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                }
+
                 spotQty = spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
-                logger.info("spot's order info,bidPrice={}, spotQty={}", askPrice, spotQty);
-                doSpotAsk(symbol, askPrice, spotQty, spotStepSize);
+                logger.info("spot's order info,spotPrice={}, spotQty={}", spotPrice, spotQty);
             }
         }
     }

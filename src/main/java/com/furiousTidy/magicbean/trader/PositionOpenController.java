@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import retrofit2.http.Path;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -94,8 +95,8 @@ public class PositionOpenController {
     }
 
 
-    @RequestMapping(value = "doopen/{symbol}/{pty}", method = RequestMethod.GET)
-    public void doOpen(@PathVariable String symbol, @PathVariable String pty) throws InterruptedException {
-        positionOpenService.doTrade(symbol, new BigDecimal(pty));
+    @RequestMapping(value = "doopen/{symbol}/{pty}/{direct}", method = RequestMethod.GET)
+    public void doOpen(@PathVariable String symbol, @PathVariable String pty, @PathVariable String direct) throws InterruptedException {
+        positionOpenService.doTrade(symbol, new BigDecimal(pty) ,direct);
     }
 }

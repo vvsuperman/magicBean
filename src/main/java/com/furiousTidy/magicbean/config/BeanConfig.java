@@ -6,6 +6,8 @@ public class BeanConfig {
 
     public static final String priceGap="0.001"; //交易条件，千分之三
     public static final String standardTradeUnit="10"; //标准交易单元，默认为100usdt
+    public static final BigDecimal MIN_OPEN_UNIT = new BigDecimal(5);
+
     public static final long orderExpireTime =2000;// 订单失效时间: 20s
 
 
@@ -17,7 +19,6 @@ public class BeanConfig {
     public static final String SPOT_SECRET_KEY = "LmPr3JxEeNbbcSEtJ6KCtXKCMXBmLc0LWDGKvEXdlk7xDhs4nFnWzOYTqcPNLfIk";
 
     //最小下单单元
-    public static final BigDecimal MIN_OPEN_UNIT = new BigDecimal(5);
 
     //现货生产
 //    public static final String SPOT_API_KEY = "4bXoFQbvoe18Xy2B7dWJxqfRTU78DPduiBDHScIHQ0aFXI6tNYeVEIsdNwfTjmX9";
