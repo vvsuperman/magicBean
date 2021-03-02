@@ -37,6 +37,7 @@ public class TradeUtil {
           });
 
           int futureStepSize = stepSize[0].lastIndexOf("1")-stepSize[0].indexOf(".");
+          if(futureStepSize <= 1) futureStepSize = 0;
 
           //现货最小下单位数
           for (SymbolFilter symbolFilter : MarketCache.spotInfoCache.get(symbol).getFilters()) {
@@ -46,11 +47,18 @@ public class TradeUtil {
               }
           }
           int spotStepSize = stepSize[1].lastIndexOf("1")-stepSize[1].indexOf(".");
+          if(spotStepSize <= 1) spotStepSize = 0;
+
+
           Integer[] rtStepSize ={0,0};
           rtStepSize[0] = futureStepSize;
           rtStepSize[1] = spotStepSize;
           MarketCache.stepSizeCache.put(symbol, rtStepSize);
           return rtStepSize;
+      }
+
+      public static void main(String[] args){
+          System.out.println(new BigDecimal(2.00).setScale(0));
       }
 
 

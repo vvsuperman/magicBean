@@ -80,12 +80,14 @@ public class PositionOpenService {
     * */
     public void doTradeTotal(String symbol, BigDecimal totalCost, String direct) throws InterruptedException {
         BigDecimal standardTradeUnit = new BigDecimal(BeanConfig.standardTradeUnit);
-        while(totalCost.compareTo(standardTradeUnit)>0){
+        while(totalCost.compareTo(standardTradeUnit) > 0){
             doTrade(symbol,standardTradeUnit,direct);
             totalCost = totalCost.subtract(standardTradeUnit);
             Thread.sleep(1000);
         }
-        doTrade(symbol,totalCost,direct);
+        if(totalCost.compareTo(BigDecimal.ZERO) > 0){
+            doTrade(symbol,totalCost,direct);
+        }
     }
 
     /*
@@ -106,7 +108,8 @@ public class PositionOpenService {
                 logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice);
                 Thread.sleep(200);
                 //TODO not support pairs now
-            } while(futurePrice.subtract(spotPrice).abs().divide(spotPrice,4).compareTo(new BigDecimal(BeanConfig.priceGap))<0);
+            } while(futurePrice.subtract(spotPrice).divide(spotPrice,4)
+                    .compareTo(new BigDecimal(BeanConfig.priceGap))<0);
         }else{
             do{
                 //re-compare the price in the cache
@@ -115,10 +118,11 @@ public class PositionOpenService {
                 logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice);
                 Thread.sleep(200);
                 //TODO not support pairs now
-            } while(futurePrice.subtract(spotPrice).abs().divide(spotPrice,4).compareTo(new BigDecimal(BeanConfig.priceGap))<0);
+            } while(spotPrice.subtract(futurePrice).divide(futurePrice,4)
+                    .compareTo(new BigDecimal(BeanConfig.priceGap))<0);
         }
 
-          doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
+        doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
     }
 
     //do paris trade
@@ -129,7 +133,7 @@ public class PositionOpenService {
         BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
         //计算现货买单数量
         BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
-
+        logger.info("trade future qty:{} spot qty:{}",futureQuantity,spotQuantity);
         //do the order
         doFutureTrade(symbol, futurePrice, futureQuantity, stepSize[0], direct);
         doSpotTrade(symbol, spotPrice, spotQuantity, stepSize[1], direct);
@@ -140,10 +144,11 @@ public class PositionOpenService {
     public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize, String direct) throws InterruptedException{
 
         OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL))? OrderSide.SELL:OrderSide.BUY;
+        PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL))?PositionSide.SHORT:PositionSide.LONG;
 
         while (futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             //下单
-            Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,null, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
+            Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
                     futurePrice.toString(),null,null,null,null,NewOrderRespType.RESULT);
             Long orderId = order.getOrderId();
             logger.info("futrue new order: orderid=" + orderId);
@@ -182,9 +187,12 @@ public class PositionOpenService {
 
     @Async
     public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct) throws InterruptedException{
+
         while(spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+
             NewOrderResponse newOrderResponse = null;
+
             if(direct.equals(BeanConstant.FUTURE_SELL)){
                  newOrderResponse = spotSyncClientProxy.newOrder(
                         limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
