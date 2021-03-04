@@ -105,7 +105,7 @@ public class PositionOpenService {
                 //re-compare the price in the cache
                 futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                 spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice);
+                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice+":"+direct);
                 Thread.sleep(200);
                 //TODO not support pairs now
             } while(futurePrice.subtract(spotPrice).divide(spotPrice,4)
@@ -115,7 +115,7 @@ public class PositionOpenService {
                 //re-compare the price in the cache
                 futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                 spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice);
+                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice+":"+direct);
                 Thread.sleep(200);
                 //TODO not support pairs now
             } while(spotPrice.subtract(futurePrice).divide(futurePrice,4)

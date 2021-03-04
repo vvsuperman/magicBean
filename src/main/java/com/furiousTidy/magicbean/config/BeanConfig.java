@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public class BeanConfig {
 
-    public static final String priceGap="0.003"; //交易条件，千分之三
+    public static final String priceGap="0.0015"; //交易条件，千分之三
     public static final String standardTradeUnit="11"; //标准交易单元，默认为100usdt
     public static final BigDecimal MIN_OPEN_UNIT = new BigDecimal(5);
 

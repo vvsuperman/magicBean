@@ -8,11 +8,14 @@ import com.binance.client.model.market.SymbolOrderBook;
 import com.binance.client.model.market.SymbolPrice;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
+import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
+import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,10 +25,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import retrofit2.http.Path;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.*;
 
 @Controller
 @RequestMapping(path = "/positionopen")
+@Slf4j
 public class PositionOpenController {
 
     @Autowired
@@ -39,6 +43,68 @@ public class PositionOpenController {
 
     @Autowired
     PreTradeService preTradeService;
+
+    private boolean watchdog = true;
+
+
+    @RequestMapping("switchwatchdog")
+    public @ResponseBody void switchWagchDog(){
+        watchdog = (watchdog == true)?false:true;
+    }
+
+    @RequestMapping("futurespotratio/{listSymbol}")
+    public @ResponseBody void futureSpotRatio(@PathVariable String listSymbol) throws InterruptedException {
+        if(!listSymbol.equals("all")){
+            do{
+                String[] symbols = listSymbol.split("-");
+                List<BigDecimal> ratioList = new LinkedList<>();
+                //re-compare the price in the cache
+                for(String symbol : symbols){
+                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                    ratioList.add(futurePrice.subtract(spotPrice).divide(spotPrice,4));
+                    Thread.sleep(200);
+
+                }
+                log.info("ratio:{}",ratioList);
+            } while(watchdog);
+        }
+        else if(listSymbol.equals("all")){
+
+            TreeMap<BigDecimal,String > ratioMap = new TreeMap<>(
+                    (o1, o2) -> o2.compareTo(o1));
+            do{
+                ratioMap.clear();
+                for(Map.Entry<String, HashMap<String, BigDecimal>> entrySet:MarketCache.futureTickerMap.entrySet()){
+                    BigDecimal futurePrice = entrySet.getValue().get(BeanConstant.BEST_BID_PRICE);
+                    if(!MarketCache.spotTickerMap.containsKey(entrySet.getKey()))  continue;
+                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(entrySet.getKey()).get(BeanConstant.BEST_ASK_PRICE);
+                    BigDecimal ratio = futurePrice.subtract(spotPrice).divide(spotPrice,4);
+                    ratioMap.put(ratio,entrySet.getKey());
+                }
+                log.info("ratio:{}",ratioMap);
+            }while (watchdog);
+
+        }
+    }
+
+    @RequestMapping("spotfutureratio/{listSymbol}")
+    public @ResponseBody void spotfutureratio(@PathVariable String listSymbol) throws InterruptedException {
+
+            do{
+                String[] symbols = listSymbol.split("-");
+                List<BigDecimal> ratioList = new LinkedList<>();
+                //re-compare the price in the cache
+                for(String symbol : symbols){
+                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                    ratioList.add(spotPrice.subtract(futurePrice).divide(futurePrice,4));
+                    Thread.sleep(200);
+                }
+                log.info("ratio:{}",ratioList);
+            } while(watchdog);
+
+    }
 
     @RequestMapping("spotbookticker/{symbol}")
     public @ResponseBody BookTicker getSpotBookTicker(@PathVariable String symbol){
