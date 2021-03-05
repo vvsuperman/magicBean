@@ -20,6 +20,8 @@ import java.util.*;
 
 @Service
 public class MarketCache {
+    //market price cache for future
+    public static Map<String, MarkPriceEvent> markPriceEventMap = new HashMap<>();
     //step size cache
     public static Map<String, Integer[]> stepSizeCache = new HashMap<>();
     //期货信息

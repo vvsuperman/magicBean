@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
 import java.math.BigDecimal;
 import java.util.HashMap;
 
@@ -24,6 +25,16 @@ import java.util.HashMap;
 public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
+
+    //subscribe future ratio
+
+    public void futureRatioSubscription(){
+        BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
+            listMarkPrice.forEach(markPriceEvent -> {
+                MarketCache.markPriceEventMap.put(markPriceEvent.getSymbol(), markPriceEvent);
+            });
+        },null);
+    }
 
     public void getAllBookTikcers(){
         BinanceClient.futureSyncClient.getSymbolOrderBookTicker(null).forEach(symbolOrderBook -> {

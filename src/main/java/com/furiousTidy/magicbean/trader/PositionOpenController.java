@@ -64,13 +64,11 @@ public class PositionOpenController {
                     BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                     ratioList.add(futurePrice.subtract(spotPrice).divide(spotPrice,4));
                     Thread.sleep(200);
-
                 }
                 log.info("ratio:{}",ratioList);
             } while(watchdog);
         }
         else if(listSymbol.equals("all")){
-
             TreeMap<BigDecimal,String > ratioMap = new TreeMap<>(
                     (o1, o2) -> o2.compareTo(o1));
             do{
@@ -80,11 +78,15 @@ public class PositionOpenController {
                     if(!MarketCache.spotTickerMap.containsKey(entrySet.getKey()))  continue;
                     BigDecimal spotPrice = MarketCache.spotTickerMap.get(entrySet.getKey()).get(BeanConstant.BEST_ASK_PRICE);
                     BigDecimal ratio = futurePrice.subtract(spotPrice).divide(spotPrice,4);
-                    ratioMap.put(ratio,entrySet.getKey());
+                    String symbol = entrySet.getKey();
+                    BigDecimal fundingRate = MarketCache.markPriceEventMap.get(symbol).getFundingRate();
+                    BigDecimal totalRatio = ratio.add(fundingRate);
+                    String value = symbol+":"+ratio+":"+fundingRate;
+                    ratioMap.put(totalRatio,value);
                 }
                 log.info("ratio:{}",ratioMap);
+                Thread.sleep(1000);
             }while (watchdog);
-
         }
     }
 
@@ -143,6 +145,9 @@ public class PositionOpenController {
         //get symbol info
         preTradeService.futureExchangeInfo();
         preTradeService.spotExchangeInfo();
+
+        //subscribe future ratio
+        futureSubscription.futureRatioSubscription();
 
         //subscribe order update info
         futureSubscription.processFutureCache();
