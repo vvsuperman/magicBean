@@ -52,6 +52,11 @@ public class PositionOpenController {
         watchdog = (watchdog == true)?false:true;
     }
 
+    @RequestMapping("storeallticks")
+    public @ResponseBody void storeAllTicks() throws InterruptedException {
+        preTradeService.storeTicks();
+    }
+
     @RequestMapping("futurespotratio/{listSymbol}")
     public @ResponseBody void futureSpotRatio(@PathVariable String listSymbol) throws InterruptedException {
         if(!listSymbol.equals("all")){
