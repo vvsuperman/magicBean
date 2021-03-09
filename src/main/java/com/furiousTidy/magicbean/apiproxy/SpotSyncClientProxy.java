@@ -6,7 +6,6 @@ import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.market.BookTicker;
 import com.furiousTidy.magicbean.util.BinanceClient;
-import com.sun.xml.internal.fastinfoset.util.ValueArrayResourceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
