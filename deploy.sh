@@ -12,6 +12,7 @@ HEALTH_CHECK_URL=http://127.0.0.1:${APP_PORT}  # 应用健康检查URL
 #APP_HOME=/home/admin/${APP_NAME} # 从package.tgz中解压出来的jar包放到这个目录下
 APP_HOME=/home/admin/application
 JAR_NAME=${APP_HOME}/target/${APP_NAME}.jar # jar包的名字
+JAR_CONF=${APP_HOME}/conf/application.properties  #配置文件
 JAVA_OUT=${APP_HOME}/logs/start.log  #应用的启动日志
 
 # 创建出相关目录
@@ -50,7 +51,7 @@ health_check() {
 }
 start_application() {
     echo "starting java process"
-    nohup java -jar ${JAR_NAME} > ${JAVA_OUT} 2>&1 &
+    nohup java -jar ${JAR_NAME} --spring.config.location=${JAR_CONF} > ${JAVA_OUT} 2>&1 &
     echo "started java process"
 }
 
