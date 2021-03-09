@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 修改APP_NAME为云效上的应用名
-APP_NAME=application
+APP_NAME=magicbean-0.0.1
 
 
 PROG_NAME=$0
