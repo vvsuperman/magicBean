@@ -46,6 +46,11 @@ public class PositionOpenController {
 
     private boolean watchdog = true;
 
+    @RequestMapping("statuscheck")
+    public @ResponseBody void statusCheck(){
+    }
+
+
 
     @RequestMapping("switchwatchdog")
     public @ResponseBody void switchWagchDog(){
