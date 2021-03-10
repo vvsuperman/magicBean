@@ -8,6 +8,7 @@ import com.binance.api.client.domain.account.request.CancelOrderResponse;
 import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.enums.*;
 import com.binance.client.model.event.MarkPriceEvent;
+import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
@@ -27,6 +28,7 @@ import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 import static com.binance.api.client.domain.account.NewOrder.limitSell;
@@ -74,12 +76,13 @@ public class PositionOpenService {
     }
 
 
+
     /*
     *
     * 实际下单数量，用最小交易单元来交易
     * */
-    public void doTradeTotal(String symbol, BigDecimal totalCost, String direct) throws InterruptedException {
-        BigDecimal standardTradeUnit = new BigDecimal(BeanConfig.standardTradeUnit);
+    public void doTradeSymbol(String symbol, BigDecimal totalCost, String direct) throws InterruptedException {
+        BigDecimal standardTradeUnit = BeanConfig.standardTradeUnit;
         while(totalCost.compareTo(standardTradeUnit) > 0){
             doTrade(symbol,standardTradeUnit,direct);
             totalCost = totalCost.subtract(standardTradeUnit);
@@ -109,7 +112,7 @@ public class PositionOpenService {
                 Thread.sleep(200);
                 //TODO not support pairs now
             } while(futurePrice.subtract(spotPrice).divide(spotPrice,4)
-                    .compareTo(new BigDecimal(BeanConfig.priceGap))<0);
+                    .compareTo(BeanConfig.openPriceGap)<0);
         }else{
             do{
                 //re-compare the price in the cache
@@ -119,10 +122,36 @@ public class PositionOpenService {
                 Thread.sleep(200);
                 //TODO not support pairs now
             } while(spotPrice.subtract(futurePrice).divide(futurePrice,4)
-                    .compareTo(new BigDecimal(BeanConfig.priceGap))<0);
+                    .compareTo(BeanConfig.openPriceGap)<0);
         }
 
         doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
+    }
+
+
+    private void doPairsTradeRobot() throws InterruptedException {
+         BigDecimal futurePrice = null;
+         BigDecimal spotPrice = null;
+        String symbol = "";
+        while(true){
+
+            for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
+                    //re-compare the price in the cache
+                    symbol = entry.getKey();
+                    futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                    spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                    if(futurePrice.subtract(spotPrice).divide(spotPrice,4)
+                            .compareTo(BeanConfig.openPriceGap) > 0){
+                        doPairsTrade(symbol, BeanConfig.standardTradeUnit,futurePrice,spotPrice,BeanConstant.FUTURE_SELL);
+                        //存储symbol和差价，持仓量，以及orderid
+                    }else if(spotPrice.subtract(futurePrice).divide(futurePrice,4)
+                            .compareTo(BeanConfig.openPriceGap)<0){
+
+                    }
+                    Thread.sleep(200);
+            }
+        }
+
     }
 
     //do paris trade
@@ -155,6 +184,7 @@ public class PositionOpenService {
             Thread.sleep(BeanConfig.orderExpireTime);
             if(MarketCache.futureOrderCache.containsKey(orderId) &&
                     MarketCache.futureOrderCache.get(orderId).getOrderStatus().equals("FILLED")){
+
                 logger.info("future order has been filled: orderid={}",orderId);
                 return;
             }

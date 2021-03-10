@@ -24,7 +24,7 @@ public class MarketCache {
     public static Map<String, MarkPriceEvent> markPriceEventMap = new HashMap<>();
     //step size cache
     public static Map<String, Integer[]> stepSizeCache = new HashMap<>();
-    //期货信息
+    //期货信息,exchangeinfo
     public static Map<String,ExchangeInfoEntry> futureInfoCache = new HashMap<>();
     //现货信息
     public static Map<String, SymbolInfo> spotInfoCache =new HashMap<>();
