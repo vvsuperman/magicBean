@@ -10,7 +10,8 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.retry.annotation.EnableRetry;
 
 
-@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
+//@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
+@SpringBootApplication
 @EnableRetry
 public class MagicbeanApplication {
 	private static final Logger logger = LoggerFactory.getLogger(MagicbeanApplication.class);

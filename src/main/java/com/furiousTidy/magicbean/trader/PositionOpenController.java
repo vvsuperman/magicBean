@@ -5,10 +5,8 @@ import com.binance.api.client.domain.account.request.AllOrdersRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.market.SymbolOrderBook;
-import com.binance.client.model.market.SymbolPrice;
-import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
-import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
-import com.furiousTidy.magicbean.config.BeanConfig;
+import com.furiousTidy.magicbean.dbutil.PairsTradeDao;
+import com.furiousTidy.magicbean.dbutil.PairsTradeModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
@@ -22,7 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import retrofit2.http.Path;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -44,13 +41,22 @@ public class PositionOpenController {
     @Autowired
     PreTradeService preTradeService;
 
+    @Autowired
+    PairsTradeDao symbolOrderDao;
+
     private boolean watchdog = true;
+
+    @RequestMapping("checksql")
+    public @ResponseBody void checkSql(){
+        PairsTradeModel symbolOrderModel = new PairsTradeModel();
+        symbolOrderModel.setSymbol("BTCUSDT");
+        symbolOrderModel.setStatus(0);
+        log.info("list:{}",symbolOrderDao.findBySymbolStatusType(symbolOrderModel));
+    }
 
     @RequestMapping("statuscheck")
     public @ResponseBody void statusCheck(){
     }
-
-
 
     @RequestMapping("switchwatchdog")
     public @ResponseBody void switchWagchDog(){
