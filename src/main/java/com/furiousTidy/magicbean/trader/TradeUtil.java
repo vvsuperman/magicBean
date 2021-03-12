@@ -9,11 +9,28 @@ import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.error.Mark;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @Service
 public class TradeUtil {
 
-      public Integer[] getStepSize(String symbol){
+    //future rate high or not
+    public boolean futureSelected(String symbol){
+        int i=0;
+        for(Map.Entry entry: MarketCache.fRateSymbolCache.entrySet()){
+            if( i > BeanConfig.priorNum) {
+                return false;
+            }
+            if(entry.getValue().equals(symbol)){
+                return true;
+            }
+            i++;
+        }
+        return false;
+    }
+
+
+    public Integer[] getStepSize(String symbol){
           if(MarketCache.stepSizeCache.containsKey(symbol)){
               return MarketCache.stepSizeCache.get(symbol);
           }

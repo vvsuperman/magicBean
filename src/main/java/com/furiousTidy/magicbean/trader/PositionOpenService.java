@@ -128,7 +128,7 @@ public class PositionOpenService {
         doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
     }
 
-
+    //the central control to control the pair trade
     private void doPairsTradeRobot() throws InterruptedException {
          BigDecimal futurePrice = null;
          BigDecimal spotPrice = null;
@@ -146,7 +146,6 @@ public class PositionOpenService {
                         //存储symbol和差价，持仓量，以及orderid
                     }else if(spotPrice.subtract(futurePrice).divide(futurePrice,4)
                             .compareTo(BeanConfig.openPriceGap)<0){
-
                     }
                     Thread.sleep(200);
             }
@@ -184,7 +183,6 @@ public class PositionOpenService {
             Thread.sleep(BeanConfig.orderExpireTime);
             if(MarketCache.futureOrderCache.containsKey(orderId) &&
                     MarketCache.futureOrderCache.get(orderId).getOrderStatus().equals("FILLED")){
-
                 logger.info("future order has been filled: orderid={}",orderId);
                 return;
             }

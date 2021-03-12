@@ -1,5 +1,6 @@
 package com.furiousTidy.magicbean.dbutil;
 
+import org.apache.ibatis.annotations.InsertProvider;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.SelectProvider;
@@ -13,4 +14,6 @@ public interface PairsTradeDao {
     @SelectProvider(type = PairsTradeMapper.class,method = "findSymbolOrderList")
     List<PairsTradeModel> findBySymbolStatusType(@Param("symbolModel") PairsTradeModel symbolModel);
 
+    @InsertProvider(type=PairsTradeMapper.class,method = "insertPairsTrade")
+    Integer insertPairsTrade(@Param("pairsTradeModel") PairsTradeModel pairsTradeModel);
 }

@@ -48,10 +48,11 @@ public class PositionOpenController {
 
     @RequestMapping("checksql")
     public @ResponseBody void checkSql(){
-        PairsTradeModel symbolOrderModel = new PairsTradeModel();
-        symbolOrderModel.setSymbol("BTCUSDT");
-        symbolOrderModel.setStatus(0);
-        log.info("list:{}",symbolOrderDao.findBySymbolStatusType(symbolOrderModel));
+        PairsTradeModel pairsTradeModel = new PairsTradeModel();
+        pairsTradeModel.setSymbol("BNBUSDT");
+        pairsTradeModel.setStatus(0);
+        log.info("insertparisTrade:{}",symbolOrderDao.insertPairsTrade(pairsTradeModel));
+        log.info("list:{}",symbolOrderDao.findBySymbolStatusType(pairsTradeModel));
     }
 
     @RequestMapping("statuscheck")
@@ -95,7 +96,7 @@ public class PositionOpenController {
                     BigDecimal spotPrice = MarketCache.spotTickerMap.get(entrySet.getKey()).get(BeanConstant.BEST_ASK_PRICE);
                     BigDecimal ratio = futurePrice.subtract(spotPrice).divide(spotPrice,4);
                     String symbol = entrySet.getKey();
-                    BigDecimal fundingRate = MarketCache.markPriceEventMap.get(symbol).getFundingRate();
+                    BigDecimal fundingRate = MarketCache.futureRateCache.get(symbol);
                     BigDecimal totalRatio = ratio.add(fundingRate);
                     String value = symbol+":"+ratio+":"+fundingRate;
                     ratioMap.put(totalRatio,value);

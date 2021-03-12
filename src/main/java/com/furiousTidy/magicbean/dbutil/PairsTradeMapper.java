@@ -14,5 +14,15 @@ public class PairsTradeMapper {
         return sql.toString();
     }
 
+    public String insertPairsTrade(){
+        return new SQL()
+                .INSERT_INTO("pairs_trade_info")
+                .INTO_COLUMNS("symbol", "openBidPrice","openBidQty","openAskPrice","openAskQty","status")
+                .INTO_VALUES("#{pairsTradeModel.symbol}","#{pairsTradeModel.openBidPrice}","#{pairsTradeModel.openBidQty}","#{pairsTradeModel.openAskPrice}","#{pairsTradeModel.openAskQty}", "#{pairsTradeModel.status}")
+                .INTO_COLUMNS("closeBidPrice","closeBidQty","closeAskPrice","closeAskQty")
+                .INTO_VALUES("#{pairsTradeModel.closeBidPrice}","#{pairsTradeModel.closeBidQty}","#{pairsTradeModel.closeAskPrice}","#{pairsTradeModel.closeAskQty}")
+                .toString();
+    }
+
 
 }

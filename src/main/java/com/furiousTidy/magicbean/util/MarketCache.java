@@ -20,8 +20,12 @@ import java.util.*;
 
 @Service
 public class MarketCache {
-    //market price cache for future
-    public static Map<String, MarkPriceEvent> markPriceEventMap = new HashMap<>();
+    //symbol-futurerate cache store symbol and futrerate
+    public static Map<String, BigDecimal> futureRateCache = new HashMap<>();
+    //futurerate-symbol cache store the futurerate and symbol
+    public static TreeMap<BigDecimal, String> fRateSymbolCache = new TreeMap<BigDecimal, String>(
+            (Comparator<BigDecimal>) (a, b) -> b.compareTo(a)
+    );
     //step size cache
     public static Map<String, Integer[]> stepSizeCache = new HashMap<>();
     //期货信息,exchangeinfo

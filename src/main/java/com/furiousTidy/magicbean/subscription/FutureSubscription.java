@@ -17,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
 import java.math.BigDecimal;
 import java.util.HashMap;
 
@@ -26,12 +25,12 @@ public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
 
-    //subscribe future ratio
-
+    //subscribe future ratio and store in the tree map
     public void futureRatioSubscription(){
         BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
             listMarkPrice.forEach(markPriceEvent -> {
-                MarketCache.markPriceEventMap.put(markPriceEvent.getSymbol(), markPriceEvent);
+                MarketCache.futureRateCache.put(markPriceEvent.getSymbol(), markPriceEvent.getFundingRate());
+                MarketCache.fRateSymbolCache.put(markPriceEvent.getFundingRate(),markPriceEvent.getSymbol());
             });
         },null);
     }
@@ -49,9 +48,7 @@ public class FutureSubscription {
 
     //存储合约最佳挂单行情
     public void allBookTickerSubscription(){
-
         getAllBookTikcers();
-
         BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent)->{
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,symbolBookTickerEvent.getBestAskPrice());
@@ -63,7 +60,7 @@ public class FutureSubscription {
         },null);
     }
 
-
+    //initial user's future accout info
     public void processFutureCache(){
         //初始化合约缓存
         AccountInformation accountInformation = BinanceClient.futureSyncClient.getAccountInformation();
@@ -82,7 +79,6 @@ public class FutureSubscription {
             MarketCache.futurePositionCache.put(position.getSymbol(),positionUpdate);
         }
         userDataUpdateSubscription();
-
     }
 
     //订阅合约的用户状态更新事件，生成合约相关缓存
