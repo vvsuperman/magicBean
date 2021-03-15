@@ -1,10 +1,16 @@
 package com.furiousTidy.magicbean.subscription;
 
 
+import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
+import com.furiousTidy.magicbean.dbutil.PairsTradeDao;
+import com.furiousTidy.magicbean.dbutil.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.TradeInfoModel;
+import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -14,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ACCOUNT_POSITION_UPDATE;
@@ -27,6 +34,13 @@ public class SpotSubscription {
 
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
+
+
+    @Autowired
+    TradeInfoDao tradeInfoDao;
+
+    @Autowired
+    PairsTradeDao pairsTradeDao;
 
     public void symbolBookTickSubscription(String symbol){
 
@@ -106,10 +120,63 @@ public class SpotSubscription {
                 logger.info("spot account_update event:type={},response={}",response.getAccountUpdateEvent().getEventType(),response.toString());
 
             } else if(response.getEventType() == ORDER_TRADE_UPDATE) {
-                OrderTradeUpdateEvent orderTradeUpdateEvent = response.getOrderTradeUpdateEvent();
-                MarketCache.spotOrderCache.put(orderTradeUpdateEvent.getOrderId(), orderTradeUpdateEvent);
-                logger.info("spot order_update event:type={},orderid={},response={}"+response.getOrderTradeUpdateEvent().getEventType(),
-                        orderTradeUpdateEvent.getOrderId(),response.toString());
+                OrderTradeUpdateEvent orderUpdate = response.getOrderTradeUpdateEvent();
+                MarketCache.spotOrderCache.put(orderUpdate.getOrderId(), orderUpdate);
+
+                if(orderUpdate.getOrderStatus()==OrderStatus.FILLED &&
+                        orderUpdate.getOrderStatus() == OrderStatus.PARTIALLY_FILLED){
+                    logger.info("spot order_update event:type={},orderid={},response={}"+response.getOrderTradeUpdateEvent().getEventType(),
+                            orderUpdate.getOrderId(),response.toString());
+
+                    String clientOrderId = orderUpdate.getNewClientOrderId();
+                    TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoById(clientOrderId);
+
+                    if(tradeInfo == null){
+                        tradeInfo = new TradeInfoModel();
+                        tradeInfo.setSymbol(orderUpdate.getSymbol());
+                        tradeInfo.setOrderId(clientOrderId);
+                        tradeInfo.setSpotPrice(new BigDecimal(orderUpdate.getPrice()));
+                        tradeInfo.setSpotQty(new BigDecimal(orderUpdate.getAccumulatedQuantity()));
+                        tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
+                        pairsTradeDao.insertPairsTrade(tradeInfo);
+                    }
+                    else{
+                        BigDecimal spotPrice, spotQty;
+                        BigDecimal ratio;
+                        String price = orderUpdate.getPrice();
+                        String qty = orderUpdate.getAccumulatedQuantity();
+                        int priceSize = price.length() - price.indexOf(".");
+                        //calculate bid price
+                        if(tradeInfo.getSpotPrice() == null){
+                            spotPrice = new BigDecimal(price);
+                            spotQty = new BigDecimal(qty);
+                        }else{
+                            spotQty = new BigDecimal(qty).add(tradeInfo.getSpotQty());
+                            spotPrice = new BigDecimal(price).multiply(new BigDecimal(qty))
+                                    .add(tradeInfo.getSpotPrice()).multiply(tradeInfo.getSpotQty())
+                                            .divide(spotQty,priceSize,RoundingMode.HALF_UP);
+                        }
+                        //calcualte ratio
+                        if (tradeInfo.getFuturePrice() != null) {
+                            BigDecimal futurePrice = tradeInfo.getFuturePrice();
+                            if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
+                                ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
+                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+                            }else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
+                                ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
+                                pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
+                            }
+                        }
+
+                        tradeInfo.setSpotQty(spotQty);
+                        tradeInfo.setSpotPrice(spotPrice);
+
+                        tradeInfoDao.updateTradeInfoById(tradeInfo);
+
+                    }
+
+                }
+
             }
             logger.info("Waiting for spot balance or order events......");
             BinanceClient.spotSyncClient.keepAliveUserDataStream(listenKey);

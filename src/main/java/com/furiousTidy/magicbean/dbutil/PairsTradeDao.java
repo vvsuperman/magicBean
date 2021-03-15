@@ -8,12 +8,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+
 @Mapper
 @Component
 public interface PairsTradeDao {
-    @SelectProvider(type = PairsTradeMapper.class,method = "findSymbolOrderList")
-    List<PairsTradeModel> findBySymbolStatusType(@Param("symbolModel") PairsTradeModel symbolModel);
+    @SelectProvider(type = PairsTradeMapper.class,method = "findPairsTradeBySymbol")
+    List<PairsTradeModel> findPairsTradeBySymbol(@Param("symbol") String symbol);
 
-    @InsertProvider(type=PairsTradeMapper.class,method = "insertPairsTrade")
-    Integer insertPairsTrade(@Param("pairsTradeModel") PairsTradeModel pairsTradeModel);
+    @InsertProvider(type=PairsTradeMapper.class,method = "insertPairsStatus")
+    Integer insertPairsStatus(@Param("pairsStatusModel") PairsTradeModel pairsStatusModel);
+
 }

@@ -53,7 +53,7 @@ public class PreTradeService {
                 spotBidPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
 
                 fundingRate = MarketCache.futureRateCache.containsKey(symbol)?
-                        MarketCache.futureRateCache.get(symbol).getFundingRate():BigDecimal.ZERO;
+                        MarketCache.futureRateCache.get(symbol):BigDecimal.ZERO;
                 point = Point.measurement(BeanConstant.SYMBOL_TICKS_INFO)
                         .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                         .tag(BeanConstant.EXCHANGE, BeanConstant.BINANCE)
