@@ -9,10 +9,18 @@ import org.springframework.stereotype.Service;
 import org.yaml.snakeyaml.error.Mark;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Map;
 
 @Service
 public class TradeUtil {
+
+    public static String getCurrentTime(){
+        LocalDate today = LocalDate.now();
+        LocalTime time = LocalTime.now();
+        return today.getYear()+"/"+today.getMonthValue()+"/"+today.getDayOfMonth()+" "+time;
+    }
 
     //future rate high or not
     public boolean futureSelected(String symbol){

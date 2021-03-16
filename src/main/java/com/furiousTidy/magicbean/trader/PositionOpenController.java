@@ -5,8 +5,8 @@ import com.binance.api.client.domain.account.request.AllOrdersRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.market.SymbolOrderBook;
-import com.furiousTidy.magicbean.dbutil.PairsTradeDao;
-import com.furiousTidy.magicbean.dbutil.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.TradeInfoModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
@@ -42,13 +42,13 @@ public class PositionOpenController {
     PreTradeService preTradeService;
 
     @Autowired
-    PairsTradeDao symbolOrderDao;
+    TradeInfoDao symbolOrderDao;
 
     private boolean watchdog = true;
 
     @RequestMapping("checksql")
     public @ResponseBody void checkSql(){
-        PairsTradeModel pairsTradeModel = new PairsTradeModel();
+        TradeInfoModel pairsTradeModel = new TradeInfoModel();
         pairsTradeModel.setSymbol("BNBUSDT");
         pairsTradeModel.setStatus(0);
         log.info("insertparisTrade:{}",symbolOrderDao.insertPairsTrade(pairsTradeModel));
@@ -159,6 +159,8 @@ public class PositionOpenController {
 
     @RequestMapping("docache")
     public @ResponseBody String doCache(){
+        //set the position side
+//        BinanceClient.futureSyncClient.changePositionSide(true);
         //get symbol info
         preTradeService.futureExchangeInfo();
         preTradeService.spotExchangeInfo();

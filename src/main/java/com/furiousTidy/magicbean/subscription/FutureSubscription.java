@@ -10,20 +10,34 @@ import com.binance.client.model.trade.Position;
 import com.binance.client.model.user.BalanceUpdate;
 import com.binance.client.model.user.OrderUpdate;
 import com.binance.client.model.user.PositionUpdate;
+import com.furiousTidy.magicbean.dbutil.PairsTradeDao;
+import com.furiousTidy.magicbean.dbutil.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.TradeInfoModel;
+import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 
 @Service
 public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
+
+
+    @Autowired
+    TradeInfoDao tradeInfoDao;
+
+    @Autowired
+    PairsTradeDao pairsTradeDao;
 
     //subscribe future ratio and store in the tree map
     public void futureRatioSubscription(){
@@ -105,6 +119,54 @@ public class FutureSubscription {
                 MarketCache.futureOrderCache.put(orderUpdate.getOrderId(),orderUpdate);
                 logger.info("future trade_update event: orderid={},orderstatus={},event={}",orderUpdate.getOrderId(),
                         orderUpdate.getOrderStatus(),event);
+                if(orderUpdate.getOrderStatus().equals("FILLED") || orderUpdate.getOrderStatus().equals("PARTIALLY_FILLED")){
+                    // update the database
+                    String clientOrderId = orderUpdate.getClientOrderId();
+                    TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoById(orderUpdate.getClientOrderId());
+
+                    if(tradeInfo == null){
+                        tradeInfo = new TradeInfoModel();
+                        tradeInfo.setSymbol(orderUpdate.getSymbol());
+                        tradeInfo.setOrderId(clientOrderId);
+                        tradeInfo.setFuturePrice(orderUpdate.getAvgPrice());
+                        tradeInfo.setFutureQty(orderUpdate.getCumulativeFilledQty());
+                        tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
+                        pairsTradeDao.insertPairsTrade(tradeInfo);
+                    }
+                    else{
+                        BigDecimal futurePrice, futureQty;
+                        BigDecimal ratio;
+                        int priceSize = orderUpdate.getAvgPrice().toString().length() - orderUpdate.getAvgPrice().toString().indexOf(".");
+                        //calculate bid price
+                        if(tradeInfo.getFuturePrice() == null){
+                             futurePrice = orderUpdate.getAvgPrice();
+                             futureQty = orderUpdate.getCumulativeFilledQty();
+                        }else{
+                            futureQty = orderUpdate.getCumulativeFilledQty().add(tradeInfo.getFutureQty());
+                            futurePrice = orderUpdate.getAvgPrice().multiply(orderUpdate.getCumulativeFilledQty())
+                                    .add(tradeInfo.getFuturePrice()).multiply(tradeInfo.getFutureQty())
+                                            .divide(futureQty,priceSize);
+                        }
+                        //calcualte ratio
+                        if (tradeInfo.getSpotPrice() != null) {
+                            BigDecimal spotPrice = tradeInfo.getSpotPrice();
+                            if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
+                                ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
+                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+                            }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
+                                ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
+                                pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
+                            }
+                        }
+
+                        tradeInfo.setFutureQty(futureQty);
+                        tradeInfo.setFuturePrice(futurePrice);
+
+                        tradeInfoDao.updatePairsTradeById(tradeInfo);
+
+                    }
+
+                }
             }else if(event.getEventType().equals("LISTEN_KEY_EXPIRED")){
                 //Listen key 失效了
                 logger.error("listen key expired");
