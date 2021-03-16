@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 
 @Data
 public class PairsTradeModel {
+    String id;
     String symbol;
     String openId;
     String closeId;

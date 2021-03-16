@@ -129,7 +129,9 @@ public class SpotSubscription {
                             orderUpdate.getOrderId(),response.toString());
 
                     String clientOrderId = orderUpdate.getNewClientOrderId();
-                    TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoById(clientOrderId);
+//                    TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoById(clientOrderId);
+
+                    TradeInfoModel tradeInfo = null;
 
                     if(tradeInfo == null){
                         tradeInfo = new TradeInfoModel();
@@ -138,7 +140,7 @@ public class SpotSubscription {
                         tradeInfo.setSpotPrice(new BigDecimal(orderUpdate.getPrice()));
                         tradeInfo.setSpotQty(new BigDecimal(orderUpdate.getAccumulatedQuantity()));
                         tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
-                        pairsTradeDao.insertPairsTrade(tradeInfo);
+//                        pairsTradeDao.insertPairsTrade(tradeInfo);
                     }
                     else{
                         BigDecimal spotPrice, spotQty;
@@ -161,17 +163,17 @@ public class SpotSubscription {
                             BigDecimal futurePrice = tradeInfo.getFuturePrice();
                             if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
                                 ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
-                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+//                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
                             }else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
                                 ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
-                                pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
+//                                pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
                             }
                         }
 
                         tradeInfo.setSpotQty(spotQty);
                         tradeInfo.setSpotPrice(spotPrice);
 
-                        tradeInfoDao.updateTradeInfoById(tradeInfo);
+//                        tradeInfoDao.updateTradeInfoById(tradeInfo);
 
                     }
 
