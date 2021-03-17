@@ -182,7 +182,7 @@ public class PositionOpenService {
                                     pairsTradeModel.setCloseId(clientOrderId);
                                     //update close id in pairstrade
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
-                                    TradeInfoModel tradeInfoModel = tradeInfoDao.findByOpenId(pairsTradeModel.getOpenId());
+                                    TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
                                     BigDecimal cost = tradeInfoModel.getFuturePrice().multiply(tradeInfoModel.getFutureQty());
                                     doPairsTrade(symbol, cost,futurePrice,spotPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
@@ -205,18 +205,6 @@ public class PositionOpenService {
             }
         }
         return symbolPairsTradeList;
-    }
-
-    //TODO NEED SPEED UP
-    public boolean inFutureBid(String symbol){
-        //check if the symbol in futureBidRatio
-        //select * from futureBid where symbol = symbol
-        List<PairsTradeModel> pairsTradeList =  pairsTradeDao.findPairsTradeBySymbol(symbol);
-        if (pairsTradeList == null){
-            return false;
-        }else{
-            return true;
-        }
     }
 
     //do paris trade

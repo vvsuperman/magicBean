@@ -4,6 +4,7 @@ import com.furiousTidy.magicbean.dbutil.mapper.PairsTradeMapper;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,11 +14,11 @@ import java.util.List;
 @Component
 public interface PairsTradeDao {
     @Select("Select * from pairs_trade where symbol = #{symbol}")
-    PairsTradeModel findPairsTradeBySymbol(@Param("symbol") String symbol);
+    List<PairsTradeModel> findPairsTradeBySymbol(@Param("symbol") String symbol);
 
     @Insert("INSERT INTO pairs_trade(symbol,openId,closeId,openRatio,closeRatio) " +
             "VALUES(#{symbol}, #{openId}, #{closeId},#{openRatio},#{closeRatio})")
-    Integer insertPairsTrade(@Param("PairsTradeModel") PairsTradeModel PairsTradeModel);
+    Integer insertPairsTrade( PairsTradeModel PairsTradeModel);
 
     @Update("UPDATE pairs_trade SET openId=#{openId},openRatio=#{openRatio}" +
             ",closeId=#{closeId}, closeRatio=#{closeRatio} WHERE id =#{id}")
@@ -29,6 +30,6 @@ public interface PairsTradeDao {
     @Update("UPDATE pairs_trade SET closeRatio=#{closeRatio} WHERE closeId =#{closeId}")
     void updateCloseRatioByCloseId(@Param("closeId") String closeId, @Param("closeRatio") BigDecimal closeRatio);
 
-    @Select("select * from pairs_trade where close_id = null")
+    @Select("select * from pairs_trade where closeId ISNULL")
     List<PairsTradeModel> findPairsTradeOpen();
 }

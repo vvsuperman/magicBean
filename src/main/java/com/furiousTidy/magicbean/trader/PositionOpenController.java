@@ -5,7 +5,9 @@ import com.binance.api.client.domain.account.request.AllOrdersRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.market.SymbolOrderBook;
+import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
@@ -42,17 +44,21 @@ public class PositionOpenController {
     PreTradeService preTradeService;
 
     @Autowired
-    TradeInfoDao symbolOrderDao;
+    TradeInfoDao tradeInfoDao;
+
+    @Autowired
+    PairsTradeDao pairsTradeDao;
 
     private boolean watchdog = true;
 
     @RequestMapping("checksql")
     public @ResponseBody void checkSql(){
-        TradeInfoModel pairsTradeModel = new TradeInfoModel();
-        pairsTradeModel.setSymbol("BNBUSDT");
-        pairsTradeModel.setStatus(0);
-        log.info("insertparisTrade:{}",symbolOrderDao.insertPairsTrade(pairsTradeModel));
-        log.info("list:{}",symbolOrderDao.findBySymbolStatusType(pairsTradeModel));
+//        PairsTradeModel pairsTradeModel = new PairsTradeModel();
+//        pairsTradeModel.setSymbol("BNBUSDT");
+//        pairsTradeModel.setOpenId("abc123456");
+//        log.info("insert parisTrade:{}",pairsTradeDao.insertPairsTrade(pairsTradeModel));
+//        log.info("list:{}",pairsTradeDao.findPairsTradeBySymbol("BNBUSDT"));
+//          log.info("list:{}",pairsTradeDao.findPairsTradeOpen());
     }
 
     @RequestMapping("statuscheck")

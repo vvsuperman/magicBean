@@ -31,7 +31,6 @@ public class FutureSubscription {
 
     static Logger logger = LoggerFactory.getLogger(FutureSubscription.class);
 
-
     @Autowired
     TradeInfoDao tradeInfoDao;
 
