@@ -1,4 +1,4 @@
-package com.furiousTidy.magicbean.dbutil;
+package com.furiousTidy.magicbean.dbutil.model;
 
 import lombok.Data;
 

@@ -1,9 +1,9 @@
 //package com.furiousTidy.magicbean.trader;
 //
-//import com.furiousTidy.magicbean.dbutil.PairsTradeDao;
-//import com.furiousTidy.magicbean.dbutil.PairsTradeModel;
-//import com.furiousTidy.magicbean.dbutil.TradeInfoDao;
-//import com.furiousTidy.magicbean.dbutil.TradeInfoModel;
+//import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
+//import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
+//import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+//import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 //import org.springframework.beans.factory.annotation.Autowired;
 //
 //import java.util.List;

@@ -6,10 +6,9 @@ import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
-import com.furiousTidy.magicbean.dbutil.PairsTradeDao;
-import com.furiousTidy.magicbean.dbutil.PairsTradeModel;
-import com.furiousTidy.magicbean.dbutil.TradeInfoDao;
-import com.furiousTidy.magicbean.dbutil.TradeInfoModel;
+import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
+import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -129,9 +128,7 @@ public class SpotSubscription {
                             orderUpdate.getOrderId(),response.toString());
 
                     String clientOrderId = orderUpdate.getNewClientOrderId();
-//                    TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoById(clientOrderId);
-
-                    TradeInfoModel tradeInfo = null;
+                    TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
 
                     if(tradeInfo == null){
                         tradeInfo = new TradeInfoModel();
@@ -140,7 +137,7 @@ public class SpotSubscription {
                         tradeInfo.setSpotPrice(new BigDecimal(orderUpdate.getPrice()));
                         tradeInfo.setSpotQty(new BigDecimal(orderUpdate.getAccumulatedQuantity()));
                         tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
-//                        pairsTradeDao.insertPairsTrade(tradeInfo);
+                        tradeInfoDao.insertTradeInfo(tradeInfo);
                     }
                     else{
                         BigDecimal spotPrice, spotQty;
@@ -163,17 +160,17 @@ public class SpotSubscription {
                             BigDecimal futurePrice = tradeInfo.getFuturePrice();
                             if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
                                 ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
-//                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
                             }else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
                                 ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
-//                                pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
+                                pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
                             }
                         }
 
                         tradeInfo.setSpotQty(spotQty);
                         tradeInfo.setSpotPrice(spotPrice);
 
-//                        tradeInfoDao.updateTradeInfoById(tradeInfo);
+                        tradeInfoDao.updateTradeInfoById(tradeInfo);
 
                     }
 
