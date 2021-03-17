@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 
 public class BeanConfig {
 
-    public static final BigDecimal openPriceGap =new BigDecimal("0.005"); //交易条件，千分之五
+    public static final BigDecimal openPriceGap =new BigDecimal("0.0045"); //交易条件，千分之五
     public static final BigDecimal closePriceGap = new BigDecimal("0.003");  //平仓条件千分之三
-    public static final BigDecimal standardTradeUnit=new BigDecimal("15"); //标准交易单元，默认为100usdt
+    public static final BigDecimal standardTradeUnit=new BigDecimal("100"); //标准交易单元，默认为100usdt
     public static final BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
 
     public static final long orderExpireTime =5000;// 订单失效时间: 20s

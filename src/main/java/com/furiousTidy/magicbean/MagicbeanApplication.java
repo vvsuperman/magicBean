@@ -11,7 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.retry.annotation.EnableRetry;
 
 
-@SpringBootApplication(scanBasePackages = {"com.*"})
+@SpringBootApplication
 @EnableRetry
 //@MapperScan("com.furiousTidy.magicbean.dbutil.mapper.*")
 public class MagicbeanApplication {

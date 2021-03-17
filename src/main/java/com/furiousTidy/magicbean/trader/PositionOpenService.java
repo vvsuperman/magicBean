@@ -141,23 +141,24 @@ public class PositionOpenService {
     }
 
     //the central control to control the pair trade
-    private void doPairsTradeRobot() throws InterruptedException {
+    public void doPairsTradeRobot() throws InterruptedException {
          BigDecimal futurePrice = null;
          BigDecimal spotPrice = null;
         String symbol = "";
-        while(true){
-//select futureBid from futureBid where symbol = symbol;
+        while(PositionOpenController.watchdog){
+            //select futureBid from futureBid where symbol = symbol;
             List<PairsTradeModel> pairsTradeList =  pairsTradeDao.findPairsTradeOpen();
-            //select the mim one
-            Collections.sort(pairsTradeList,
-                    (Comparator<PairsTradeModel>) (a, b) -> b.getOpenRatio().compareTo(a.getOpenRatio())
-            );
+            //sort the mim one
+            sortPairsTradeList(pairsTradeList);
+
             for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
                     //re-compare the price in the cache
                     symbol = entry.getKey();
-                    futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                    spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                    futurePrice = getFutureTickPrice(symbol);
+                    spotPrice = getSpotTickPrice(symbol);
+                    if(futurePrice == null || spotPrice == null ||
+                            futurePrice.equals(BigDecimal.ZERO) || futurePrice.equals(BigDecimal.ZERO) ) continue;
                     //price matched open
                     if(futurePrice.subtract(spotPrice).divide(spotPrice,4)
                             .compareTo(BeanConfig.openPriceGap) > 0){
@@ -171,6 +172,7 @@ public class PositionOpenService {
                         doPairsTrade(symbol, BeanConfig.standardTradeUnit,futurePrice,spotPrice,
                                 BeanConstant.FUTURE_SELL,clientOrderId);
                     }else {
+                        if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
@@ -196,11 +198,42 @@ public class PositionOpenService {
         }
     }
 
+    private BigDecimal getFutureTickPrice(String symbol) {
+        if(MarketCache.futureTickerMap.containsKey(symbol)){
+            return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+        }else{
+            return null;
+        }
+    }
+
+    private BigDecimal getSpotTickPrice(String symbol) {
+        if(MarketCache.spotTickerMap.containsKey(symbol)){
+            return  MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+        }else{
+            return null;
+        }
+    }
+
+    private void sortPairsTradeList(List<PairsTradeModel> pairsTradeList) {
+        if(pairsTradeList!=null && pairsTradeList.size()>0){
+            Collections.sort(pairsTradeList,
+                    (Comparator<PairsTradeModel>) (a, b) -> {
+                        if(a.getOpenRatio()!=null && b.getOpenRatio()!=null){
+                          return  b.getOpenRatio().compareTo(a.getOpenRatio());
+                        }else{
+                            return 0;
+                        }
+                    }
+            );
+        }
+    }
+
 
     public List<PairsTradeModel> getPairsTradeInList(String symbol, List<PairsTradeModel> pairsTradeList){
         List<PairsTradeModel> symbolPairsTradeList = new ArrayList<>();
         for(PairsTradeModel pairsTradeModel: pairsTradeList){
             if(pairsTradeModel.getSymbol().equals(symbol)){
+                if(pairsTradeModel.getOpenRatio() == null) continue;
                 symbolPairsTradeList.add(pairsTradeModel);
             }
         }
@@ -221,7 +254,7 @@ public class PositionOpenService {
 
 
         doFutureTrade(symbol, futurePrice, futureQuantity, stepSize[0], direct, clientOrderId);
-//        doSpotTrade(symbol, spotPrice, spotQuantity, stepSize[1], direct, clientOrderId);
+        doSpotTrade(symbol, spotPrice, spotQuantity, stepSize[1], direct, clientOrderId);
     }
 
 
@@ -235,6 +268,8 @@ public class PositionOpenService {
 
         while (futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             //下单
+            logger.info("new order, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
+                                    ,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
             Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
                     futurePrice.toString(),null,clientOrderId,null,null,NewOrderRespType.RESULT);
             Long orderId = order.getOrderId();
@@ -275,7 +310,7 @@ public class PositionOpenService {
     }
 
     @Async
-    public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct) throws InterruptedException{
+    public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
 
         while(spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
@@ -286,12 +321,12 @@ public class PositionOpenService {
                  newOrderResponse = spotSyncClientProxy.newOrder(
                         limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
                                 spotQty.toString(),
-                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
+                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
             }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
                 newOrderResponse = spotSyncClientProxy.newOrder(
                         limitSell(symbol, com.binance.api.client.domain.TimeInForce.GTC,
                                 spotQty.toString(),
-                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL));
+                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
             }
 
 
@@ -316,7 +351,7 @@ public class PositionOpenService {
             }
 
             //new order again
-            if (cancelOrderResponse.getExecutedQty() == spotQty.toString()) {
+            if (cancelOrderResponse.getExecutedQty().equals(spotQty.toString())) {
                 return;
             } else {
                 Thread.sleep(200);

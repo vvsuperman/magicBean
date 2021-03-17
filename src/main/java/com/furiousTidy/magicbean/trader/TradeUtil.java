@@ -19,7 +19,8 @@ public class TradeUtil {
     public static String getCurrentTime(){
         LocalDate today = LocalDate.now();
         LocalTime time = LocalTime.now();
-        return today.getYear()+"/"+today.getMonthValue()+"/"+today.getDayOfMonth()+" "+time;
+        return today.getYear()+"/"+today.getMonthValue()+"/"+today.getDayOfMonth()+" "
+                +time.getHour()+":"+time.getMinute()+":"+time.getSecond();
     }
 
     //future rate high or not

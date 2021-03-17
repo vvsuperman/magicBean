@@ -20,6 +20,6 @@ public class BeanConstant {
     public static final String SPOT_ASK_PRICE="spotAskPrice";
 
 
-    public static final String FUTURE_SELL_OPEN = "futureSellOpen";
-    public static final String FUTURE_SELL_CLOSE = "futureSellClose";
+    public static final String FUTURE_SELL_OPEN = "FSO";
+    public static final String FUTURE_SELL_CLOSE = "FSC";
 }

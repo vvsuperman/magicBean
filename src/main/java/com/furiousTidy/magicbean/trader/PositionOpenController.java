@@ -49,15 +49,22 @@ public class PositionOpenController {
     @Autowired
     PairsTradeDao pairsTradeDao;
 
-    private boolean watchdog = true;
+    public static boolean watchdog = true;
+
+    @RequestMapping("earnmoney")
+    public @ResponseBody void earnMoney() throws InterruptedException {
+        doCache();
+        Thread.sleep(5000);
+        positionOpenService.doPairsTradeRobot();
+    }
 
     @RequestMapping("checksql")
     public @ResponseBody void checkSql(){
-//        PairsTradeModel pairsTradeModel = new PairsTradeModel();
-//        pairsTradeModel.setSymbol("BNBUSDT");
-//        pairsTradeModel.setOpenId("abc123456");
-//        log.info("insert parisTrade:{}",pairsTradeDao.insertPairsTrade(pairsTradeModel));
-//        log.info("list:{}",pairsTradeDao.findPairsTradeBySymbol("BNBUSDT"));
+        PairsTradeModel pairsTradeModel = new PairsTradeModel();
+        pairsTradeModel.setSymbol("BTCUSDT");
+        pairsTradeModel.setOpenId("abc123457");
+        log.info("insert parisTrade:{}",pairsTradeDao.insertPairsTrade(pairsTradeModel));
+        log.info("list:{}",pairsTradeDao.findPairsTradeBySymbol("BTCUSDT"));
 //          log.info("list:{}",pairsTradeDao.findPairsTradeOpen());
     }
 
