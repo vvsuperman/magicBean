@@ -14,9 +14,9 @@ public interface TradeInfoDao {
     @Select("Select * from trade_info where orderId = #{orderId}")
     TradeInfoModel getTradeInfoByOrderId(@Param("orderId") String orderId);
 
-    @Insert("INSERT INTO trade_info(symbol,futurePrice,futureQty,spotPrice,spotQty) " +
-            "VALUES(#{symbol}, #{futurePrice}, #{futureQty},#{spotPrice},#{spotQty})")
-    Integer insertTradeInfo(@Param("tradeInfoModel") TradeInfoModel tradeInfoModel);
+    @Insert("INSERT INTO trade_info(orderId,symbol,futurePrice,futureQty,spotPrice,spotQty,createTime) " +
+            "VALUES(#{orderId}, #{symbol}, #{futurePrice}, #{futureQty},#{spotPrice},#{spotQty},#{createTime})")
+    Integer insertTradeInfo(TradeInfoModel tradeInfoModel);
 
     @Update("UPDATE trade_info SET futurePrice=#{futurePrice},futureQty=#{futureQty}" +
             ",spotPrice=#{spotPrice},spotQty=#{spotQty} WHERE orderId =#{orderId}")

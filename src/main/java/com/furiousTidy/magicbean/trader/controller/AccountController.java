@@ -1,8 +1,12 @@
 package com.furiousTidy.magicbean.trader.controller;
 
 
+import com.binance.api.client.domain.account.Account;
+import com.binance.api.client.domain.account.request.CancelOrderRequest;
+import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.trade.AccountInformation;
 import com.furiousTidy.magicbean.util.BinanceClient;
+import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -40,14 +44,16 @@ public class AccountController {
         rtmap.put("balance",availableBalance);
         rtmap.put("asset",assetInfo);
         rtmap.put("position",positionMap);
+
+
         return rtmap;
     }
 
-    @RequestMapping("asynctest")
-    public @ResponseBody void asynctest(){
-        asyncTest.test1();
-        asyncTest.test2();
+    @RequestMapping("cancelallorder")
+    public @ResponseBody void cancelallorder() {
+        for (Map.Entry<String, ExchangeInfoEntry> entry : MarketCache.futureInfoCache.entrySet()) {
+            BinanceClient.futureSyncClient.cancelAllOpenOrder(entry.getKey());
+            BinanceClient.spotSyncClient.cancelOrder(new CancelOrderRequest(entry.getKey(),""));
+        }
     }
-
-
 }

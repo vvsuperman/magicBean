@@ -122,10 +122,10 @@ public class SpotSubscription {
                 OrderTradeUpdateEvent orderUpdate = response.getOrderTradeUpdateEvent();
                 MarketCache.spotOrderCache.put(orderUpdate.getOrderId(), orderUpdate);
 
-                if(orderUpdate.getOrderStatus()==OrderStatus.FILLED &&
+                if(orderUpdate.getOrderStatus()==OrderStatus.FILLED ||
                         orderUpdate.getOrderStatus() == OrderStatus.PARTIALLY_FILLED){
-                    logger.info("spot order_update event:type={},orderid={},response={}"+response.getOrderTradeUpdateEvent().getEventType(),
-                            orderUpdate.getOrderId(),response.toString());
+                    logger.info("spot order_update event:type={},orderid={},status={},price={},qty={},response={}",response.getOrderTradeUpdateEvent().getEventType(),
+                            orderUpdate.getNewClientOrderId(),orderUpdate.getOrderStatus(),orderUpdate.getPrice(),orderUpdate.getAccumulatedQuantity(),response.toString());
 
                     String clientOrderId = orderUpdate.getNewClientOrderId();
                     TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
@@ -160,7 +160,7 @@ public class SpotSubscription {
                             BigDecimal futurePrice = tradeInfo.getFuturePrice();
                             if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
                                 ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
-                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId,ratio );
                             }else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
                                 ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
                                 pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);

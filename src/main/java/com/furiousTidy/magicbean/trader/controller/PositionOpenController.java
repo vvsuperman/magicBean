@@ -8,7 +8,6 @@ import com.binance.client.model.market.SymbolOrderBook;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
-import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
@@ -61,12 +60,10 @@ public class PositionOpenController {
 
     @RequestMapping("checksql")
     public @ResponseBody void checkSql(){
-        PairsTradeModel pairsTradeModel = new PairsTradeModel();
-        pairsTradeModel.setSymbol("BTCUSDT");
-        pairsTradeModel.setOpenId("abc123457");
-        log.info("insert parisTrade:{}",pairsTradeDao.insertPairsTrade(pairsTradeModel));
-        log.info("list:{}",pairsTradeDao.findPairsTradeBySymbol("BTCUSDT"));
-//          log.info("list:{}",pairsTradeDao.findPairsTradeOpen());
+        String clientOrderId = "LTCUSDT_FSO_2021_3_18_23_33_44";
+        BigDecimal ratio = new BigDecimal("0.006");
+        pairsTradeDao.updateOpenRatioByOpenId(clientOrderId,ratio );
+
     }
 
 

@@ -1,16 +1,8 @@
 package com.furiousTidy.magicbean.trader;
 
-import com.binance.api.client.domain.OrderStatus;
-import com.binance.api.client.domain.account.NewOrderResponse;
-import com.binance.api.client.domain.account.NewOrderResponseType;
-import com.binance.api.client.domain.account.request.CancelOrderRequest;
-import com.binance.api.client.domain.account.request.CancelOrderResponse;
-import com.binance.client.exception.BinanceApiException;
-import com.binance.client.model.enums.*;
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.MarkPrice;
-import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
@@ -24,17 +16,13 @@ import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 
-import static com.binance.api.client.domain.account.NewOrder.limitBuy;
-import static com.binance.api.client.domain.account.NewOrder.limitSell;
 import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
 
 
@@ -148,7 +136,7 @@ public class PositionOpenService {
         String symbol = "";
         while(PositionOpenController.watchdog){
             //select futureBid from futureBid where symbol = symbol;
-            List<PairsTradeModel> pairsTradeList =  pairsTradeDao.findPairsTradeOpen();
+            List<PairsTradeModel> pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
             //sort the mim one
             sortPairsTradeList(pairsTradeList);
 
@@ -165,14 +153,17 @@ public class PositionOpenService {
                     if(futurePrice.subtract(spotPrice).divide(spotPrice,4)
                             .compareTo(BeanConfig.openPriceGap) > 0){
 
-                        String clientOrderId = symbol+":"+BeanConstant.FUTURE_SELL_OPEN+":"+ getCurrentTime();
+                        String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
                         //insert orderId into futureBid_table
                         PairsTradeModel pairsTradeModel = new PairsTradeModel();
                         pairsTradeModel.setSymbol(symbol);
                         pairsTradeModel.setOpenId(clientOrderId);
+                        if(pairsTradeDao.getPairsTradeByOpenId(clientOrderId)!=null){
+                            logger.info("openid is the same,openId={}",clientOrderId);
+                        }
                         pairsTradeDao.insertPairsTrade(pairsTradeModel);
                         doPairsTrade(symbol, BeanConfig.standardTradeUnit,futurePrice,spotPrice,
-                                BeanConstant.FUTURE_SELL,clientOrderId);
+                                BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
                     }else {
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
@@ -196,7 +187,7 @@ public class PositionOpenService {
                         }
                     }
             }
-            Thread.sleep(200);
+            Thread.sleep(2000000);
         }
     }
 

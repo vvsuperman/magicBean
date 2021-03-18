@@ -101,7 +101,6 @@ public class FutureSubscription {
         logger.info("获得listenKey: " + listenKey);
 
         BinanceClient.futureSubsptClient.subscribeUserDataEvent(listenKey, ((event) -> {
-            logger.info("event:"+event);
             //更新资金、持仓信息
             if(event.getEventType().equals("ACCOUNT_UPDATE")){
                 for(BalanceUpdate balanceUpdate:event.getAccountUpdate().getBalances()){
@@ -115,8 +114,8 @@ public class FutureSubscription {
             }else if(event.getEventType().equals("ORDER_TRADE_UPDATE")){
                 OrderUpdate orderUpdate = event.getOrderUpdate();
                 MarketCache.futureOrderCache.put(orderUpdate.getOrderId(),orderUpdate);
-                logger.info("future trade_update event: orderid={},orderstatus={},event={}",orderUpdate.getOrderId(),
-                        orderUpdate.getOrderStatus(),event);
+                logger.info("future trade_update event: orderstatus={},clientId={},price={},qty={},event={}",
+                        orderUpdate.getOrderStatus(),orderUpdate.getClientOrderId(),orderUpdate.getAvgPrice(),orderUpdate.getCumulativeFilledQty(),event);
                 if(orderUpdate.getOrderStatus().equals("FILLED") || orderUpdate.getOrderStatus().equals("PARTIALLY_FILLED")){
                     // update the database
                     String clientOrderId = orderUpdate.getClientOrderId();
@@ -150,7 +149,7 @@ public class FutureSubscription {
                             BigDecimal spotPrice = tradeInfo.getSpotPrice();
                             if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
                                 ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
-                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId,ratio);
                             }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
                                 ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
                                 pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);

@@ -14,7 +14,7 @@ import java.util.List;
 @Component
 public interface PairsTradeDao {
     @Select("Select * from pairs_trade where symbol = #{symbol}")
-    List<PairsTradeModel> findPairsTradeBySymbol(@Param("symbol") String symbol);
+    List<PairsTradeModel> getPairsTradeBySymbol(String symbol);
 
     @Insert("INSERT INTO pairs_trade(symbol,openId,closeId,openRatio,closeRatio) " +
             "VALUES(#{symbol}, #{openId}, #{closeId},#{openRatio},#{closeRatio})")
@@ -28,8 +28,11 @@ public interface PairsTradeDao {
     void updateOpenRatioByOpenId(@Param("openId") String openId, @Param("openRatio") BigDecimal openRatio);
 
     @Update("UPDATE pairs_trade SET closeRatio=#{closeRatio} WHERE closeId =#{closeId}")
-    void updateCloseRatioByCloseId(@Param("closeId") String closeId, @Param("closeRatio") BigDecimal closeRatio);
+    void updateCloseRatioByCloseId( @Param("closeId") String closeId, @Param("closeRatio") BigDecimal closeRatio);
 
     @Select("select * from pairs_trade where closeId ISNULL")
-    List<PairsTradeModel> findPairsTradeOpen();
+    List<PairsTradeModel> getPairsTradeOpen();
+
+    @Select("select * from pairs_trade where openId = #{openId}")
+    PairsTradeModel getPairsTradeByOpenId(String openId);
 }

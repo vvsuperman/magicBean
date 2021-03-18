@@ -90,7 +90,7 @@ public class TradeService {
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             NewOrderResponse newOrderResponse = null;
-
+            log.info("new spot order,symbol={},price={},qty={},direct={},clientid={}",symbol,spotPrice,spotQty,direct,clientOrderId);
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 newOrderResponse = spotSyncClientProxy.newOrder(
                         limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
@@ -130,9 +130,9 @@ public class TradeService {
             } else {
                 Thread.sleep(200);
                 if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                    spotPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                    spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                 }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    spotPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                    spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                 }
                 spotQty = spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
                 log.info("spot's order info,spotPrice={}, spotQty={}", spotPrice, spotQty);
