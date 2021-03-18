@@ -58,6 +58,9 @@ public class PositionOpenService {
     @Autowired
     TradeInfoDao tradeInfoDao;
 
+    @Autowired
+    TradeService tradeService;
+
     //处理资金费率
     public void processFundingRate(){
         MarketCache.markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
@@ -252,117 +255,8 @@ public class PositionOpenService {
         //do the order
 
 
-        doFutureTrade(symbol, futurePrice, futureQuantity, stepSize[0], direct, clientOrderId);
-        doSpotTrade(symbol, spotPrice, spotQuantity, stepSize[1], direct, clientOrderId);
-    }
-
-
-    @Async
-    public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize,
-                              String direct,String clientOrderId) throws InterruptedException{
-
-        OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL_OPEN))? OrderSide.SELL:OrderSide.BUY;
-//        PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL))?PositionSide.SHORT:PositionSide.LONG;
-        PositionSide positionSide = null;
-
-        while (futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
-            //下单
-            logger.info("new order, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
-                                    ,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
-            Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
-                    futurePrice.toString(),null,clientOrderId,null,null,NewOrderRespType.RESULT);
-            Long orderId = order.getOrderId();
-            logger.info("futrue new order: orderid=" + orderId);
-            Thread.sleep(BeanConfig.orderExpireTime);
-            //suscription receive the info
-            if(MarketCache.futureOrderCache.containsKey(orderId) &&
-                    MarketCache.futureOrderCache.get(orderId).getOrderStatus().equals("FILLED")){
-                logger.info("future order has been filled: orderid={}",orderId);
-                return;
-            }
-
-            try {
-                order = BinanceClient.futureSyncClient.cancelOrder(symbol, order.getOrderId(), null);
-            }catch (BinanceApiException binanceApiException){
-                if (binanceApiException.getMessage().contains("Unknown order sent")) {
-                        //order has been filled but no subscription received, do nothing
-                        logger.info("future order has been filled,no need to cancel,orderid={}",orderId);
-                        return;
-                    }
-            }
-
-            if(order.getExecutedQty().equals(futureQty)){
-                logger.info("future order has been filled until the cancel order: orderid={}",orderId);
-                return;
-            }else{
-                Thread.sleep(200);
-                if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                    futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                }
-
-                futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize,RoundingMode.HALF_UP));
-                logger.info("future's next order info,bidPrice={}, futureQty={}",futurePrice,futureQty);
-            }
-        }
-    }
-
-    @Async
-    public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
-
-        while(spotQty.compareTo(BigDecimal.ZERO)>0 &&
-                spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
-
-            NewOrderResponse newOrderResponse = null;
-
-            if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                 newOrderResponse = spotSyncClientProxy.newOrder(
-                        limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
-                                spotQty.toString(),
-                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
-            }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                newOrderResponse = spotSyncClientProxy.newOrder(
-                        limitSell(symbol, com.binance.api.client.domain.TimeInForce.GTC,
-                                spotQty.toString(),
-                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
-            }
-
-
-            Long orderId = newOrderResponse.getOrderId();
-            logger.info("new spot order,orderid={}", orderId);
-            Thread.sleep(BeanConfig.orderExpireTime);
-            if (MarketCache.spotOrderCache.containsKey(orderId) &&
-                    MarketCache.spotOrderCache.get(orderId).getOrderStatus() == OrderStatus.FILLED) {
-                logger.info("spot order has been filled, orderId={}", orderId);
-                return;
-            }
-            CancelOrderResponse cancelOrderResponse = null;
-            //cancel the order
-            try {
-                cancelOrderResponse = BinanceClient.spotSyncClient.cancelOrder(new CancelOrderRequest(symbol, orderId));
-            } catch (Exception exception) {
-                if (exception.getMessage().contains("Unknown order sent")) {
-                    //order has been filled but subscription not receive, do nothing
-                    logger.info("spot order has been filled,no need to cancel,orderid={}", orderId);
-                    return;
-                }
-            }
-
-            //new order again
-            if (cancelOrderResponse.getExecutedQty().equals(spotQty.toString())) {
-                return;
-            } else {
-                Thread.sleep(200);
-                if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                    spotPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    spotPrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                }
-                spotQty = spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
-                logger.info("spot's order info,spotPrice={}, spotQty={}", spotPrice, spotQty);
-            }
-        }
+        tradeService.doFutureTrade(symbol, futurePrice, futureQuantity, stepSize[0], direct, clientOrderId);
+        tradeService.doSpotTrade(symbol, spotPrice, spotQuantity, stepSize[1], direct, clientOrderId);
     }
 
 

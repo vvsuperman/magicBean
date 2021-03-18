@@ -9,10 +9,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 
 @SpringBootApplication
 @EnableRetry
+@EnableAsync
 //@MapperScan("com.furiousTidy.magicbean.dbutil.mapper.*")
 public class MagicbeanApplication {
 	private static final Logger logger = LoggerFactory.getLogger(MagicbeanApplication.class);

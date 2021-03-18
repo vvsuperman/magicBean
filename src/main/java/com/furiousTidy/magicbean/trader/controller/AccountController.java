@@ -45,7 +45,8 @@ public class AccountController {
 
     @RequestMapping("asynctest")
     public @ResponseBody void asynctest(){
-
+        asyncTest.test1();
+        asyncTest.test2();
     }
 
 
