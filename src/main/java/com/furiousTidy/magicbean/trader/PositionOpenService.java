@@ -10,7 +10,6 @@ import com.binance.client.model.enums.*;
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.MarkPrice;
-import com.binance.client.model.market.Trade;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
@@ -18,18 +17,17 @@ import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
+import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -155,10 +153,11 @@ public class PositionOpenService {
 
                     //re-compare the price in the cache
                     symbol = entry.getKey();
+                    if(!symbol.contains("USDT")) continue;
                     futurePrice = getFutureTickPrice(symbol);
                     spotPrice = getSpotTickPrice(symbol);
                     if(futurePrice == null || spotPrice == null ||
-                            futurePrice.equals(BigDecimal.ZERO) || futurePrice.equals(BigDecimal.ZERO) ) continue;
+                            futurePrice.compareTo(BigDecimal.ZERO)==0 || spotPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
                     if(futurePrice.subtract(spotPrice).divide(spotPrice,4)
                             .compareTo(BeanConfig.openPriceGap) > 0){

@@ -1,4 +1,4 @@
-package com.furiousTidy.magicbean.trader;
+package com.furiousTidy.magicbean.trader.controller;
 
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.account.request.AllOrdersRequest;
@@ -12,6 +12,7 @@ import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
+import com.furiousTidy.magicbean.trader.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -68,9 +69,6 @@ public class PositionOpenController {
 //          log.info("list:{}",pairsTradeDao.findPairsTradeOpen());
     }
 
-    @RequestMapping("statuscheck")
-    public @ResponseBody void statusCheck(){
-    }
 
     @RequestMapping("switchwatchdog")
     public @ResponseBody void switchWagchDog(){
@@ -162,10 +160,14 @@ public class PositionOpenController {
         return BinanceClient.spotSyncClient.getAllOrders(allOrdersRequest);
     }
 
-    @RequestMapping("futureallorders/{symbol}")
-    public @ResponseBody
-    List<com.binance.client.model.trade.Order> getAllOrdersFuture(@PathVariable String symbol){
+    @RequestMapping("futureorders/{symbol}")
+    public @ResponseBody List<com.binance.client.model.trade.Order> getAllOrdersFuture(@PathVariable String symbol){
         return BinanceClient.futureSyncClient.getAllOrders(symbol,null,null,null,null);
+    }
+
+    @RequestMapping("futureallorders")
+    public @ResponseBody List<com.binance.client.model.trade.Order> getAllOrdersFuture(){
+        return BinanceClient.futureSyncClient.getAllOrders(null,null,null,null,null);
     }
 
 
