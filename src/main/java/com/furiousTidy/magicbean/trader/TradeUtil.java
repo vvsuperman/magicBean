@@ -3,10 +3,8 @@ package com.furiousTidy.magicbean.trader;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.furiousTidy.magicbean.config.BeanConfig;
-import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.springframework.stereotype.Service;
-import org.yaml.snakeyaml.error.Mark;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,6 +13,11 @@ import java.util.Map;
 
 @Service
 public class TradeUtil {
+
+    public boolean isUSDTenough(){
+        return new BigDecimal(MarketCache.spotBalanceCache.get("USDT").getFree()).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0
+                && MarketCache.futureBalanceCache.get("USDT").getWalletBalance().compareTo(BeanConfig.STANDARD_TRADE_UNIT) >0;
+    }
 
     public static String getCurrentTime(){
         LocalDate today = LocalDate.now();
@@ -27,7 +30,7 @@ public class TradeUtil {
     public boolean futureSelected(String symbol){
         int i=0;
         for(Map.Entry entry: MarketCache.fRateSymbolCache.entrySet()){
-            if( i > BeanConfig.priorNum) {
+            if( i > BeanConfig.PRIOR_NUM) {
                 return false;
             }
             if(entry.getValue().equals(symbol)){

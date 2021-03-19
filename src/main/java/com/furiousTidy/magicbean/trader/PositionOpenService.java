@@ -83,7 +83,7 @@ public class PositionOpenService {
     * 实际下单数量，用最小交易单元来交易
     * */
     public void doTradeSymbol(String symbol, BigDecimal totalCost, String direct) throws InterruptedException {
-        BigDecimal standardTradeUnit = BeanConfig.standardTradeUnit;
+        BigDecimal standardTradeUnit = BeanConfig.STANDARD_TRADE_UNIT;
         while(totalCost.compareTo(standardTradeUnit) > 0){
             doTrade(symbol,standardTradeUnit,direct);
             totalCost = totalCost.subtract(standardTradeUnit);
@@ -113,7 +113,7 @@ public class PositionOpenService {
                 Thread.sleep(200);
                 //TODO not support pairs now
             } while(futurePrice.subtract(spotPrice).divide(spotPrice,4)
-                    .compareTo(BeanConfig.openPriceGap)<0);
+                    .compareTo(BeanConfig.OPEN_PRICE_GAP)<0);
         }else{
             do{
                 //re-compare the price in the cache
@@ -123,7 +123,7 @@ public class PositionOpenService {
                 Thread.sleep(200);
                 //TODO not support pairs now
             } while(spotPrice.subtract(futurePrice).divide(futurePrice,4)
-                    .compareTo(BeanConfig.openPriceGap)<0);
+                    .compareTo(BeanConfig.OPEN_PRICE_GAP)<0);
         }
 
 //        doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
@@ -150,8 +150,8 @@ public class PositionOpenService {
                     if(futurePrice == null || spotPrice == null ||
                             futurePrice.compareTo(BigDecimal.ZERO)==0 || spotPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(futurePrice.subtract(spotPrice).divide(spotPrice,4)
-                            .compareTo(BeanConfig.openPriceGap) > 0){
+                    if(tradeUtil.isUSDTenough() && futurePrice.subtract(spotPrice).divide(spotPrice,4)
+                            .compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
                         //insert orderId into futureBid_table
@@ -162,18 +162,22 @@ public class PositionOpenService {
                             logger.info("openid is the same,openId={}",clientOrderId);
                         }
                         pairsTradeDao.insertPairsTrade(pairsTradeModel);
-                        doPairsTrade(symbol, BeanConfig.standardTradeUnit,futurePrice,spotPrice,
+                        doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futurePrice,spotPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
+                        PositionOpenController.watchdog = false;
+                        break;
                     }else {
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
+                        logger.info("eth price: future={},spot={}",getFutureTickPrice("ETHUSDT"),getSpotTickPrice("ETHUSDT"));
+
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
-                                if(spotPrice.subtract(futurePrice).divide(futurePrice,4,BigDecimal.ROUND_HALF_UP)
-                                        .add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.closePriceGap) > 0){
+                                if( futurePrice.compareTo(BigDecimal.ZERO)>0 && spotPrice.compareTo(BigDecimal.ZERO)>0 ||  spotPrice.subtract(futurePrice).divide(futurePrice,4,BigDecimal.ROUND_HALF_UP)
+                                        .add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
 
                                     //begin to close the symbol
-                                    String clientOrderId = symbol+":"+BeanConstant.FUTURE_SELL_CLOSE+":"+ getCurrentTime();
+                                    String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
                                     pairsTradeModel.setCloseId(clientOrderId);
                                     //update close id in pairstrade
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
@@ -181,13 +185,15 @@ public class PositionOpenService {
                                     BigDecimal cost = tradeInfoModel.getFuturePrice().multiply(tradeInfoModel.getFutureQty());
                                     doPairsTrade(symbol, cost,futurePrice,spotPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
+                                    PositionOpenController.watchdog = false;
+
                                     break;
                                 }
                             }
                         }
                     }
             }
-            Thread.sleep(2000000);
+//            Thread.sleep(2000000);
         }
     }
 
@@ -212,7 +218,7 @@ public class PositionOpenService {
             Collections.sort(pairsTradeList,
                     (Comparator<PairsTradeModel>) (a, b) -> {
                         if(a.getOpenRatio()!=null && b.getOpenRatio()!=null){
-                          return  b.getOpenRatio().compareTo(a.getOpenRatio());
+                          return  a.getOpenRatio().compareTo(b.getOpenRatio());
                         }else{
                             return 0;
                         }

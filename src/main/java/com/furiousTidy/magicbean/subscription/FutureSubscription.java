@@ -37,7 +37,7 @@ public class FutureSubscription {
     @Autowired
     PairsTradeDao pairsTradeDao;
 
-    //subscribe future ratio and store in the tree map
+    //subscribe funding rate and store in the tree map
     public void futureRatioSubscription(){
         BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
             listMarkPrice.forEach(markPriceEvent -> {
@@ -104,7 +104,7 @@ public class FutureSubscription {
             //更新资金、持仓信息
             if(event.getEventType().equals("ACCOUNT_UPDATE")){
                 for(BalanceUpdate balanceUpdate:event.getAccountUpdate().getBalances()){
-                    MarketCache.futureBalanceCache.put(balanceUpdate.getAsset(),balanceUpdate.getWalletBalance());
+                    MarketCache.futureBalanceCache.put(balanceUpdate.getAsset(),balanceUpdate);
                 }
                 for(PositionUpdate positionUpdate:event.getAccountUpdate().getPositions()){
                     MarketCache.futurePositionCache.put(positionUpdate.getSymbol(),positionUpdate);

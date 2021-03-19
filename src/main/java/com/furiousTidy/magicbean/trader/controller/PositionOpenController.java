@@ -53,8 +53,7 @@ public class PositionOpenController {
 
     @RequestMapping("earnmoney")
     public @ResponseBody void earnMoney() throws InterruptedException {
-        doCache();
-        Thread.sleep(5000);
+        PositionOpenController.watchdog = true;
         positionOpenService.doPairsTradeRobot();
     }
 

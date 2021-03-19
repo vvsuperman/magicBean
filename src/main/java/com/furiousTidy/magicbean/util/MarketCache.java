@@ -4,6 +4,7 @@ package com.furiousTidy.magicbean.util;
 //存储市场信息
 
 
+import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.MarkPriceEvent;
@@ -11,6 +12,7 @@ import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
+import com.binance.client.model.user.BalanceUpdate;
 import com.binance.client.model.user.OrderUpdate;
 import com.binance.client.model.user.UserDataUpdateEvent;
 import org.springframework.stereotype.Service;
@@ -41,7 +43,7 @@ public class MarketCache {
     public static List<MarkPrice> markPriceList = new LinkedList<>();
 
     // 合约balance信息
-    public static TreeMap futureBalanceCache = new TreeMap();
+    public static TreeMap<String, BalanceUpdate> futureBalanceCache = new TreeMap();
 
     // 合约position信息
     public static TreeMap futurePositionCache = new TreeMap();
@@ -55,7 +57,7 @@ public class MarketCache {
 
 
     // 现货用户持仓信息
-    public static HashMap spotBalanceCache = new HashMap();
+    public static HashMap<String , AssetBalance> spotBalanceCache = new HashMap();
 
     // 现货用户订单信息
     public static HashMap<Long,OrderTradeUpdateEvent> spotOrderCache = new HashMap();

@@ -39,16 +39,17 @@ public class TradeService {
         OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL_OPEN))? OrderSide.SELL:OrderSide.BUY;
 //        PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL))?PositionSide.SHORT:PositionSide.LONG;
         PositionSide positionSide = null;
+        int i=1;
 
         while (futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             //下单
-            log.info("new future order, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
-                    ,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
+            log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
+                    ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
             Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
                     futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
             Long orderId = order.getOrderId();
-            log.info("futrue new order: orderid=" + orderId);
-            Thread.sleep(BeanConfig.orderExpireTime);
+            log.info("futrue new order return: orderid=" + orderId);
+            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
             //suscription receive the info
             if(MarketCache.futureOrderCache.containsKey(orderId) &&
                     MarketCache.futureOrderCache.get(orderId).getOrderStatus().equals("FILLED")){
@@ -61,7 +62,7 @@ public class TradeService {
             }catch (BinanceApiException binanceApiException){
                 if (binanceApiException.getMessage().contains("Unknown order sent")) {
                     //order has been filled but no subscription received, do nothing
-                    log.info("future order has been filled,no need to cancel,orderid={}",orderId);
+                    log.info("future order cancel failed has been filled,no need to cancel,orderid={}",orderId);
                     return;
                 }
             }
@@ -85,12 +86,12 @@ public class TradeService {
 
     @Async
     public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
+        int i=1;
 
         while(spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
-
             NewOrderResponse newOrderResponse = null;
-            log.info("new spot order,symbol={},price={},qty={},direct={},clientid={}",symbol,spotPrice,spotQty,direct,clientOrderId);
+            log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 newOrderResponse = spotSyncClientProxy.newOrder(
                         limitBuy(symbol, com.binance.api.client.domain.TimeInForce.GTC,
@@ -105,8 +106,8 @@ public class TradeService {
 
 
             Long orderId = newOrderResponse.getOrderId();
-            log.info("new spot order,orderid={}", orderId);
-            Thread.sleep(BeanConfig.orderExpireTime);
+            log.info("new spot order return,orderid={}", orderId);
+            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
             if (MarketCache.spotOrderCache.containsKey(orderId) &&
                     MarketCache.spotOrderCache.get(orderId).getOrderStatus() == OrderStatus.FILLED) {
                 log.info("spot order has been filled, orderId={}", orderId);
@@ -119,7 +120,7 @@ public class TradeService {
             } catch (Exception exception) {
                 if (exception.getMessage().contains("Unknown order sent")) {
                     //order has been filled but subscription not receive, do nothing
-                    log.info("spot order has been filled,no need to cancel,orderid={}", orderId);
+                    log.info("spot order cancel failed has been filled,no need to cancel,orderid={}", orderId);
                     return;
                 }
             }

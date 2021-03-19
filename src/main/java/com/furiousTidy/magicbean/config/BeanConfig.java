@@ -1,25 +1,28 @@
 package com.furiousTidy.magicbean.config;
 
+import lombok.Data;
+
 import java.math.BigDecimal;
 
+@Data
 public class BeanConfig {
 
-    public static final BigDecimal openPriceGap =new BigDecimal("0.0045"); //交易条件，千分之五
-    public static final BigDecimal closePriceGap = new BigDecimal("0.003");  //平仓条件千分之三
-    public static final BigDecimal standardTradeUnit=new BigDecimal("100"); //标准交易单元，默认为100usdt
-    public static final BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
+    public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.0045"); //交易条件，千分之五
+    public static  BigDecimal CLOSE_PRICE_GAP = new BigDecimal("0.003");  //平仓条件千分之三
+    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("100"); //标准交易单元，默认为100usdt
+    public static  BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
 
-    public static final long orderExpireTime =5000;// 订单失效时间: 20s
+    public static  long ORDER_EXPIRE_TIME =5000;// 订单失效时间: 20s
 
-    public static final int priorNum =5;
+    public static  int PRIOR_NUM =5;
 
     //test future api
-    public static final String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";
-    public static final String FUTURE_SECRET_KEY = "a11b4277df6bd76ba52363acc509ffb2f8b346ee141aac8efe1ad0d1c1c4c83b";
+    public static  String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";
+    public static  String FUTURE_SECRET_KEY = "a11b4277df6bd76ba52363acc509ffb2f8b346ee141aac8efe1ad0d1c1c4c83b";
 
     //现货测试
-    public static final String SPOT_API_KEY = "AI349hcSE7HLymNLXTrpNfeCFptoqrhpAzblO0DPiRPj67Kq7QLG9AfEHBaObpH8";
-    public static final String SPOT_SECRET_KEY = "LmPr3JxEeNbbcSEtJ6KCtXKCMXBmLc0LWDGKvEXdlk7xDhs4nFnWzOYTqcPNLfIk";
+    public static  String SPOT_API_KEY = "AI349hcSE7HLymNLXTrpNfeCFptoqrhpAzblO0DPiRPj67Kq7QLG9AfEHBaObpH8";
+    public static  String SPOT_SECRET_KEY = "LmPr3JxEeNbbcSEtJ6KCtXKCMXBmLc0LWDGKvEXdlk7xDhs4nFnWzOYTqcPNLfIk";
 
     //最小下单单元
 
@@ -33,6 +36,6 @@ public class BeanConfig {
 
 
     public static void main(String[] args){
-        System.out.println(new BigDecimal("-0.001").subtract(closePriceGap));
+        System.out.println(new BigDecimal("-0.001").subtract(CLOSE_PRICE_GAP));
     }
 }
