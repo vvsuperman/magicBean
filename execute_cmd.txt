@@ -7,3 +7,11 @@ SELECT (("futureBidPrice"-"spotAskPrice")/"spotAskPrice") as futureRate, (("spot
 
 SELECT (("spotBidPrice"-"futureAskPrice")/"futureAskPrice") as "spotRatio",  (("futureBidPrice"-"spotAskPrice")/"spotAskPrice") as "futureRatio","fundingRate" as "fundingRate" FROM "autogen"."symbol_ticks_info" WHERE ("symbol" = 'BNBUSDT') AND $timeFilter
 
+
+mvn -B clean package -Dmaven.test.skip=true -Dautoconfig.skip
+scp /Users/fw/Documents/workspace/magicBean/target/magicbean-0.0.1.jar root@8.209.248.166:/home/admin/application/target
+ssh root@8.209.248.166
+. /home/admin/application/deploy.sh restart
+
+#退出sqlite
+.quit

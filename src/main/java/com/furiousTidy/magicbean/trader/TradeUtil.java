@@ -14,6 +14,7 @@ import java.util.Map;
 @Service
 public class TradeUtil {
 
+    //is enouf money
     public boolean isUSDTenough(){
         return new BigDecimal(MarketCache.spotBalanceCache.get("USDT").getFree()).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0
                 && MarketCache.futureBalanceCache.get("USDT").getWalletBalance().compareTo(BeanConfig.STANDARD_TRADE_UNIT) >0;

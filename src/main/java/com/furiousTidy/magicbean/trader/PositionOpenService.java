@@ -131,8 +131,6 @@ public class PositionOpenService {
 
     //the central control to control the pair trade
     public void doPairsTradeRobot() throws InterruptedException {
-         BigDecimal futurePrice = null;
-         BigDecimal spotPrice = null;
         String symbol = "";
         while(PositionOpenController.watchdog){
             //select futureBid from futureBid where symbol = symbol;
@@ -145,13 +143,13 @@ public class PositionOpenService {
                     //re-compare the price in the cache
                     symbol = entry.getKey();
                     if(!symbol.contains("USDT")) continue;
-                    futurePrice = getFutureTickPrice(symbol);
-                    spotPrice = getSpotTickPrice(symbol);
-                    if(futurePrice == null || spotPrice == null ||
-                            futurePrice.compareTo(BigDecimal.ZERO)==0 || spotPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
+                    BigDecimal futureBidPrice = getFutureTickPrice(symbol,"bid");
+                    BigDecimal spotAskPrice = getSpotTickPrice(symbol,"ask");
+                    if(futureBidPrice == null || spotAskPrice == null ||
+                            futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isUSDTenough() && futurePrice.subtract(spotPrice).divide(spotPrice,4)
-                            .compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
+                    if(tradeUtil.isUSDTenough() && tradeUtil.futureSelected(symbol)
+                            &&  futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
                         //insert orderId into futureBid_table
@@ -162,18 +160,20 @@ public class PositionOpenService {
                             logger.info("openid is the same,openId={}",clientOrderId);
                         }
                         pairsTradeDao.insertPairsTrade(pairsTradeModel);
-                        doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futurePrice,spotPrice,
+                        doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
                         PositionOpenController.watchdog = false;
                         break;
                     }else {
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
-                        logger.info("eth price: future={},spot={}",getFutureTickPrice("ETHUSDT"),getSpotTickPrice("ETHUSDT"));
 
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
-                                if( futurePrice.compareTo(BigDecimal.ZERO)>0 && spotPrice.compareTo(BigDecimal.ZERO)>0 ||  spotPrice.subtract(futurePrice).divide(futurePrice,4,BigDecimal.ROUND_HALF_UP)
+                                BigDecimal futureAskPrice = getFutureTickPrice(symbol,"ask");
+                                BigDecimal spotBidPrice = getSpotTickPrice(symbol,"bid");
+                                if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
+                                        && spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP)
                                         .add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
 
                                     //begin to close the symbol
@@ -183,31 +183,39 @@ public class PositionOpenService {
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
                                     TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
                                     BigDecimal cost = tradeInfoModel.getFuturePrice().multiply(tradeInfoModel.getFutureQty());
-                                    doPairsTrade(symbol, cost,futurePrice,spotPrice,
+                                    doPairsTrade(symbol, cost,futureAskPrice,spotBidPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
                                     PositionOpenController.watchdog = false;
-
                                     break;
                                 }
                             }
                         }
                     }
             }
-//            Thread.sleep(2000000);
+            Thread.sleep(1000);
         }
     }
 
-    private BigDecimal getFutureTickPrice(String symbol) {
+    private BigDecimal getFutureTickPrice(String symbol,String type) {
         if(MarketCache.futureTickerMap.containsKey(symbol)){
-            return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+            if(type.equals("bid")){
+                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+            }else {
+                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+            }
         }else{
             return null;
         }
     }
 
-    private BigDecimal getSpotTickPrice(String symbol) {
+    private BigDecimal getSpotTickPrice(String symbol,String type) {
         if(MarketCache.spotTickerMap.containsKey(symbol)){
-            return  MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+            if(type.equals("bid")){
+                return  MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+            }else{
+                return  MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+
+            }
         }else{
             return null;
         }

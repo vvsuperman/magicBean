@@ -68,7 +68,6 @@ public class PreTradeService {
                 batchPoints.point(point);
             }
             influxDbConnection.batchInsert(batchPoints);
-            log.info("ratio:{}",ratioMap);
             Thread.sleep(1000);
         }while (true);
     }

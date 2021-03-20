@@ -7,7 +7,6 @@ import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.market.SymbolOrderBook;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
-import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
@@ -50,6 +49,11 @@ public class PositionOpenController {
     PairsTradeDao pairsTradeDao;
 
     public static boolean watchdog = true;
+
+    @RequestMapping("statuscheck")
+    public @ResponseBody String checkStatus(){
+        return "magicbean start success";
+    }
 
     @RequestMapping("earnmoney")
     public @ResponseBody void earnMoney() throws InterruptedException {
@@ -177,7 +181,7 @@ public class PositionOpenController {
         preTradeService.spotExchangeInfo();
 
         //subscribe future ratio
-        futureSubscription.futureRatioSubscription();
+        futureSubscription.fundingRateSub();
 
         //subscribe order update info
         futureSubscription.processFutureCache();

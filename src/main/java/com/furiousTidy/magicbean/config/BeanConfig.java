@@ -9,10 +9,10 @@ public class BeanConfig {
 
     public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.0045"); //交易条件，千分之五
     public static  BigDecimal CLOSE_PRICE_GAP = new BigDecimal("0.003");  //平仓条件千分之三
-    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("100"); //标准交易单元，默认为100usdt
+    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元，默认为100usdt
     public static  BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
 
-    public static  long ORDER_EXPIRE_TIME =5000;// 订单失效时间: 20s
+    public static  long ORDER_EXPIRE_TIME =3;// 订单失效时间
 
     public static  int PRIOR_NUM =5;
 

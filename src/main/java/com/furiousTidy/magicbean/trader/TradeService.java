@@ -37,8 +37,8 @@ public class TradeService {
                               String direct, String clientOrderId) throws InterruptedException{
 
         OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL_OPEN))? OrderSide.SELL:OrderSide.BUY;
-//        PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL))?PositionSide.SHORT:PositionSide.LONG;
-        PositionSide positionSide = null;
+        PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL_OPEN))?PositionSide.SHORT:PositionSide.LONG;
+//        PositionSide positionSide = null;
         int i=1;
 
         while (futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
@@ -49,7 +49,7 @@ public class TradeService {
                     futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
             Long orderId = order.getOrderId();
             log.info("futrue new order return: orderid=" + orderId);
-            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
+//            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
             //suscription receive the info
             if(MarketCache.futureOrderCache.containsKey(orderId) &&
                     MarketCache.futureOrderCache.get(orderId).getOrderStatus().equals("FILLED")){
@@ -71,7 +71,7 @@ public class TradeService {
                 log.info("future order has been filled until the cancel order: orderid={}",orderId);
                 return;
             }else{
-                Thread.sleep(200);
+//                Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
                 if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                     futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                 }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
@@ -107,7 +107,7 @@ public class TradeService {
 
             Long orderId = newOrderResponse.getOrderId();
             log.info("new spot order return,orderid={}", orderId);
-            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
+//            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
             if (MarketCache.spotOrderCache.containsKey(orderId) &&
                     MarketCache.spotOrderCache.get(orderId).getOrderStatus() == OrderStatus.FILLED) {
                 log.info("spot order has been filled, orderId={}", orderId);
@@ -129,7 +129,7 @@ public class TradeService {
             if (cancelOrderResponse.getExecutedQty().equals(spotQty.toString())) {
                 return;
             } else {
-                Thread.sleep(200);
+//                Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
                 if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                     spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                 }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){

@@ -25,8 +25,9 @@ import java.util.TreeMap;
 @Slf4j
 public class ConfigController {
 
-    @RequestMapping("testopen")
-    public @ResponseBody String testConfig(){
+    @RequestMapping("testchange/{key}")
+    public @ResponseBody String testConfig(@PathVariable String key) throws NoSuchFieldException {
+        Field f = BeanConfig.class.getField(key);
         return BeanConfig.ORDER_EXPIRE_TIME+"";
     }
 

@@ -38,7 +38,7 @@ public class FutureSubscription {
     PairsTradeDao pairsTradeDao;
 
     //subscribe funding rate and store in the tree map
-    public void futureRatioSubscription(){
+    public void fundingRateSub(){
         BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
             listMarkPrice.forEach(markPriceEvent -> {
                 MarketCache.futureRateCache.put(markPriceEvent.getSymbol(), markPriceEvent.getFundingRate());
@@ -109,7 +109,7 @@ public class FutureSubscription {
                 for(PositionUpdate positionUpdate:event.getAccountUpdate().getPositions()){
                     MarketCache.futurePositionCache.put(positionUpdate.getSymbol(),positionUpdate);
                 }
-                logger.info("future accout_update event:{}",event);
+//                logger.info("future accout_update event:{}",event);
                 //更新订单信息
             }else if(event.getEventType().equals("ORDER_TRADE_UPDATE")){
                 OrderUpdate orderUpdate = event.getOrderUpdate();
@@ -119,8 +119,9 @@ public class FutureSubscription {
                 if(orderUpdate.getOrderStatus().equals("FILLED") || orderUpdate.getOrderStatus().equals("PARTIALLY_FILLED")){
                     // update the database
                     String clientOrderId = orderUpdate.getClientOrderId();
+                    long getbegin = System.currentTimeMillis();
                     TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(orderUpdate.getClientOrderId());
-
+                    logger.info("get tradeinfo cost {} ms", System.currentTimeMillis() - getbegin);
                     if(tradeInfo == null){
                         tradeInfo = new TradeInfoModel();
                         tradeInfo.setSymbol(orderUpdate.getSymbol());
@@ -128,7 +129,10 @@ public class FutureSubscription {
                         tradeInfo.setFuturePrice(orderUpdate.getAvgPrice());
                         tradeInfo.setFutureQty(orderUpdate.getCumulativeFilledQty());
                         tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
+                        long insertTrade = System.currentTimeMillis();
                         tradeInfoDao.insertTradeInfo(tradeInfo);
+                        logger.info("insert trade info cost {} ms", System.currentTimeMillis() - insertTrade);
+
                     }
                     else{
                         BigDecimal futurePrice, futureQty;
