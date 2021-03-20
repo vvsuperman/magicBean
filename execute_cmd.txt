@@ -6,3 +6,4 @@ sudo systemctl status|start|stop grafana-server
 SELECT (("futureBidPrice"-"spotAskPrice")/"spotAskPrice") as futureRate, (("spotBidPrice"-"futureAskPrice")/"futureAskPrice") as spotRate,  "fundingRate" as fundingRate FROM "autogen"."symbol_ticks_info" WHERE ("symbol" = 'REEFUSDT') AND $timeFilter
 
 SELECT (("spotBidPrice"-"futureAskPrice")/"futureAskPrice") as "spotRatio",  (("futureBidPrice"-"spotAskPrice")/"spotAskPrice") as "futureRatio","fundingRate" as "fundingRate" FROM "autogen"."symbol_ticks_info" WHERE ("symbol" = 'BNBUSDT') AND $timeFilter
+

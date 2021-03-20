@@ -5,6 +5,8 @@ import org.influxdb.BatchOptions;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.*;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -120,7 +122,9 @@ public class InfluxDbConnection {
         influxdb.write(database, retentionPolicy, builder.build());
     }
 
+    @Retryable( maxAttempts = 500, backoff = @Backoff(delay = 2000, multiplier = 1.1))
     public void batchInsert(BatchPoints batchPoints) {
+
         influxdb.write(batchPoints);
     }
 

@@ -19,30 +19,52 @@
     <property name="pattern-color"
               value="%yellow(%d{yyyy-MM-dd HH:mm:ss.SSS}) [%thread] %highlight(%-5level) %green(%logger{50}) - %highlight(%msg) %n"/>
     <!--文件路径输出说明，会自动生成文件夹及log文件，但是由于我这个是多模块，默认生成在父目录下的logs文件夹下面，所以要在子模块下生成要再加一个路径-->
-    <property name="LOG_HOME" value="./springboot_log/logs"/>
+    <property name="LOG_INFO_HOME" value="./springboot_log/"/>
+    <property name="LOG_ERROR_HOME" value="./springboot_log/"/>
 
-    <!-- 控制台输出 -->
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <!--ThresholdFilter为系统定义的拦截器，例如我们用ThresholdFilter来过滤掉ERROR级别以下的日志不输出到文件中。如果不用记得注释掉，不然你控制台会发现没日志~-->
-        <!--<filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
-        <!--<level>ERROR</level>-->
-        <!--</filter>-->
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${pattern}</pattern>
+    <appender name="CONSOLE-LOG" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>
+        </layout>
+    </appender>
+    <!--获取比info级别高(包括info级别)但除error级别的日志-->
+    <appender name="INFO-LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>ACCEPT</onMismatch>
+        </filter>
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>
         </encoder>
+
+        <!--滚动策略-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--路径-->
+            <fileNamePattern>${LOG_INFO_HOME}//%d-info.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
     </appender>
 
-    <!-- 控制台输出-带颜色 -->
-    <appender name="CONSOLE-WITH-COLOR" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>${pattern-color}</pattern>
+    <appender name="ERROR-LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>
         </encoder>
+        <!--滚动策略-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--路径-->
+            <fileNamePattern>${LOG_ERROR_HOME}//%d-error.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
     </appender>
 
     <appender name="ASYNC_INFO" class="ch.qos.logback.classic.AsyncAppender">
         <discardingThreshold>0</discardingThreshold>
         <queueSize>512</queueSize>
-        <appender-ref ref="file-info"></appender-ref>
+        <appender-ref ref="INFO-LOG"></appender-ref>
     </appender>
 
     <!-- 文件输出 -->
@@ -62,8 +84,8 @@
 
     <!--相当于全局的配置-->
     <root level="INFO">
-        <appender-ref ref="CONSOLE-WITH-COLOR"/>
-        <!--<appender-ref ref="FILE"/>-->
+        <appender-ref ref="CONSOLE-LOG"/>
+        <appender-ref ref="ASYNC_INFO"/>
     </root>
     <!--1. root和logger是父子的关系。
        Logger的appender根据参数additivity决定是否要叠加root的appender，logger的级别是其自身定义的级别，和root的级别没什么关系。

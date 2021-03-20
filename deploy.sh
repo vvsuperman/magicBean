@@ -14,6 +14,7 @@ APP_HOME=/home/admin/application
 JAR_NAME=${APP_HOME}/target/${APP_NAME}.jar # jar包的名字
 JAR_CONF=${APP_HOME}/conf/application.properties  #配置文件
 JAVA_OUT=${APP_HOME}/logs/start.log  #应用的启动日志
+LOG_PATH=${APP_HOME}/logs
 
 # 创建出相关目录
 mkdir -p ${APP_HOME}
@@ -51,7 +52,7 @@ health_check() {
 }
 start_application() {
     echo "starting java process"
-    nohup java -jar ${JAR_NAME} --spring.config.location=${JAR_CONF} > ${JAVA_OUT} 2>&1 &
+    nohup java -jar ${JAR_NAME} -Dlogging.path=${LOG_PATH}  --spring.config.location=${JAR_CONF} > ${JAVA_OUT} 2>&1 &
     echo "started java process"
 }
 
