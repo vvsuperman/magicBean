@@ -37,8 +37,8 @@ public class TradeService {
                               String direct, String clientOrderId) throws InterruptedException{
 
         OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL_OPEN))? OrderSide.SELL:OrderSide.BUY;
-        PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL_OPEN))?PositionSide.SHORT:PositionSide.LONG;
-//        PositionSide positionSide = null;
+//      PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL_OPEN))?PositionSide.SHORT:PositionSide.LONG;
+        PositionSide positionSide = null;
         int i=1;
 
         while (futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
@@ -48,7 +48,7 @@ public class TradeService {
             Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
                     futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
             Long orderId = order.getOrderId();
-            log.info("futrue new order return: orderid=" + orderId);
+            log.info("futrue new order return: orderid={},status={},qty={}" , orderId,order.getStatus(),order.getExecutedQty());
 //            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
             //suscription receive the info
             if(MarketCache.futureOrderCache.containsKey(orderId) &&

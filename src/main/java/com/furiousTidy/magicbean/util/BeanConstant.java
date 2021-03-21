@@ -1,6 +1,11 @@
 package com.furiousTidy.magicbean.util;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 public class BeanConstant {
+
 
     public static final String BEST_ASK_PRICE="bestAskPrice";
     public static final String BEST_ASK_Qty="bestAskQty";

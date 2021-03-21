@@ -7,14 +7,14 @@ import java.math.BigDecimal;
 @Data
 public class BeanConfig {
 
-    public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.0045"); //交易条件，千分之五
+    public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.005"); //交易条件，千分之五
     public static  BigDecimal CLOSE_PRICE_GAP = new BigDecimal("0.003");  //平仓条件千分之三
-    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元，默认为100usdt
+    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
     public static  BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
 
     public static  long ORDER_EXPIRE_TIME =3;// 订单失效时间
 
-    public static  int PRIOR_NUM =5;
+    public static  int PRIOR_NUM =5;  //资金费率排名前5的
 
     //test future api
 //    public static  String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";

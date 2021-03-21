@@ -19,9 +19,14 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
 
 @Service
 public class MarketCache {
+    //lock
+    public static Map<String, Lock> eventLockCache = new HashMap<>();
+
+
     //symbol-futurerate cache store symbol and futrerate
     public static Map<String, BigDecimal> futureRateCache = new HashMap<>();
     //futurerate-symbol cache store the futurerate and symbol

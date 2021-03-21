@@ -22,6 +22,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
 
@@ -157,16 +159,16 @@ public class PositionOpenService {
                         pairsTradeModel.setSymbol(symbol);
                         pairsTradeModel.setOpenId(clientOrderId);
                         if(pairsTradeDao.getPairsTradeByOpenId(clientOrderId)!=null){
-                            logger.info("openid is the same,openId={}",clientOrderId);
+                            logger.error("openid is the same,openId={}",clientOrderId);
                         }
                         pairsTradeDao.insertPairsTrade(pairsTradeModel);
+                        MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
                         PositionOpenController.watchdog = false;
                         break;
                     }else {
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
-
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
@@ -183,6 +185,7 @@ public class PositionOpenService {
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
                                     TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
                                     BigDecimal cost = tradeInfoModel.getFuturePrice().multiply(tradeInfoModel.getFutureQty());
+                                    MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                                     doPairsTrade(symbol, cost,futureAskPrice,spotBidPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
                                     PositionOpenController.watchdog = false;

@@ -21,9 +21,11 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
+import java.util.concurrent.locks.Lock;
 
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ACCOUNT_POSITION_UPDATE;
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ORDER_TRADE_UPDATE;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 //现货订阅类
 @Service
@@ -128,50 +130,59 @@ public class SpotSubscription {
                             orderUpdate.getNewClientOrderId(),orderUpdate.getOrderStatus(),orderUpdate.getPrice(),orderUpdate.getAccumulatedQuantity(),response.toString());
 
                     String clientOrderId = orderUpdate.getNewClientOrderId();
-                    TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
 
-                    if(tradeInfo == null){
-                        tradeInfo = new TradeInfoModel();
-                        tradeInfo.setSymbol(orderUpdate.getSymbol());
-                        tradeInfo.setOrderId(clientOrderId);
-                        tradeInfo.setSpotPrice(new BigDecimal(orderUpdate.getPrice()));
-                        tradeInfo.setSpotQty(new BigDecimal(orderUpdate.getAccumulatedQuantity()));
-                        tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
-                        tradeInfoDao.insertTradeInfo(tradeInfo);
-                    }
-                    else{
-                        BigDecimal spotPrice, spotQty;
-                        BigDecimal ratio;
-                        String price = orderUpdate.getPrice();
-                        String qty = orderUpdate.getAccumulatedQuantity();
-                        int priceSize = price.length() - price.indexOf(".");
-                        //calculate bid price
-                        if(tradeInfo.getSpotPrice() == null){
-                            spotPrice = new BigDecimal(price);
-                            spotQty = new BigDecimal(qty);
-                        }else{
-                            spotQty = new BigDecimal(qty).add(tradeInfo.getSpotQty());
-                            spotPrice = new BigDecimal(price).multiply(new BigDecimal(qty))
-                                    .add(tradeInfo.getSpotPrice()).multiply(tradeInfo.getSpotQty())
-                                            .divide(spotQty,priceSize,RoundingMode.HALF_UP);
-                        }
-                        //calcualte ratio
-                        if (tradeInfo.getFuturePrice() != null) {
-                            BigDecimal futurePrice = tradeInfo.getFuturePrice();
-                            if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
-                                ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
-                                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId,ratio );
-                            }else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
-                                ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
-                                pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
+
+                    //we need a lock to lock pairs trade, or insert may exception
+                    Lock eventLock = MarketCache.eventLockCache.get(clientOrderId);
+                    try {
+                        if(eventLock.tryLock(2000,MILLISECONDS)) {
+                            TradeInfoModel tradeInfo = tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
+
+                            if (tradeInfo == null) {
+                                tradeInfo = new TradeInfoModel();
+                                tradeInfo.setSymbol(orderUpdate.getSymbol());
+                                tradeInfo.setOrderId(clientOrderId);
+                                tradeInfo.setSpotPrice(new BigDecimal(orderUpdate.getPrice()));
+                                tradeInfo.setSpotQty(new BigDecimal(orderUpdate.getAccumulatedQuantity()));
+                                tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
+                                tradeInfoDao.insertTradeInfo(tradeInfo);
+                            } else {
+                                BigDecimal spotPrice, spotQty;
+                                BigDecimal ratio;
+                                String price = orderUpdate.getPrice();
+                                String qty = orderUpdate.getAccumulatedQuantity();
+                                int priceSize = price.length() - price.indexOf(".");
+                                //calculate bid price
+                                if (tradeInfo.getSpotPrice() == null) {
+                                    spotPrice = new BigDecimal(price);
+                                    spotQty = new BigDecimal(qty);
+                                } else {
+                                    spotQty = new BigDecimal(qty).add(tradeInfo.getSpotQty());
+                                    spotPrice = new BigDecimal(price).multiply(new BigDecimal(qty))
+                                            .add(tradeInfo.getSpotPrice().multiply(tradeInfo.getSpotQty()))
+                                            .divide(spotQty, priceSize, RoundingMode.HALF_UP);
+                                }
+                                //calcualte ratio
+                                if (tradeInfo.getFuturePrice() != null) {
+                                    BigDecimal futurePrice = tradeInfo.getFuturePrice();
+                                    if (clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
+                                        ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize, RoundingMode.HALF_UP);
+                                        pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+                                    } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
+                                        ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize, RoundingMode.HALF_UP);
+                                        pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
+                                    }
+                                }
+
+                                tradeInfo.setSpotQty(spotQty);
+                                tradeInfo.setSpotPrice(spotPrice);
+
+                                tradeInfoDao.updateTradeInfoById(tradeInfo);
+
                             }
                         }
-
-                        tradeInfo.setSpotQty(spotQty);
-                        tradeInfo.setSpotPrice(spotPrice);
-
-                        tradeInfoDao.updateTradeInfoById(tradeInfo);
-
+                    } catch (Exception e) {
+                        logger.error("spot process......failed {}",e);
                     }
 
                 }
@@ -183,18 +194,15 @@ public class SpotSubscription {
      }
 
      public static void main(String[] args) throws InterruptedException {
-        String symbol = "btcusdt";
-         SpotSubscription spotSubscription = new SpotSubscription();
-         spotSubscription.getAllBookTicks();
-//         spotSubscription.symbolBookTickSubscription(symbol);
-//         spotSubscription.processBalanceCache();
-//
-//         Thread.sleep(5000);
-//
-//         // Placing a real LIMIT order
-//         String symbol = "BNBUSDT";
-//         NewOrderResponse newOrderResponse = BinanceClient.spotSyncClient.newOrder(limitBuy(symbol, TimeInForce.GTC, "0.09", "270").newOrderRespType(NewOrderResponseType.FULL));
-//         System.out.println(newOrderResponse);
+
+         String price = "5.031";
+         String qty="2.33";
+         BigDecimal oldPrice =  new BigDecimal("5.03");
+         BigDecimal oldQty = new BigDecimal("0.65");
+         BigDecimal allqty = new BigDecimal("2.98");
+         System.out.println(new BigDecimal(price).multiply(new BigDecimal(qty))
+                 .add(oldPrice.multiply(oldQty))
+                 .divide(allqty,3,RoundingMode.HALF_UP));
      }
 
 
