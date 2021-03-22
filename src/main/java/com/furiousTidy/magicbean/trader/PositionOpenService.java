@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -155,10 +156,7 @@ public class PositionOpenService {
                             &&  futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
-                        //insert orderId into futureBid_table
-                        PairsTradeModel pairsTradeModel = new PairsTradeModel();
-                        pairsTradeModel.setSymbol(symbol);
-                        pairsTradeModel.setOpenId(clientOrderId);
+
                         MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
@@ -178,14 +176,21 @@ public class PositionOpenService {
 
                                     //begin to close the symbol
                                     String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
+
+                                    TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
+                                    BigDecimal qty = tradeInfoModel.getFutureQty();
+
+                                    AtomicBoolean atomicFSO = new AtomicBoolean(false);
+                                    MarketCache.closeLockCache.put(clientOrderId,atomicFSO);
+
+                                    doPairsTradeByQty(symbol,   qty,futureAskPrice,spotBidPrice,
+                                            BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
+
                                     pairsTradeModel.setCloseId(clientOrderId);
                                     //update close id in pairstrade
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
-                                    TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
-                                    BigDecimal cost = tradeInfoModel.getFuturePrice().multiply(tradeInfoModel.getFutureQty());
-                                    MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-                                    doPairsTrade(symbol, cost,futureAskPrice,spotBidPrice,
-                                            BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
+                                    atomicFSO.set(true);
+
                                     PositionOpenController.watchdog = false;
                                     break;
                                 }
@@ -259,11 +264,20 @@ public class PositionOpenService {
         BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
         logger.info("trade future qty:{} spot qty:{}",futureQuantity,spotQuantity);
         //do the order
+        BigDecimal qty = futurePrice.compareTo(spotPrice)>0?spotQuantity:futureQuantity;
 
+        tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
+        tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
+    }
 
+    //do paris trade
+    private void doPairsTradeByQty(String symbol, BigDecimal qty, BigDecimal futurePrice, BigDecimal spotPrice,
+                              String direct,String clientOrderId) throws InterruptedException {
+        //计算合约最小下单位数
+        Integer[] stepSize = tradeUtil.getStepSize(symbol);
 
-        tradeService.doFutureTrade(symbol, futurePrice, futureQuantity, stepSize[0], direct, clientOrderId);
-        tradeService.doSpotTrade(symbol, spotPrice, spotQuantity, stepSize[1], direct, clientOrderId);
+        tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
+        tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
     }
 
 

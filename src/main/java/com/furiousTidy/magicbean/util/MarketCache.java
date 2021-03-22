@@ -19,12 +19,16 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
 @Service
 public class MarketCache {
     //lock
     public static Map<String, Lock> eventLockCache = new HashMap<>();
+
+    //lock
+    public static Map<String, AtomicBoolean> closeLockCache = new HashMap<>();
 
 
     //symbol-futurerate cache store symbol and futrerate
