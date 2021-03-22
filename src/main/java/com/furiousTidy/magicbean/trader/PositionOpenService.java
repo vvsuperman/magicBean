@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
@@ -150,7 +151,7 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isUSDTenough() && tradeUtil.futureSelected(symbol)
+                    if(tradeUtil.isUSDTenough() || tradeUtil.futureSelected(symbol)
                             &&  futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
@@ -158,13 +159,10 @@ public class PositionOpenService {
                         PairsTradeModel pairsTradeModel = new PairsTradeModel();
                         pairsTradeModel.setSymbol(symbol);
                         pairsTradeModel.setOpenId(clientOrderId);
-                        if(pairsTradeDao.getPairsTradeByOpenId(clientOrderId)!=null){
-                            logger.error("openid is the same,openId={}",clientOrderId);
-                        }
-                        pairsTradeDao.insertPairsTrade(pairsTradeModel);
                         MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
+
                         PositionOpenController.watchdog = false;
                         break;
                     }else {
@@ -261,6 +259,7 @@ public class PositionOpenService {
         BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
         logger.info("trade future qty:{} spot qty:{}",futureQuantity,spotQuantity);
         //do the order
+
 
 
         tradeService.doFutureTrade(symbol, futurePrice, futureQuantity, stepSize[0], direct, clientOrderId);

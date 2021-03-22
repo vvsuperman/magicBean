@@ -118,7 +118,7 @@ public class SpotSubscription {
                 for (AssetBalance assetBalance : response.getAccountUpdateEvent().getBalances()) {
                     MarketCache.spotBalanceCache.put(assetBalance.getAsset(), assetBalance);
                 }
-                logger.info("spot account_update event:type={},response={}",response.getAccountUpdateEvent().getEventType(),response.toString());
+//                logger.info("spot account_update event:type={},response={}",response.getAccountUpdateEvent().getEventType(),response.toString());
 
             } else if(response.getEventType() == ORDER_TRADE_UPDATE) {
                 OrderTradeUpdateEvent orderUpdate = response.getOrderTradeUpdateEvent();
@@ -126,64 +126,8 @@ public class SpotSubscription {
 
                 if(orderUpdate.getOrderStatus()==OrderStatus.FILLED ||
                         orderUpdate.getOrderStatus() == OrderStatus.PARTIALLY_FILLED){
-                    logger.info("spot order_update event:type={},orderid={},status={},price={},qty={},response={}",response.getOrderTradeUpdateEvent().getEventType(),
-                            orderUpdate.getNewClientOrderId(),orderUpdate.getOrderStatus(),orderUpdate.getPrice(),orderUpdate.getAccumulatedQuantity(),response.toString());
-
-                    String clientOrderId = orderUpdate.getNewClientOrderId();
-
-
-                    //we need a lock to lock pairs trade, or insert may exception
-                    Lock eventLock = MarketCache.eventLockCache.get(clientOrderId);
-                    try {
-                        if(eventLock.tryLock(2000,MILLISECONDS)) {
-                            TradeInfoModel tradeInfo = tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
-
-                            if (tradeInfo == null) {
-                                tradeInfo = new TradeInfoModel();
-                                tradeInfo.setSymbol(orderUpdate.getSymbol());
-                                tradeInfo.setOrderId(clientOrderId);
-                                tradeInfo.setSpotPrice(new BigDecimal(orderUpdate.getPrice()));
-                                tradeInfo.setSpotQty(new BigDecimal(orderUpdate.getAccumulatedQuantity()));
-                                tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
-                                tradeInfoDao.insertTradeInfo(tradeInfo);
-                            } else {
-                                BigDecimal spotPrice, spotQty;
-                                BigDecimal ratio;
-                                String price = orderUpdate.getPrice();
-                                String qty = orderUpdate.getAccumulatedQuantity();
-                                int priceSize = price.length() - price.indexOf(".");
-                                //calculate bid price
-                                if (tradeInfo.getSpotPrice() == null) {
-                                    spotPrice = new BigDecimal(price);
-                                    spotQty = new BigDecimal(qty);
-                                } else {
-                                    spotQty = new BigDecimal(qty).add(tradeInfo.getSpotQty());
-                                    spotPrice = new BigDecimal(price).multiply(new BigDecimal(qty))
-                                            .add(tradeInfo.getSpotPrice().multiply(tradeInfo.getSpotQty()))
-                                            .divide(spotQty, priceSize, RoundingMode.HALF_UP);
-                                }
-                                //calcualte ratio
-                                if (tradeInfo.getFuturePrice() != null) {
-                                    BigDecimal futurePrice = tradeInfo.getFuturePrice();
-                                    if (clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
-                                        ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize, RoundingMode.HALF_UP);
-                                        pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
-                                    } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
-                                        ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize, RoundingMode.HALF_UP);
-                                        pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
-                                    }
-                                }
-
-                                tradeInfo.setSpotQty(spotQty);
-                                tradeInfo.setSpotPrice(spotPrice);
-
-                                tradeInfoDao.updateTradeInfoById(tradeInfo);
-
-                            }
-                        }
-                    } catch (Exception e) {
-                        logger.error("spot process......failed {}",e);
-                    }
+//                    logger.info("spot order_update event:type={},orderid={},status={},price={},qty={},response={}",response.getOrderTradeUpdateEvent().getEventType(),
+//                            orderUpdate.getNewClientOrderId(),orderUpdate.getOrderStatus(),orderUpdate.getPrice(),orderUpdate.getAccumulatedQuantity(),response.toString());
 
                 }
 

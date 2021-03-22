@@ -121,65 +121,11 @@ public class FutureSubscription {
             }else if(event.getEventType().equals("ORDER_TRADE_UPDATE")){
                 OrderUpdate orderUpdate = event.getOrderUpdate();
                 MarketCache.futureOrderCache.put(orderUpdate.getOrderId(),orderUpdate);
-                logger.info("future trade_update event: orderstatus={},clientId={},price={},qty={},event={}",
-                        orderUpdate.getOrderStatus(),orderUpdate.getClientOrderId(),orderUpdate.getAvgPrice(),orderUpdate.getCumulativeFilledQty(),event);
+//                logger.info("future trade_update event: orderstatus={},clientId={},price={},qty={},event={}",
+//                        orderUpdate.getOrderStatus(),orderUpdate.getClientOrderId(),orderUpdate.getAvgPrice(),orderUpdate.getCumulativeFilledQty(),event);
                 if(orderUpdate.getOrderStatus().equals("FILLED") || orderUpdate.getOrderStatus().equals("PARTIALLY_FILLED")){
                     // update the database
-                    try {
-                        String clientOrderId = orderUpdate.getClientOrderId();
-                        //we need a lock to lock pairs trade, or insert may exception
-                        Lock eventLock = MarketCache.eventLockCache.get(clientOrderId);
-                        if(eventLock.tryLock(2000,MILLISECONDS)){
-                            long lockbegin = System.currentTimeMillis();
-                            TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(orderUpdate.getClientOrderId());
-                            if(tradeInfo == null){
-                                tradeInfo = new TradeInfoModel();
-                                tradeInfo.setSymbol(orderUpdate.getSymbol());
-                                tradeInfo.setOrderId(clientOrderId);
-                                tradeInfo.setFuturePrice(orderUpdate.getAvgPrice());
-                                tradeInfo.setFutureQty(orderUpdate.getCumulativeFilledQty());
-                                tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
-                                tradeInfoDao.insertTradeInfo(tradeInfo);
-                            }
-                            else{
-                                BigDecimal futurePrice, futureQty;
-                                BigDecimal ratio;
-                                int priceSize = orderUpdate.getAvgPrice().toString().length() - orderUpdate.getAvgPrice().toString().indexOf(".");
-                                //calculate bid price
-                                if(tradeInfo.getFuturePrice() == null){
-                                    futurePrice = orderUpdate.getAvgPrice();
-                                    futureQty = orderUpdate.getCumulativeFilledQty();
-                                }else{
-                                    futureQty = orderUpdate.getCumulativeFilledQty().add(tradeInfo.getFutureQty());
-                                    futurePrice = orderUpdate.getAvgPrice().multiply(orderUpdate.getCumulativeFilledQty())
-                                            .add(tradeInfo.getFuturePrice().multiply(tradeInfo.getFutureQty()))
-                                            .divide(futureQty,priceSize);
-                                }
-                                //calcualte ratio
-                                if (tradeInfo.getSpotPrice() != null) {
-                                    BigDecimal spotPrice = tradeInfo.getSpotPrice();
-                                    if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
-                                        ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
-                                        pairsTradeDao.updateOpenRatioByOpenId(clientOrderId,ratio);
-                                    }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
-                                        ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize,RoundingMode.HALF_UP);
-                                        pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
-                                    }
-                                }
 
-                                tradeInfo.setFutureQty(futureQty);
-                                tradeInfo.setFuturePrice(futurePrice);
-
-                                tradeInfoDao.updateTradeInfoById(tradeInfo);
-                                logger.info("future even has been finished:cost={}",System.currentTimeMillis()-lockbegin);
-
-                            }
-
-                        }
-                        eventLock.unlock();
-                    } catch (Exception e) {
-                        logger.error("future process......failed {}",e);
-                    }
                 }
             }else if(event.getEventType().equals("LISTEN_KEY_EXPIRED")){
                 //Listen key 失效了

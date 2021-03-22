@@ -35,4 +35,7 @@ public interface PairsTradeDao {
 
     @Select("select * from pairs_trade where openId = #{openId}")
     PairsTradeModel getPairsTradeByOpenId(String openId);
+
+    @Select("select * from pairs_trade where closeId = #{closeId}")
+    PairsTradeModel getPairsTradeByCloseId(String closeId);
 }
