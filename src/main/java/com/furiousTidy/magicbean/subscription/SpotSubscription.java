@@ -104,7 +104,6 @@ public class SpotSubscription {
         for (AssetBalance assetBalance : account.getBalances()) {
             MarketCache.spotBalanceCache.put(assetBalance.getAsset(), assetBalance);
         }
-
         return BinanceClient.spotSyncClient.startUserDataStream();
     }
 

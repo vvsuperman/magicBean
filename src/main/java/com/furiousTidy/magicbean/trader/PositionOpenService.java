@@ -22,9 +22,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
@@ -152,7 +149,7 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isUSDTenough() || tradeUtil.futureSelected(symbol)
+                    if(tradeUtil.isUSDTenough() || tradeUtil.inFutureRatingList(symbol)
                             &&  futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
@@ -180,16 +177,14 @@ public class PositionOpenService {
                                     TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
                                     BigDecimal qty = tradeInfoModel.getFutureQty();
 
-                                    AtomicBoolean atomicFSO = new AtomicBoolean(false);
-                                    MarketCache.closeLockCache.put(clientOrderId,atomicFSO);
+                                    pairsTradeModel.setCloseId(clientOrderId);
+                                    //update close id in pairstrade
+                                    pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
                                     doPairsTradeByQty(symbol,   qty,futureAskPrice,spotBidPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
 
-                                    pairsTradeModel.setCloseId(clientOrderId);
-                                    //update close id in pairstrade
-                                    pairsTradeDao.updatePairsTrade(pairsTradeModel);
-                                    atomicFSO.set(true);
+
 
                                     PositionOpenController.watchdog = false;
                                     break;

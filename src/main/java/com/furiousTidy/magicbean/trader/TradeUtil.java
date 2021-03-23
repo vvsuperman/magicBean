@@ -3,16 +3,48 @@ package com.furiousTidy.magicbean.trader;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.furiousTidy.magicbean.config.BeanConfig;
+import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
+import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.util.MarketCache;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class TradeUtil {
+
+    @Autowired
+    TradeInfoDao tradeInfoDao;
+
+    @Autowired
+    PairsTradeDao pairsTradeDao;
+
+    public List<String> getSymbolWatchList(){
+        List<String> symbolList = new ArrayList<>();
+        int i=0;
+        for(Map.Entry entry: MarketCache.fRateSymbolCache.entrySet()){
+            if( i > BeanConfig.PRIOR_NUM) {
+                break;
+            }
+            symbolList.add(entry.getValue().toString());
+            i++;
+        }
+        pairsTradeDao.getPairsTradeOpen().forEach(pairsTradeModel -> {
+            symbolList.add(pairsTradeModel.getSymbol());
+        });
+
+        return symbolList;
+    }
+
+
 
     //is enouf money
     public boolean isUSDTenough(){
@@ -28,7 +60,7 @@ public class TradeUtil {
     }
 
     //future rate high or not
-    public boolean futureSelected(String symbol){
+    public boolean inFutureRatingList(String symbol){
         int i=0;
         for(Map.Entry entry: MarketCache.fRateSymbolCache.entrySet()){
             if( i > BeanConfig.PRIOR_NUM) {

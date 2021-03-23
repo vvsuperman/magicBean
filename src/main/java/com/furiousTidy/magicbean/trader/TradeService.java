@@ -149,7 +149,6 @@ public class TradeService {
                 }
             }
 
-
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
             }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
@@ -157,7 +156,6 @@ public class TradeService {
             }
             spotQty = spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             log.info("spot's order info,spotPrice={}, spotQty={}", spotPrice, spotQty);
-
         }
     }
 
@@ -271,9 +269,8 @@ public class TradeService {
                 pairsTradeModel.setOpenRatio(ratio);
                 pairsTradeDao.insertPairsTrade(pairsTradeModel);
             }else{
-                    pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
-
-                }
+                pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
+            }
 
         } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
             ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize, RoundingMode.HALF_UP);
