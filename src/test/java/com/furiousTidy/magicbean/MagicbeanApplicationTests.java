@@ -3,7 +3,7 @@
 //
 //import com.furiousTidy.magicbean.subscription.FutureSubscription;
 //import com.furiousTidy.magicbean.subscription.SpotSubscription;
-//import com.furiousTidy.magicbean.trader.PositionOpenService;
+//import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 //import org.junit.Test;
 //import org.junit.runner.RunWith;
 //import org.springframework.beans.factory.annotation.Autowired;

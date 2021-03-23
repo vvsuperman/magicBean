@@ -11,28 +11,28 @@ import com.furiousTidy.magicbean.config.BeanConfig;
 public class BinanceClient {
 
     //合约同步客户端
-    public static SyncRequestClient futureSyncClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,
-            new RequestOptions());
-
-    //合约订阅客户端
-    public static SubscriptionClient futureSubsptClient = SubscriptionClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY);
-
-
-    //binance spot client
-    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.SPOT_API_KEY, BeanConfig.SPOT_SECRET_KEY);
-    public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
-
-    //prd
-//    public static SyncRequestClient futureSyncClient = SyncRequestClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY,
+//    public static SyncRequestClient futureSyncClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,
 //            new RequestOptions());
 //
 //    //合约订阅客户端
-//    public static SubscriptionClient futureSubsptClient = SubscriptionClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+//    public static SubscriptionClient futureSubsptClient = SubscriptionClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY);
 //
 //
 //    //binance spot client
-//    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+//    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.SPOT_API_KEY, BeanConfig.SPOT_SECRET_KEY);
 //    public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
+
+    //prd
+    public static SyncRequestClient futureSyncClient = SyncRequestClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY,
+            new RequestOptions());
+
+    //合约订阅客户端
+    public static SubscriptionClient futureSubsptClient = SubscriptionClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+
+
+    //binance spot client
+    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+    public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
 
     public static BinanceApiWebSocketClient spotSubsptClient = clientFactory.newWebSocketClient();
 

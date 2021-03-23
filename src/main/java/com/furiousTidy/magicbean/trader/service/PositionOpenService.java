@@ -1,4 +1,4 @@
-package com.furiousTidy.magicbean.trader;
+package com.furiousTidy.magicbean.trader.service;
 
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
@@ -9,6 +9,7 @@ import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
+import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -149,7 +150,7 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isUSDTenough() || tradeUtil.inFutureRatingList(symbol)
+                    if(tradeUtil.isUSDTenough()
                             &&  futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
@@ -158,8 +159,8 @@ public class PositionOpenService {
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
 
-                        PositionOpenController.watchdog = false;
-                        break;
+//                        PositionOpenController.watchdog = false;
+//                        break;
                     }else {
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
@@ -181,19 +182,17 @@ public class PositionOpenService {
                                     //update close id in pairstrade
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
-                                    doPairsTradeByQty(symbol,   qty,futureAskPrice,spotBidPrice,
+                                    doPairsTradeByQty(symbol, qty,futureAskPrice,spotBidPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
 
-
-
-                                    PositionOpenController.watchdog = false;
-                                    break;
+//                                    PositionOpenController.watchdog = false;
+//                                    break;
                                 }
                             }
                         }
                     }
             }
-            Thread.sleep(1000);
+            Thread.sleep(200);
         }
     }
 
@@ -236,7 +235,7 @@ public class PositionOpenService {
         }
     }
 
-
+    //get symbol's all the pairs info
     public List<PairsTradeModel> getPairsTradeInList(String symbol, List<PairsTradeModel> pairsTradeList){
         List<PairsTradeModel> symbolPairsTradeList = new ArrayList<>();
         for(PairsTradeModel pairsTradeModel: pairsTradeList){
@@ -260,6 +259,10 @@ public class PositionOpenService {
         logger.info("trade future qty:{} spot qty:{}",futureQuantity,spotQuantity);
         //do the order
         BigDecimal qty = futurePrice.compareTo(spotPrice)>0?spotQuantity:futureQuantity;
+        int qtyStepSize = stepSize[0]<stepSize[1]?stepSize[0]:stepSize[1];
+        qty = qty.setScale(qtyStepSize);
+        logger.info("actual  qty:{}",qty);
+
 
         tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
         tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
