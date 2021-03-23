@@ -72,15 +72,20 @@ public class TradeService {
 //                log.info("future order has been filled: orderid={}",orderId);
 //                return;
 //            }
-
+            Order cancelOrder = null;
             try {
-                order = BinanceClient.futureSyncClient.cancelOrder(symbol, order.getOrderId(), null);
+                cancelOrder = BinanceClient.futureSyncClient.cancelOrder(symbol, order.getOrderId(), null);
             }catch (BinanceApiException binanceApiException){
                 if (binanceApiException.getMessage().contains("Unknown order sent")) {
                     //order has been filled but no subscription received, do nothing
                     log.info("future order has been filled,no need cancel,begin process,symbol={},status={},qty={},orderid={}"
                             ,symbol,order.getStatus(),order.getExecutedQty(),orderId);
-                    orderStoreService.processFutureOrder(clientOrderId,order);
+                    //order status has not been changed
+                    if(order.getStatus().equals("NEW")){
+                        orderStoreService.processFutureOrder(clientOrderId,order);
+                    }else{
+                        orderStoreService.processFutureOrder(clientOrderId,cancelOrder);
+                    }
                     return;
                 }
             }
@@ -142,7 +147,7 @@ public class TradeService {
                         log.info("spot order cancel filled,no need to cancel,symbol={},status={},qty={},orderid={}"
                                 ,symbol, newOrderResponse.getStatus(),newOrderResponse.getExecutedQty(),orderId);
                         orderStoreService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getPrice())
-                                ,new BigDecimal(newOrderResponse.getCummulativeQuoteQty()));
+                                ,new BigDecimal(newOrderResponse.getExecutedQty()));
                         return;
                     }else{ //partial filled
                         log.info("spot order cancel partial filled,symbol={},status={},qty={},orderid={}"
