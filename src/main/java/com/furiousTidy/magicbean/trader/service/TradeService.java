@@ -78,10 +78,11 @@ public class TradeService {
             }catch (BinanceApiException binanceApiException){
                 if (binanceApiException.getMessage().contains("Unknown order sent")) {
                     //order has been filled but no subscription received, do nothing
-                    log.info("future order has been filled,no need cancel,begin process,symbol={},status={},qty={},orderid={}"
-                            ,symbol,order.getStatus(),order.getExecutedQty(),orderId);
+                    log.info("future order has been filled,no need cancel,begin process,symbol={},status={},qty={},orderid={},cancelOrder={}"
+                            ,symbol,order.getStatus(),order.getExecutedQty(),orderId,cancelOrder);
                     //order status has not been changed
-                    if(order.getStatus().equals("NEW")){
+                    if(cancelOrder == null ||cancelOrder.getStatus().equals("NEW")){
+                        order.setExecutedQty(futureQty);
                         orderStoreService.processFutureOrder(clientOrderId,order);
                     }else{
                         orderStoreService.processFutureOrder(clientOrderId,cancelOrder);

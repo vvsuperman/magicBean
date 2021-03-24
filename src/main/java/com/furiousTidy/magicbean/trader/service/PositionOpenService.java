@@ -139,7 +139,8 @@ public class PositionOpenService {
             List<PairsTradeModel> pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
             //sort the mim one
             sortPairsTradeList(pairsTradeList);
-
+            //usd is not enough
+            if(!tradeUtil.isUSDTenough()) continue;
             for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
                     //re-compare the price in the cache
@@ -150,8 +151,7 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isUSDTenough()
-                            &&  futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
+                    if( futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
@@ -168,10 +168,11 @@ public class PositionOpenService {
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
                                 BigDecimal futureAskPrice = getFutureTickPrice(symbol,"ask");
                                 BigDecimal spotBidPrice = getSpotTickPrice(symbol,"bid");
+                                BigDecimal closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP)
+                                        .add(pairsTradeModel.getOpenRatio());
                                 if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
-                                        && spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP)
-                                        .add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
-
+                                        && closeRatio.compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
+                                    logger.info("begin to close symbol={}, closeRatio",symbol,closeRatio);
                                     //begin to close the symbol
                                     String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
 
@@ -256,11 +257,9 @@ public class PositionOpenService {
         BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
         //计算现货买单数量
         BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
-        logger.info("trade future qty:{} spot qty:{}",futureQuantity,spotQuantity);
+        logger.info("trade future symbol:{}, qty:{} spot qty:{}",symbol,futureQuantity,spotQuantity);
         //do the order
-        BigDecimal qty = futurePrice.compareTo(spotPrice)>0?spotQuantity:futureQuantity;
-        int qtyStepSize = stepSize[0]<stepSize[1]?stepSize[0]:stepSize[1];
-        qty = qty.setScale(qtyStepSize);
+        BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
         logger.info("actual  qty:{}",qty);
 
 

@@ -33,6 +33,8 @@ public class OrderStoreService {
 
     @Async
     public void processFutureOrder(String clientOrderId, Order order){
+        log.info(" future store begin,symbol={}, price={},qty={}",order.getSymbol(),order.getPrice(),order.getExecutedQty());
+
         Lock eventLock = null;
         try {
             //we need a lock to lock pairs trade, or insert may exception
@@ -89,7 +91,7 @@ public class OrderStoreService {
 
     @Async
     public void processSpotOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty){
-
+        log.info(" spot store begin,symbol={}, price={},qty={}",symbol,price,qty);
         //we need a lock to lock pairs trade, or insert may exception
         Lock eventLock = MarketCache.eventLockCache.containsKey(clientOrderId)?MarketCache.eventLockCache.get(clientOrderId):null;
         if(eventLock == null){
@@ -108,23 +110,30 @@ public class OrderStoreService {
                     tradeInfo.setSpotPrice(price);
                     tradeInfo.setSpotQty(qty);
                     tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
+                    log.info("spot store process insert, tradeInfo {}",tradeInfo);
+
                     tradeInfoDao.insertTradeInfo(tradeInfo);
                 } else {
                     BigDecimal spotPrice, spotQty;
                     BigDecimal ratio;
-
+                    log.info("spot store process info, tradeInfo {}",tradeInfo);
                     int priceSize = price.toString().length() - price.toString().indexOf(".");
                     //calculate bid price
                     if (tradeInfo.getSpotPrice() == null) {
                         spotPrice = price;
                         spotQty = qty;
                     } else {
+
                         spotQty = qty.add(tradeInfo.getSpotQty());
                         spotPrice = price.multiply(qty)
                                 .add(tradeInfo.getSpotPrice().multiply(tradeInfo.getSpotQty()))
                                 .divide(spotQty, priceSize, RoundingMode.HALF_UP);
+                        log.info("spot store process calculate, tradeInfo {}",spotQty,spotPrice);
+
+
                     }
                     //calcualte ratio
+                    log.info("calculate ratio begin, tradeInfo={}", tradeInfo);
                     if (tradeInfo.getFuturePrice() != null) {
                         BigDecimal futurePrice = tradeInfo.getFuturePrice();
                         calculateRatio(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
@@ -132,7 +141,7 @@ public class OrderStoreService {
 
                     tradeInfo.setSpotQty(spotQty);
                     tradeInfo.setSpotPrice(spotPrice);
-
+                    log.info("spot store process update, tradeInfo {}",tradeInfo);
                     tradeInfoDao.updateTradeInfoById(tradeInfo);
 
                 }
@@ -146,6 +155,7 @@ public class OrderStoreService {
 
     private void calculateRatio(String symbol,String clientOrderId, BigDecimal futurePrice, BigDecimal spotPrice, int priceSize) {
         BigDecimal ratio;
+        log.info("in calucalateRatio, symbol={}, clientorderid={}, futureprice={}, spotprice={}",symbol,clientOrderId,futurePrice,spotPrice);
         if (clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
             ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
             PairsTradeModel pairsTradeModel =pairsTradeDao.getPairsTradeByOpenId(clientOrderId);
@@ -161,6 +171,7 @@ public class OrderStoreService {
 
         } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
             ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize, RoundingMode.HALF_UP);
+            log.info("in calculate ratio, updateCloseRatioByCloseId,clientOrdeid={}, ratio={}",clientOrderId,ratio);
             pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
         }
     }

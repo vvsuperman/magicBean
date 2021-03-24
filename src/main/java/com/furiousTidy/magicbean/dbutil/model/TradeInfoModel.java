@@ -13,4 +13,6 @@ public class TradeInfoModel {
     BigDecimal spotPrice;
     BigDecimal spotQty;
     String createTime;
+
+
 }
