@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.temporal.ChronoField;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +58,7 @@ public class TradeUtil {
         LocalDate today = LocalDate.now();
         LocalTime time = LocalTime.now();
         return today.getYear()+"_"+today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
-                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond();
+                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND);
     }
 
     //future rate high or not
@@ -120,7 +122,7 @@ public class TradeUtil {
       }
 
       public static void main(String[] args){
-          System.out.println(new BigDecimal(2.00).setScale(0));
+          System.out.println(TradeUtil.getCurrentTime());
       }
 
 

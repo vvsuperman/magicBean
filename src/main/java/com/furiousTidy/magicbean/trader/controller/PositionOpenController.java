@@ -57,6 +57,7 @@ public class PositionOpenController {
 
     @RequestMapping("earnmoney")
     public @ResponseBody void earnMoney() throws InterruptedException {
+        log.info("earn money begin..............");
         PositionOpenController.watchdog = true;
         positionOpenService.doPairsTradeRobot();
     }

@@ -91,11 +91,15 @@ public class TradeService {
                 }
             }
 
-            if(order.getExecutedQty().equals(futureQty)){
-                log.info("future order has been filled until the cancel order: orderid={}",orderId);
+            if(cancelOrder.getStatus().equals("FILLED")){
+                log.info("future order filled until the cancel order: order={},cancelOrder={}",order,cancelOrder);
+                orderStoreService.processFutureOrder(clientOrderId,cancelOrder);
                 return;
-            }else{
+             //PARTIALLY_FILLED
+            }else if(cancelOrder.getStatus().equals("PARTIALLY_FILLED")){
 //                Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
+                log.info("future order  PARTIALLY_FILLED until the cancel order: order={}, cancelOrder={}",order,cancelOrder);
+                orderStoreService.processFutureOrder(clientOrderId,cancelOrder);
                 if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                     futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                 }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
@@ -158,6 +162,8 @@ public class TradeService {
                     }
                 }
             }
+
+
 
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);

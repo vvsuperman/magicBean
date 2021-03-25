@@ -151,7 +151,7 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if( futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
+                    if(tradeUtil.isUSDTenough() && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
