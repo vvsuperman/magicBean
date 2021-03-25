@@ -159,8 +159,7 @@ public class PositionOpenService {
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
 
-//                        PositionOpenController.watchdog = false;
-//                        break;
+
                     }else {
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
@@ -186,8 +185,7 @@ public class PositionOpenService {
                                     doPairsTradeByQty(symbol, qty,futureAskPrice,spotBidPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
 
-//                                    PositionOpenController.watchdog = false;
-//                                    break;
+
                                 }
                             }
                         }

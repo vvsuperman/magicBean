@@ -72,8 +72,9 @@ public class PositionOpenController {
 
 
     @RequestMapping("switchwatchdog")
-    public @ResponseBody void switchWagchDog(){
+    public @ResponseBody boolean switchWagchDog(){
         watchdog = (watchdog == true)?false:true;
+        return watchdog;
     }
 
     @RequestMapping("storeallticks")

@@ -3,3 +3,8 @@
 2021-03-25 16:33:28 [INFO] - future order has been filled,no need cancel,begin process,symbol=STMXUSDT,status=NEW,qty=0,orderid=20471587,cancelOrder=null
 
 2021-03-25 17:18:17 [INFO] - future order has been filled,no need cancel,symbol=ONEUSDT,status=FILLED,qty=80,orderid=126050696,cancelOrder=null
+
+
+spot order cancel filled,no need to cancel,symbol=DENTUSDT,status=FILLED,qty=1485.00000000,orderid=56553618,cancelOrder=null
+
+20 spot cancel order return, cancel order =NewOrderResponse[symbol=DENTUSDT,orderId=56553627,clientOrderId=DENTUSDT_FSO_2021_3_25_22_8_53_652,transactTime=1616681333739,price=0.01010200,origQty=1485.00000000,executedQty=443.00000000,status=PARTIALLY_FILLED,timeInForce=GTC,type=LIMIT,side=BUY,fills=Trade[id=9065822,symbol=<null>,price=0.01010200,qty=443.00000000,quoteQty=<null>,commission=0.00001419,commissionAsset=BNB,time=0,buyer=false,maker=false,bestMatch=false,orderId=<null>]],cancelorder=CancelOrderResponse[symbol=DENTUSDT,origClientOrderId=DENTUSDT_FSO_2021_3_25_22_8_53_652,orderId=56553627,clientOrderId=7kr4hoKoISqdeTK91b5gYX]
