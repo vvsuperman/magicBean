@@ -172,7 +172,7 @@ public class PositionOpenService {
                                         .add(pairsTradeModel.getOpenRatio());
                                 if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
                                         && closeRatio.compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
-                                    logger.info("begin to close symbol={}, closeRatio",symbol,closeRatio);
+                                    logger.info("begin to close symbol={}, closeRatio={}",symbol,closeRatio);
                                     //begin to close the symbol
                                     String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
 

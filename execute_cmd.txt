@@ -17,3 +17,5 @@ ssh root@8.209.248.166
 
 #退出sqlite
 .quit
+
+FUTURE_ORDER_STATUS: PARTIALLY_FILLED

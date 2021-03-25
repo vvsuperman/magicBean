@@ -64,7 +64,7 @@ public class TradeService {
             Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.GTC,futureQty.toString(),
                     futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
             Long orderId = order.getOrderId();
-            log.info("futrue new order return: orderid={},status={},qty={}" , orderId,order.getStatus(),order.getExecutedQty());
+            log.info("futrue new order return: orderid={},status={},qty={}" , clientOrderId,order.getStatus(),order.getExecutedQty());
 //            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
             //suscription receive the info
 //            if(MarketCache.futureOrderCache.containsKey(orderId) &&
@@ -78,37 +78,32 @@ public class TradeService {
             }catch (BinanceApiException binanceApiException){
                 if (binanceApiException.getMessage().contains("Unknown order sent")) {
                     //order has been filled but no subscription received, do nothing
-                    log.info("future order has been filled,no need cancel,begin process,symbol={},status={},qty={},orderid={},cancelOrder={}"
+                    log.info("future order has been filled,no need cancel,symbol={},status={},qty={},orderid={},cancelOrder={}"
                             ,symbol,order.getStatus(),order.getExecutedQty(),orderId,cancelOrder);
-                    //order status has not been changed
-                    if(cancelOrder == null ||cancelOrder.getStatus().equals("NEW")){
+                    //order has been filled, order status is new or filled, qty is 0 , cancel order is null
+                    if(cancelOrder == null && order.getStatus().equals("NEW")|| order.getStatus().equals("FILLED")){
                         order.setExecutedQty(futureQty);
                         orderStoreService.processFutureOrder(clientOrderId,order);
-                    }else{
-                        orderStoreService.processFutureOrder(clientOrderId,cancelOrder);
+                        return;
+                     // order has been partially filled, order status is partially filled, cancel order is null;
+                    }else if(cancelOrder == null && order.getStatus().equals("PARTIALLY_FILLED")){
+                        orderStoreService.processFutureOrder(clientOrderId,order);
+                        futureQty = futureQty.subtract(cancelOrder.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
                     }
-                    return;
                 }
             }
 
-            if(cancelOrder.getStatus().equals("FILLED")){
-                log.info("future order filled until the cancel order: order={},cancelOrder={}",order,cancelOrder);
-                orderStoreService.processFutureOrder(clientOrderId,cancelOrder);
-                return;
-             //PARTIALLY_FILLED
-            }else if(cancelOrder.getStatus().equals("PARTIALLY_FILLED")){
-//                Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
-                log.info("future order  PARTIALLY_FILLED until the cancel order: order={}, cancelOrder={}",order,cancelOrder);
-                orderStoreService.processFutureOrder(clientOrderId,cancelOrder);
-                if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                    futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                }
-
-                futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
-                log.info("future's next order info,bidPrice={}, futureQty={}",futurePrice,futureQty);
+//
+            log.info("future cancel order return: order={}, cancelOrder={}",order,cancelOrder);
+            if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+                futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+            }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
+                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
             }
+
+            log.info("future's next order info,bidPrice={}, futureQty={}",futurePrice,futureQty);
+
+
         }
     }
 
@@ -134,7 +129,7 @@ public class TradeService {
 
 
             Long orderId = newOrderResponse.getOrderId();
-            log.info("new spot order return,orderid={}", orderId);
+            log.info("new spot order return,order={}", newOrderResponse);
 ////            Thread.sleep(BeanConfig.ORDER_EXPIRE_TIME);
 //            if (MarketCache.spotOrderCache.containsKey(orderId) &&
 //                    MarketCache.spotOrderCache.get(orderId).getOrderStatus() == OrderStatus.FILLED) {
@@ -147,30 +142,27 @@ public class TradeService {
                 cancelOrderResponse = BinanceClient.spotSyncClient.cancelOrder(new CancelOrderRequest(symbol, orderId));
             } catch (Exception exception) {
                 if (exception.getMessage().contains("Unknown order sent")) {
-                    //order has been filled
-                    if(cancelOrderResponse == null){
-                        log.info("spot order cancel filled,no need to cancel,symbol={},status={},qty={},orderid={}"
-                                ,symbol, newOrderResponse.getStatus(),newOrderResponse.getExecutedQty(),orderId);
-                        orderStoreService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getPrice())
-                                ,new BigDecimal(newOrderResponse.getExecutedQty()));
-                        return;
-                    }else{ //partial filled
-                        log.info("spot order cancel partial filled,symbol={},status={},qty={},orderid={}"
-                                ,symbol, cancelOrderResponse.getStatus(),cancelOrderResponse.getExecutedQty(),orderId);
-                        orderStoreService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getPrice())
-                                ,new BigDecimal(cancelOrderResponse.getExecutedQty()));
-                    }
+                    //order has been filled, canceOrder is null
+                    log.info("spot order cancel filled,no need to cancel,symbol={},status={},qty={},orderid={},cancelOrder={}"
+                            ,symbol, newOrderResponse.getStatus(),newOrderResponse.getExecutedQty(),orderId,cancelOrderResponse);
+                    orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,spotQty);
+                    return;
                 }
             }
 
-
+            log.info("spot cancel order return, cancel order ={},cancelorder={}",newOrderResponse, cancelOrderResponse);
 
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
             }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
                 spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
             }
-            spotQty = spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
+
+            if(cancelOrderResponse.getStatus().equals("PARTIAL_FILLED")){
+                orderStoreService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getPrice())
+                        ,new BigDecimal(cancelOrderResponse.getExecutedQty()));
+                spotQty = spotQty.subtract(new BigDecimal(cancelOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
+            }
             log.info("spot's order info,spotPrice={}, spotQty={}", spotPrice, spotQty);
         }
     }
