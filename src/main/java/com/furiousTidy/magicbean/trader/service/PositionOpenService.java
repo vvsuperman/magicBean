@@ -139,8 +139,6 @@ public class PositionOpenService {
             List<PairsTradeModel> pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
             //sort the mim one
             sortPairsTradeList(pairsTradeList);
-            //usd is not enough
-            if(!tradeUtil.isUSDTenough()) continue;
             for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
                     //re-compare the price in the cache
