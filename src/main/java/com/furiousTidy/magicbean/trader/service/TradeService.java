@@ -49,6 +49,9 @@ public class TradeService {
     @Autowired
     OrderStoreService orderStoreService;
 
+    @Autowired
+    TradeUtil tradeUtil;
+
     @Async
     public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize,
                               String direct, String clientOrderId) throws InterruptedException{
@@ -59,7 +62,7 @@ public class TradeService {
         int i=1;
 
         while (PositionOpenController.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
-            //下单
+
             log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
                     ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
             Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
@@ -70,7 +73,10 @@ public class TradeService {
                 orderStoreService.processFutureOrder(clientOrderId,order);
                 return;
                 // order has been partially filled, order status is partially filled, cancel order is null;
-            }else if(order.getStatus().equals("PARTIALLY_FILLED")){
+            }else if(order.getStatus().equals("PARTIALLY_FILLED" )){
+                orderStoreService.processFutureOrder(clientOrderId,order);
+                futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
+            }else if(order.getStatus().equals("EXPIRED") && order.getExecutedQty().compareTo(BigDecimal.ZERO)>0){
                 orderStoreService.processFutureOrder(clientOrderId,order);
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }
@@ -114,7 +120,7 @@ public class TradeService {
             if(newOrderResponse.getStatus() == OrderStatus.FILLED){
                 orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,spotQty);
                 return;
-            }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED){
+            }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED || newOrderResponse.getStatus() == OrderStatus.EXPIRED){
                 orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }

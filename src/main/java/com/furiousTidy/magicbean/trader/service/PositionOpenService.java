@@ -159,6 +159,7 @@ public class PositionOpenService {
 
 
                     }else {
+                        if(tradeUtil.inFutureRatingList(symbol)) continue;
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){

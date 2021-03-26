@@ -1,3 +1,11 @@
+ new spot order return,order=NewOrderResponse[symbol=SUSHIUSDT,orderId=315011205,clientOrderId=SUSHIUSDT_FSC_2021_3_26_3_25_29_207,transactTi
+me=1616700329227,price=14.80600000,origQty=1.00000000,executedQty=0.00300000,status=EXPIRED,timeInForce=IOC,type=LIMIT,side=SELL,fills=Trade[id=22878571,symbol=<null>,pr
+ice=14.80600000,qty=0.00300000,quoteQty=<null>,commission=0.00000013,commissionAsset=BNB,time=0,buyer=false,maker=false,bestMatch=false,orderId=<null>]]
+2021-03-26 03:25:29 [INFO] - spot's next order info,spotPrice=14.80600000, spotQty=1.0
+
+
+ futrue new order return: orderid=AKROUSDT_FSC_2021_3_26_2_20_12_446,status=EXPIRED,qty=211
+
 2021-03-25 16:33:28 [INFO] - future order has been filled,no need cancel,begin process,symbol=STMXUSDT,status=PARTIALLY_FILLED,qty=98,orderid=20471578,cancelOrder=null
 
 2021-03-25 16:33:28 [INFO] - future order has been filled,no need cancel,begin process,symbol=STMXUSDT,status=NEW,qty=0,orderid=20471587,cancelOrder=null

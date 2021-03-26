@@ -5,6 +5,7 @@ import com.binance.api.client.domain.account.request.AllOrdersRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.market.SymbolOrderBook;
+import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
@@ -49,6 +50,21 @@ public class PositionOpenController {
     PairsTradeDao pairsTradeDao;
 
     public static boolean watchdog = true;
+
+    @RequestMapping("getHighFutureRateList")
+    public @ResponseBody List<String> getHighFutureRateList() {
+        int i = 0;
+        List<String> symbolList = new ArrayList<>();
+        for (Map.Entry<BigDecimal, String> entry : MarketCache.fRateSymbolCache.entrySet()) {
+            if (i > BeanConfig.PRIOR_NUM) {
+                return symbolList;
+            }
+            symbolList.add(entry.getValue());
+            i++;
+        }
+        return symbolList;
+    }
+
 
     @RequestMapping("statuscheck")
     public @ResponseBody String checkStatus(){
