@@ -29,6 +29,20 @@ public class TradeUtil {
     @Autowired
     PairsTradeDao pairsTradeDao;
 
+    public BigDecimal getFutureTickInfo(String symbol,String type) {
+        if (MarketCache.futureTickerMap.containsKey(symbol)) {
+            return MarketCache.futureTickerMap.get(symbol).get(type);
+        }
+        return null;
+    }
+
+    public BigDecimal getSpotTickInfo(String symbol,String type) {
+        if (MarketCache.spotTickerMap.containsKey(symbol)) {
+            return MarketCache.spotTickerMap.get(symbol).get(type);
+        }
+        return null;
+    }
+
     public List<String> getSymbolWatchList(){
         List<String> symbolList = new ArrayList<>();
         int i=0;

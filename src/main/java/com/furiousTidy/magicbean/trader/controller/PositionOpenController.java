@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -50,6 +51,12 @@ public class PositionOpenController {
     PairsTradeDao pairsTradeDao;
 
     public static boolean watchdog = true;
+
+//    @PostConstruct
+//    public void postConstruct() throws InterruptedException {
+//        doCache();
+//        storeAllTicks();
+//    }
 
     @RequestMapping("getHighFutureRateList")
     public @ResponseBody List<String> getHighFutureRateList() {
@@ -95,6 +102,7 @@ public class PositionOpenController {
 
     @RequestMapping("storeallticks")
     public @ResponseBody void storeAllTicks() throws InterruptedException {
+        log.info("begin to store all ticks.......");
         preTradeService.storeTicks();
     }
 

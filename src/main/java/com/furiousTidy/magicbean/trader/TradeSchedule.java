@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-// schedule move tradeInfo and pairsTrade to his_table
+// schdule
 public class TradeSchedule {
 
     @Autowired

@@ -1,5 +1,6 @@
 package com.furiousTidy.magicbean;
 
+import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import org.mybatis.spring.annotation.MapperScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,11 +18,14 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 //@MapperScan("com.furiousTidy.magicbean.dbutil.mapper.*")
 public class MagicbeanApplication {
+
+
 	private static final Logger logger = LoggerFactory.getLogger(MagicbeanApplication.class);
 
 	public static void main(String[] args) {
 
 		SpringApplication.run(MagicbeanApplication.class, args);
+
 		logger.info("magicbean start success");
 	}
 }

@@ -133,7 +133,6 @@ public class OrderStoreService {
 
                     }
                     //calcualte ratio
-                    log.info("calculate ratio begin, tradeInfo={}", tradeInfo);
                     if (tradeInfo.getFuturePrice() != null) {
                         BigDecimal futurePrice = tradeInfo.getFuturePrice();
                         calculateRatio(symbol,clientOrderId, futurePrice, spotPrice, priceSize);

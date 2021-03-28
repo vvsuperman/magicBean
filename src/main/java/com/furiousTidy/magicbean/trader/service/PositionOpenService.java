@@ -144,18 +144,39 @@ public class PositionOpenService {
                     //re-compare the price in the cache
                     symbol = entry.getKey();
                     if(!symbol.contains("USDT")) continue;
-                    BigDecimal futureBidPrice = getFutureTickPrice(symbol,"bid");
-                    BigDecimal spotAskPrice = getSpotTickPrice(symbol,"ask");
-                    if(futureBidPrice == null || spotAskPrice == null ||
-                            futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
+//                    BigDecimal futureBidPrice = getFutureTickPrice(symbol,"bid");
+//                    BigDecimal spotAskPrice = getSpotTickPrice(symbol,"ask");
+                    BigDecimal futureAskPrice = tradeUtil.getFutureTickInfo(symbol,BeanConstant.BEST_BID_PRICE);
+                    BigDecimal futureAskQty = tradeUtil.getFutureTickInfo(symbol,BeanConstant.BEST_BID_QTY);
+                    BigDecimal spotBidPrice = tradeUtil.getSpotTickInfo(symbol,BeanConstant.BEST_ASK_PRICE);
+                    BigDecimal spotBidQty = tradeUtil.getSpotTickInfo(symbol,BeanConstant.BEST_ASK_Qty);
+
+
                     //price matched open
-                    if(tradeUtil.isUSDTenough() && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
+                    if(tradeUtil.isUSDTenough() && checkOpen(futureAskPrice,futureAskQty, spotBidPrice,spotBidQty)){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
                         MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-                        doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
-                                BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
+//                      BigDecimal qty = futureBidQty.compareTo(spotAskQty)>0 ? spotAskQty : futureBidQty;
+//
+//                      BigDecimal minPrice = futureBidPrice.compareTo(spotAskPrice)>0 ? spotAskPrice : futureBidPrice;
+
+                        //计算合约最小下单位数
+                        Integer[] stepSize = tradeUtil.getStepSize(symbol);
+                        //计算合约卖单数量
+                        BigDecimal futureQuantity =  BeanConfig.STANDARD_TRADE_UNIT.divide(futureAskPrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
+                        //计算现货买单数量
+                        BigDecimal spotQuantity = BeanConfig.STANDARD_TRADE_UNIT.divide(spotBidPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
+                        logger.info("trade future symbol:{}, futurePrice:{}, qty:{}, spotPrice:{}, spot qty:{}",symbol,futureAskPrice,futureQuantity,spotBidPrice,spotQuantity);
+                        //do the order
+                        BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
+
+                        doPairsTrade(symbol, qty,futureAskPrice,spotBidPrice,BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
+
+
+//                         PositionOpenController.watchdog = false;
+//                         break;
 
 
                     }else {
@@ -164,12 +185,12 @@ public class PositionOpenService {
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
-                                BigDecimal futureAskPrice = getFutureTickPrice(symbol,"ask");
-                                BigDecimal spotBidPrice = getSpotTickPrice(symbol,"bid");
-                                BigDecimal closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP)
-                                        .add(pairsTradeModel.getOpenRatio());
-                                if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
-                                        && closeRatio.compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
+                                BigDecimal futureBidPrice = tradeUtil.getFutureTickInfo(symbol,BeanConstant.BEST_ASK_PRICE);
+                                BigDecimal spotAskPrice = tradeUtil.getSpotTickInfo(symbol,BeanConstant.BEST_BID_PRICE);
+                                BigDecimal closeRatio = spotAskPrice.subtract(futureBidPrice).divide(futureBidPrice,4,BigDecimal.ROUND_HALF_UP);
+
+                                if( futureBidPrice.compareTo(BigDecimal.ZERO)>0 && spotAskPrice.compareTo(BigDecimal.ZERO)>0
+                                        && closeRatio.add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
                                     logger.info("begin to close symbol={}, closeRatio={}",symbol,closeRatio);
                                     //begin to close the symbol
                                     String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
@@ -181,32 +202,40 @@ public class PositionOpenService {
                                     //update close id in pairstrade
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
-                                    doPairsTradeByQty(symbol, qty,futureAskPrice,spotBidPrice,
+                                    doPairsTrade(symbol, qty,futureBidPrice,spotAskPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
 
-
+//                                    PositionOpenController.watchdog = false;
+//                                    break;
                                 }
                             }
                         }
                     }
             }
-            Thread.sleep(200);
+            Thread.sleep(10);
         }
     }
 
-    private BigDecimal getFutureTickPrice(String symbol,String type) {
-        if(MarketCache.futureTickerMap.containsKey(symbol)){
-            if(type.equals("bid")){
-                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-            }else {
-                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-            }
-        }else{
-            return null;
+
+
+    private boolean checkOpen(BigDecimal futureAskPrice, BigDecimal futureAskQty, BigDecimal spotBidPrice,BigDecimal spotBidQty ){
+        if(futureAskPrice == null || spotBidPrice == null || futureAskQty == null || spotBidQty == null ||
+                futureAskPrice.compareTo(BigDecimal.ZERO)==0 || spotBidPrice.compareTo(BigDecimal.ZERO)==0
+                ||futureAskQty.compareTo(BigDecimal.ZERO)==0 || spotBidQty.compareTo(BigDecimal.ZERO)==0 ) return false;
+        if(futureAskPrice.subtract(spotBidPrice).divide(spotBidPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
+            return true;
         }
+        return false;
     }
 
-    private BigDecimal getSpotTickPrice(String symbol,String type) {
+
+
+
+
+
+
+
+    private BigDecimal getSpotTickQty(String symbol,String type) {
         if(MarketCache.spotTickerMap.containsKey(symbol)){
             if(type.equals("bid")){
                 return  MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
@@ -245,27 +274,9 @@ public class PositionOpenService {
         return symbolPairsTradeList;
     }
 
-    //do paris trade
-    private void doPairsTrade(String symbol, BigDecimal cost, BigDecimal futurePrice, BigDecimal spotPrice,
-                              String direct,String clientOrderId) throws InterruptedException {
-        //计算合约最小下单位数
-        Integer[] stepSize = tradeUtil.getStepSize(symbol);
-        //计算合约卖单数量
-        BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
-        //计算现货买单数量
-        BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
-        logger.info("trade future symbol:{}, qty:{} spot qty:{}",symbol,futureQuantity,spotQuantity);
-        //do the order
-        BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
-        logger.info("actual  qty:{}",qty);
-
-
-        tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
-        tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
-    }
 
     //do paris trade
-    private void doPairsTradeByQty(String symbol, BigDecimal qty, BigDecimal futurePrice, BigDecimal spotPrice,
+    private void doPairsTrade(String symbol, BigDecimal qty, BigDecimal futurePrice, BigDecimal spotPrice,
                               String direct,String clientOrderId) throws InterruptedException {
         //计算合约最小下单位数
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
