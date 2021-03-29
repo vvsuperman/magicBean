@@ -5,6 +5,7 @@ import com.binance.api.client.domain.account.request.AllOrdersRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.market.BookTicker;
 import com.binance.client.model.market.SymbolOrderBook;
+import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.*;
 
 @Controller
@@ -49,7 +51,33 @@ public class PositionOpenController {
     @Autowired
     PairsTradeDao pairsTradeDao;
 
+    @Autowired
+    SpotSyncClientProxy spotSyncClientProxy;
+
     public static boolean watchdog = true;
+
+    @RequestMapping("getCurrentPrice/{symbol}")
+    public @ResponseBody Map getCurrentTick(@PathVariable String symbol){
+        Map<String, Object> tickMap = new HashMap();
+
+        if(symbol == null ){
+            List<SymbolOrderBook> futureOrderBookList =  BinanceClient.futureSyncClient.getSymbolOrderBookTicker(null);
+            List<BookTicker> bookTickerList = spotSyncClientProxy.getAllBookTickers();
+            tickMap.put("futureQuery",futureOrderBookList);
+            tickMap.put("futurecache",MarketCache.futureTickerMap);
+            tickMap.put("spotQuery",bookTickerList);
+            tickMap.put("spotcache",MarketCache.spotTickerMap);
+        }else{
+            List<SymbolOrderBook> futureOrderBookList =  BinanceClient.futureSyncClient.getSymbolOrderBookTicker(symbol);
+            BookTicker bookTicker = spotSyncClientProxy.getBookTicker(symbol);
+            tickMap.put("futureQuery",futureOrderBookList);
+            tickMap.put("futurecache",MarketCache.futureTickerMap.get(symbol));
+            tickMap.put("spotQuery",bookTicker);
+            tickMap.put("spotcache",MarketCache.spotTickerMap.get(symbol));
+        }
+        tickMap.put("currentTime", LocalTime.now().getHour()+":"+LocalTime.now().getMinute()+":"+LocalTime.now().getSecond());
+        return tickMap;
+    }
 
     @RequestMapping("getHighFutureRateList")
     public @ResponseBody List<String> getHighFutureRateList() {
