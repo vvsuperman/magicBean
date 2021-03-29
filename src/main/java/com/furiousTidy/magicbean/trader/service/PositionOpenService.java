@@ -202,6 +202,8 @@ public class PositionOpenService {
                                     //update close id in pairstrade
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
+                                    MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
+
                                     doPairsTrade(symbol, qty,futureBidPrice,spotAskPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
 

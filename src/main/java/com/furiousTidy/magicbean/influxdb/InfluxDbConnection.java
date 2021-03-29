@@ -99,6 +99,11 @@ public class InfluxDbConnection {
         return influxdb.query(new Query(command, database));
     }
 
+    @Retryable( maxAttempts = 500, backoff = @Backoff(delay = 2000, multiplier = 1.1))
+    public void insert(Point point) {
+        influxdb.write(point);
+    }
+
     /**
      * 插入数据库
      *
