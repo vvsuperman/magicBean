@@ -4,6 +4,8 @@ package com.furiousTidy.magicbean.subscription;
 * 工具类，缓存行情
 * */
 
+import com.binance.client.SubscriptionErrorHandler;
+import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
 import com.binance.client.model.trade.Position;
@@ -44,6 +46,9 @@ public class FutureSubscription {
     @Autowired
     TradeInfoService tradeInfoService;
 
+    @Autowired
+    PreTradeService preTradeService;
+
     //subscribe funding rate and store in the tree map
     public void fundingRateSub(){
         BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
@@ -68,15 +73,21 @@ public class FutureSubscription {
     //存储合约最佳挂单行情
     public void allBookTickerSubscription(){
         getAllBookTikcers();
-        BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent)->{
+        BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent) -> {
             HashMap map = new HashMap();
-            map.put(BeanConstant.BEST_ASK_PRICE,symbolBookTickerEvent.getBestAskPrice());
-            map.put(BeanConstant.BEST_ASK_Qty,symbolBookTickerEvent.getBestAskQty());
-            map.put(BeanConstant.BEST_BID_PRICE,symbolBookTickerEvent.getBestBidPrice());
-            map.put(BeanConstant.BEST_BID_QTY,symbolBookTickerEvent.getBestBidQty());
-            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),map);
+            map.put(BeanConstant.BEST_ASK_PRICE, symbolBookTickerEvent.getBestAskPrice());
+            map.put(BeanConstant.BEST_ASK_Qty, symbolBookTickerEvent.getBestAskQty());
+            map.put(BeanConstant.BEST_BID_PRICE, symbolBookTickerEvent.getBestBidPrice());
+            map.put(BeanConstant.BEST_BID_QTY, symbolBookTickerEvent.getBestBidQty());
+            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(), map);
+            try{
+                preTradeService.savePriceToDB(symbolBookTickerEvent.getSymbol(), symbolBookTickerEvent.getBestBidPrice(),
+                        symbolBookTickerEvent.getBestAskPrice(), "future");
+            }catch (Exception e){
+                logger.error("spot subscription save price to db error={}",e);
+            }
 
-        },null);
+        }, null);
     }
 
     //initial user's future accout info

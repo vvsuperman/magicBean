@@ -32,6 +32,44 @@ public class PreTradeService {
     @Autowired
     InfluxDbConnection influxDbConnection;
 
+    public void savePriceToDB(String symbol, BigDecimal bidPrice, BigDecimal askPrice, String type){
+
+        if(bidPrice == null || askPrice == null) return;
+        Point point = null;
+        BigDecimal fundingRate = MarketCache.futureRateCache.containsKey(symbol)?
+                MarketCache.futureRateCache.get(symbol):BigDecimal.ZERO;
+        if(type.equals("future")){
+            BigDecimal spotBidPrice = MarketCache.spotTickerMap.containsKey(symbol)?MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE):BigDecimal.ZERO;
+            BigDecimal spotAskPrice = MarketCache.spotTickerMap.containsKey(symbol)?MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE):BigDecimal.ZERO;
+
+            point = Point.measurement(BeanConstant.SYMBOL_TICKS_INFO)
+                    .tag(BeanConstant.EXCHANGE, BeanConstant.BINANCE)
+                    .tag(BeanConstant.SYMBOL,symbol)
+                    .addField(BeanConstant.FUTURE_BID_RPICE,bidPrice)
+                    .addField(BeanConstant.FUTURE_ASK_PRICE,askPrice)
+                    .addField(BeanConstant.SPOT_BID_PRICE, spotBidPrice)
+                    .addField(BeanConstant.SPOT_ASK_PRICE, spotAskPrice)
+                    .addField(BeanConstant.FUNDING_RATE,fundingRate)
+                    .build();
+        }else if (type.equals("spot")){
+            BigDecimal futureBidPrice = MarketCache.futureTickerMap.containsKey(symbol)? MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE):BigDecimal.ZERO;
+            BigDecimal futureAskPrice = MarketCache.futureTickerMap.containsKey(symbol)? MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE):BigDecimal.ZERO;
+
+            point = Point.measurement(BeanConstant.SYMBOL_TICKS_INFO)
+                    .tag(BeanConstant.EXCHANGE, BeanConstant.BINANCE)
+                    .tag(BeanConstant.SYMBOL,symbol)
+                    .addField(BeanConstant.FUTURE_BID_RPICE,futureBidPrice)
+                    .addField(BeanConstant.FUTURE_ASK_PRICE,futureAskPrice)
+                    .addField(BeanConstant.SPOT_BID_PRICE,bidPrice)
+                    .addField(BeanConstant.SPOT_ASK_PRICE,askPrice)
+                    .addField(BeanConstant.FUNDING_RATE,fundingRate)
+                    .build();
+        }
+
+        influxDbConnection.insert(point);
+    }
+
+
 
     //get all ticks in binance and store in the influxdb
     public void storeTicks() throws InterruptedException {
@@ -55,7 +93,7 @@ public class PreTradeService {
                 fundingRate = MarketCache.futureRateCache.containsKey(symbol)?
                         MarketCache.futureRateCache.get(symbol):BigDecimal.ZERO;
                 point = Point.measurement(BeanConstant.SYMBOL_TICKS_INFO)
-                        .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+//                        .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                         .tag(BeanConstant.EXCHANGE, BeanConstant.BINANCE)
                         .tag(BeanConstant.SYMBOL,symbol)
                         .addField(BeanConstant.FUTURE_BID_RPICE,futureBidPrice)

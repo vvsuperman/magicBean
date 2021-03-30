@@ -43,6 +43,9 @@ public class SpotSubscription {
     @Autowired
     PairsTradeDao pairsTradeDao;
 
+    @Autowired
+    PreTradeService preTradeService;
+
     public void symbolBookTickSubscription(String symbol){
 
         BinanceClient.spotSubsptClient.onBookTickerEvent(symbol,bookTickerEvent -> {
@@ -52,8 +55,8 @@ public class SpotSubscription {
             map.put(BeanConstant.BEST_BID_PRICE,bookTickerEvent.getBidPrice());
             map.put(BeanConstant.BEST_BID_QTY,bookTickerEvent.getBidQuantity());
             MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
-
 //            System.out.println("spot event"+bookTickerEvent.toString());
+
         });
     }
 
@@ -66,6 +69,7 @@ public class SpotSubscription {
             map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTicker.getBidPrice()));
             map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTicker.getBidQty()));
             MarketCache.spotTickerMap.put(bookTicker.getSymbol(),map);
+
         });
     }
 
@@ -74,15 +78,43 @@ public class SpotSubscription {
 
         getAllBookTicks();
 
-        //subscribe bookticker
-        BinanceClient.spotSubsptClient.onAllBookTickersEvent(bookTickerEvent -> {
-            HashMap map = new HashMap();
-            map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTickerEvent.getAskPrice()));
-            map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTickerEvent.getAskQuantity()));
-            map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTickerEvent.getBidPrice()));
-            map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTickerEvent.getBidQuantity()));
-            MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
-            });
+        //BinanceClient.spotSubsptClient.onBookTickerEvent()
+        MarketCache.spotInfoCache.forEach((symbol, symbolInfo) -> {
+            if(symbol.contains("USDT")){
+                logger.info("subscribe symbol={}",symbol);
+                BinanceClient.spotSubsptClient.onBookTickerEvent(symbol,bookTickerEvent -> {
+                    HashMap map = new HashMap();
+                    map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTickerEvent.getAskPrice()));
+                    map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTickerEvent.getAskQuantity()));
+                    map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTickerEvent.getBidPrice()));
+                    map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTickerEvent.getBidQuantity()));
+                    MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
+                    try{
+                        preTradeService.savePriceToDB(bookTickerEvent.getSymbol(),new BigDecimal(bookTickerEvent.getBidPrice()),
+                                new BigDecimal(bookTickerEvent.getAskPrice()),"spot");
+                    }catch ( Exception e){
+                        logger.error("spot subscriptiont save to db error={}",e);
+                    }
+                });
+            }
+        });
+
+//        //subscribe bookticker
+//        BinanceClient.spotSubsptClient.onAllBookTickersEvent(bookTickerEvent -> {
+//            HashMap map = new HashMap();
+//            map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTickerEvent.getAskPrice()));
+//            map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTickerEvent.getAskQuantity()));
+//            map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTickerEvent.getBidPrice()));
+//            map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTickerEvent.getBidQuantity()));
+//            MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
+//            try{
+//                preTradeService.savePriceToDB(bookTickerEvent.getSymbol(),new BigDecimal(bookTickerEvent.getBidPrice()),
+//                        new BigDecimal(bookTickerEvent.getAskPrice()),"spot");
+//            }catch ( Exception e){
+//                logger.error("spot subscriptiont save to db error={}",e);
+//            }
+//
+//            });
     }
 
     /**

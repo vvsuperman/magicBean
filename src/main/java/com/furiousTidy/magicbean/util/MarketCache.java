@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
@@ -46,7 +47,7 @@ public class MarketCache {
 
 
     //合约最佳挂单
-    public static Map<String,HashMap<String,BigDecimal>> futureTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
+    public static Map<String,HashMap<String,BigDecimal>> futureTickerMap = new ConcurrentHashMap<String, HashMap<String, BigDecimal>>();
 
     //实时资金费率
     public static List<MarkPrice> markPriceList = new LinkedList<>();
@@ -62,7 +63,7 @@ public class MarketCache {
 
 
     //现货最佳挂单
-    public static Map<String,HashMap<String,BigDecimal>> spotTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
+    public static Map<String,HashMap<String,BigDecimal>> spotTickerMap = new ConcurrentHashMap<String, HashMap<String, BigDecimal>>();
 
 
     // 现货用户持仓信息
