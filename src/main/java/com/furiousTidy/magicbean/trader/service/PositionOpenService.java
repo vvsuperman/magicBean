@@ -175,22 +175,23 @@ public class PositionOpenService {
                                     String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
 
                                     TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
-                                    BigDecimal qty = tradeInfoModel.getFutureQty();
+                                    BigDecimal futrueQty = tradeInfoModel.getFutureQty();
+                                    BigDecimal spotQty = tradeInfoModel.getSpotQty();
 
                                     pairsTradeModel.setCloseId(clientOrderId);
                                     //update close id in pairstrade
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
-                                    doPairsTradeByQty(symbol, qty,futureAskPrice,spotBidPrice,
+                                    MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
+
+                                    doPairsTradeByQty(symbol, futrueQty,spotQty,futureAskPrice,spotBidPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
-
-
                                 }
                             }
                         }
                     }
             }
-            Thread.sleep(200);
+            Thread.sleep(5);
         }
     }
 
@@ -272,6 +273,16 @@ public class PositionOpenService {
 
         tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
         tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
+    }
+
+    //do paris trade
+    private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice,
+                                   String direct,String clientOrderId) throws InterruptedException {
+        //计算合约最小下单位数
+        Integer[] stepSize = tradeUtil.getStepSize(symbol);
+
+        tradeService.doFutureTrade(symbol, futurePrice, futureQty, stepSize[0], direct, clientOrderId);
+        tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId);
     }
 
 

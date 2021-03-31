@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
@@ -52,6 +53,8 @@ public class TradeService {
     @Autowired
     TradeUtil tradeUtil;
 
+
+
     @Async
     public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize,
                               String direct, String clientOrderId) throws InterruptedException{
@@ -61,7 +64,7 @@ public class TradeService {
         PositionSide positionSide = null;
         int i=1;
 
-        while (PositionOpenController.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+        while ( BeanConstant.ENOUGH_MONEY.get() && PositionOpenController.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
                     ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
@@ -95,21 +98,29 @@ public class TradeService {
     public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
         int i=1;
 
-        while(PositionOpenController.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
+        while(BeanConstant.ENOUGH_MONEY.get() && PositionOpenController.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             NewOrderResponse newOrderResponse = null;
             log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
-            if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                newOrderResponse = spotSyncClientProxy.newOrder(
-                        limitBuy(symbol, com.binance.api.client.domain.TimeInForce.IOC,
-                                spotQty.toString(),
-                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
-            }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                newOrderResponse = spotSyncClientProxy.newOrder(
-                        limitSell(symbol, com.binance.api.client.domain.TimeInForce.IOC,
-                                spotQty.toString(),
-                                spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+
+            try{
+                if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+                    newOrderResponse = spotSyncClientProxy.newOrder(
+                            limitBuy(symbol, com.binance.api.client.domain.TimeInForce.IOC,
+                                    spotQty.toString(),
+                                    spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
+                    newOrderResponse = spotSyncClientProxy.newOrder(
+                            limitSell(symbol, com.binance.api.client.domain.TimeInForce.IOC,
+                                    spotQty.toString(),
+                                    spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                }
+            }catch (Exception e){
+                if(e.getMessage().contains("insufficient balance")){
+                    BeanConstant.ENOUGH_MONEY.set(false);
+                }
             }
+
 
 
             log.info("new spot order return,order={}", newOrderResponse);
