@@ -81,7 +81,6 @@ public class TradeService {
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }
 
-
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
             }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
@@ -89,7 +88,6 @@ public class TradeService {
             }
 
             log.info("future's next order info,bidPrice={}, futureQty={}",futurePrice,futureQty);
-
         }
     }
 
@@ -120,11 +118,13 @@ public class TradeService {
             if(newOrderResponse.getStatus() == OrderStatus.FILLED){
                 orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,spotQty);
                 return;
-            }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED || newOrderResponse.getStatus() == OrderStatus.EXPIRED){
+            }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED ){
+                orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
+                spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
+            }else if(newOrderResponse.getStatus() == OrderStatus.EXPIRED && new BigDecimal(newOrderResponse.getExecutedQty()).compareTo(BigDecimal.ZERO)>0){
                 orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }
-
 
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
