@@ -56,6 +56,13 @@ public class PositionOpenController {
 
     public static boolean watchdog = true;
 
+    @RequestMapping("changeLeverageLevel/{level}")
+    public @ResponseBody String changeLeverageLevel(@PathVariable int level){
+        preTradeService.changeLeverageLevel(level);
+        return "success";
+    }
+
+
     @RequestMapping("getCurrentPrice/{symbol}")
     public @ResponseBody Map getCurrentTick(@PathVariable String symbol){
         Map<String, Object> tickMap = new HashMap();

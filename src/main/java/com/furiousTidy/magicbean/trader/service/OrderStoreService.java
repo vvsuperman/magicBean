@@ -43,43 +43,42 @@ public class OrderStoreService {
                 eventLock = new ReentrantLock();
                 MarketCache.eventLockCache.put(clientOrderId, eventLock);
             }
-            if(eventLock.tryLock(2000,MILLISECONDS)){
-                BigDecimal price = order.getPrice();
-                BigDecimal qty = order.getExecutedQty();
-                TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
-                if(tradeInfo == null){
-                    tradeInfo = new TradeInfoModel();
-                    tradeInfo.setSymbol(order.getSymbol());
-                    tradeInfo.setOrderId(clientOrderId);
-                    tradeInfo.setFuturePrice(price);
-                    tradeInfo.setFutureQty(qty);
-                    tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
-                    tradeInfoDao.insertTradeInfo(tradeInfo);
+            eventLock.lock();
+            BigDecimal price = order.getPrice();
+            BigDecimal qty = order.getExecutedQty();
+            TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
+            if(tradeInfo == null){
+                tradeInfo = new TradeInfoModel();
+                tradeInfo.setSymbol(order.getSymbol());
+                tradeInfo.setOrderId(clientOrderId);
+                tradeInfo.setFuturePrice(price);
+                tradeInfo.setFutureQty(qty);
+                tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
+                tradeInfoDao.insertTradeInfo(tradeInfo);
+            }
+            else{
+                BigDecimal futurePrice, futureQty;
+                int priceSize = order.getPrice().toString().length() - order.getPrice().toString().indexOf(".");
+                //calculate bid price
+                if(tradeInfo.getFuturePrice() == null){
+                    futurePrice = price;
+                    futureQty = qty;
+                }else{
+                    futureQty = qty.add(tradeInfo.getFutureQty());
+                    futurePrice = price.multiply(qty)
+                            .add(tradeInfo.getFuturePrice().multiply(tradeInfo.getFutureQty()))
+                            .divide(futureQty,priceSize);
                 }
-                else{
-                    BigDecimal futurePrice, futureQty;
-                    int priceSize = order.getPrice().toString().length() - order.getPrice().toString().indexOf(".");
-                    //calculate bid price
-                    if(tradeInfo.getFuturePrice() == null){
-                        futurePrice = price;
-                        futureQty = qty;
-                    }else{
-                        futureQty = qty.add(tradeInfo.getFutureQty());
-                        futurePrice = price.multiply(qty)
-                                .add(tradeInfo.getFuturePrice().multiply(tradeInfo.getFutureQty()))
-                                .divide(futureQty,priceSize);
-                    }
-                    //calcualte ratio
-                    if (tradeInfo.getSpotPrice() != null) {
-                        BigDecimal spotPrice = tradeInfo.getSpotPrice();
-                        calculateRatio(order.getSymbol(),clientOrderId,futurePrice,spotPrice,priceSize);
-                    }
-
-                    tradeInfo.setFutureQty(futureQty);
-                    tradeInfo.setFuturePrice(futurePrice);
-
-                    tradeInfoDao.updateTradeInfoById(tradeInfo);
+                //calcualte ratio
+                if (tradeInfo.getSpotPrice() != null) {
+                    BigDecimal spotPrice = tradeInfo.getSpotPrice();
+                    calculateRatio(order.getSymbol(),clientOrderId,futurePrice,spotPrice,priceSize);
                 }
+
+                tradeInfo.setFutureQty(futureQty);
+                tradeInfo.setFuturePrice(futurePrice);
+
+                tradeInfoDao.updateTradeInfoById(tradeInfo);
             }
 
         } catch (Exception e) {
@@ -100,51 +99,49 @@ public class OrderStoreService {
         }
 
         try {
-            if(eventLock.tryLock(2000,MILLISECONDS)) {
-                TradeInfoModel tradeInfo = tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
+            eventLock.lock();
+            TradeInfoModel tradeInfo = tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
 
-                if (tradeInfo == null) {
-                    tradeInfo = new TradeInfoModel();
-                    tradeInfo.setSymbol(symbol);
-                    tradeInfo.setOrderId(clientOrderId);
-                    tradeInfo.setSpotPrice(price);
-                    tradeInfo.setSpotQty(qty);
-                    tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
-                    log.info("spot store process insert, tradeInfo {}",tradeInfo);
+            if (tradeInfo == null) {
+                tradeInfo = new TradeInfoModel();
+                tradeInfo.setSymbol(symbol);
+                tradeInfo.setOrderId(clientOrderId);
+                tradeInfo.setSpotPrice(price);
+                tradeInfo.setSpotQty(qty);
+                tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
+                log.info("spot store process insert, tradeInfo {}",tradeInfo);
 
-                    tradeInfoDao.insertTradeInfo(tradeInfo);
+                tradeInfoDao.insertTradeInfo(tradeInfo);
+            } else {
+                BigDecimal spotPrice, spotQty;
+                BigDecimal ratio;
+                log.info("spot store process info, tradeInfo {}",tradeInfo);
+                int priceSize = price.toString().length() - price.toString().indexOf(".");
+                //calculate bid price
+                if (tradeInfo.getSpotPrice() == null) {
+                    spotPrice = price;
+                    spotQty = qty;
                 } else {
-                    BigDecimal spotPrice, spotQty;
-                    BigDecimal ratio;
-                    log.info("spot store process info, tradeInfo {}",tradeInfo);
-                    int priceSize = price.toString().length() - price.toString().indexOf(".");
-                    //calculate bid price
-                    if (tradeInfo.getSpotPrice() == null) {
-                        spotPrice = price;
-                        spotQty = qty;
-                    } else {
-
-                        spotQty = qty.add(tradeInfo.getSpotQty());
-                        spotPrice = price.multiply(qty)
-                                .add(tradeInfo.getSpotPrice().multiply(tradeInfo.getSpotQty()))
-                                .divide(spotQty, priceSize, RoundingMode.HALF_UP);
-                        log.info("spot store process calculate, tradeInfo {}",spotQty,spotPrice);
-
-
-                    }
-                    //calcualte ratio
-                    log.info("calculate ratio begin, tradeInfo={}", tradeInfo);
-                    if (tradeInfo.getFuturePrice() != null) {
-                        BigDecimal futurePrice = tradeInfo.getFuturePrice();
-                        calculateRatio(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
-                    }
-
-                    tradeInfo.setSpotQty(spotQty);
-                    tradeInfo.setSpotPrice(spotPrice);
-                    log.info("spot store process update, tradeInfo {}",tradeInfo);
-                    tradeInfoDao.updateTradeInfoById(tradeInfo);
+                    spotQty = qty.add(tradeInfo.getSpotQty());
+                    spotPrice = price.multiply(qty)
+                            .add(tradeInfo.getSpotPrice().multiply(tradeInfo.getSpotQty()))
+                            .divide(spotQty, priceSize, RoundingMode.HALF_UP);
+                    log.info("spot store process calculate, tradeInfo {}",spotQty,spotPrice);
 
                 }
+                //calcualte ratio
+                log.info("calculate ratio begin, tradeInfo={}", tradeInfo);
+                if (tradeInfo.getFuturePrice() != null) {
+                    BigDecimal futurePrice = tradeInfo.getFuturePrice();
+                    calculateRatio(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
+                }
+
+                tradeInfo.setSpotQty(spotQty);
+                tradeInfo.setSpotPrice(spotPrice);
+                log.info("spot store process update, tradeInfo {}",tradeInfo);
+                tradeInfoDao.updateTradeInfoById(tradeInfo);
+
+
             }
         } catch (Exception e) {
             log.error("spot process......failed {}",e);

@@ -1,10 +1,12 @@
 package com.furiousTidy.magicbean.subscription;
 
+import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.ExchangeInformation;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.influxdb.InfluxDB;
@@ -31,6 +33,14 @@ public class PreTradeService {
 
     @Autowired
     InfluxDbConnection influxDbConnection;
+
+
+    //change the leverage level
+    public void changeLeverageLevel(int level){
+        for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
+            BinanceClient.futureSyncClient.changeInitialLeverage(entry.getKey(),level);
+        }
+    }
 
 
     //get all ticks in binance and store in the influxdb

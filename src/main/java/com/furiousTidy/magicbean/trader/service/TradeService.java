@@ -22,6 +22,7 @@ import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -74,6 +75,9 @@ public class TradeService {
 
             if( order.getStatus().equals("FILLED")){
                 orderStoreService.processFutureOrder(clientOrderId,order);
+                if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
+                    BeanConstant.ENOUGH_MONEY.set(true);
+                }
                 return;
                 // order has been partially filled, order status is partially filled, cancel order is null;
             }else if(order.getStatus().equals("PARTIALLY_FILLED" )){
@@ -121,13 +125,19 @@ public class TradeService {
                 }
             }
 
-
-
             log.info("new spot order return,order={}", newOrderResponse);
 
+            // if insufficient, it maybe return null
+            if(newOrderResponse == null){
+                BeanConstant.ENOUGH_MONEY.set(false);
+                return;
+            }
 
             if(newOrderResponse.getStatus() == OrderStatus.FILLED){
                 orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,spotQty);
+                if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
+                    BeanConstant.ENOUGH_MONEY.set(true);
+                }
                 return;
             }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED ){
                 orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
