@@ -9,6 +9,7 @@ import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
@@ -117,7 +118,10 @@ public class PositionOpenController {
     public @ResponseBody void checkSql(){
         String clientOrderId = "LTCUSDT_FSO_2021_3_18_23_33_44";
         BigDecimal ratio = new BigDecimal("0.006");
-        pairsTradeDao.updateOpenRatioByOpenId(clientOrderId,ratio );
+        PairsTradeModel pairsTradeModel = new PairsTradeModel();
+        pairsTradeModel.setOpenId(clientOrderId);
+        pairsTradeModel.setOpenRatio(ratio);
+        pairsTradeDao.insertPairsTrade(pairsTradeModel);
 
     }
 
