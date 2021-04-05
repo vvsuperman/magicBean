@@ -65,7 +65,7 @@ public class TradeService {
         PositionSide positionSide = null;
         int i=1;
 
-        while ( BeanConstant.ENOUGH_MONEY.get() && PositionOpenController.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+        while ( PositionOpenController.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
                     ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
@@ -102,7 +102,7 @@ public class TradeService {
     public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
         int i=1;
 
-        while(BeanConstant.ENOUGH_MONEY.get() && PositionOpenController.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
+        while( PositionOpenController.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             NewOrderResponse newOrderResponse = null;
             log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
@@ -121,7 +121,10 @@ public class TradeService {
                 }
             }catch (Exception e){
                 if(e.getMessage().contains("insufficient balance")){
+                    log.error("insufficient money......exception{}",e);
                     BeanConstant.ENOUGH_MONEY.set(false);
+                }else{
+                    log.error("spot order exception={}",e);
                 }
             }
 
@@ -155,6 +158,12 @@ public class TradeService {
 
             log.info("spot's next order info,spotPrice={}, spotQty={}", spotPrice, spotQty);
         }
+    }
+
+
+    public static void main(String[] args){
+        BigDecimal b = new BigDecimal("1.700000");
+        System.out.println(b.setScale(2));
     }
 
 

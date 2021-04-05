@@ -40,21 +40,23 @@ public class AccountController {
     public @ResponseBody String testConfig(){
         return BeanConfig.OPEN_PRICE_GAP.toString();
     }
+
     @RequestMapping("futureinfo")
     public @ResponseBody Map getFutureInfo(){
         AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
         BigDecimal availableBalance = accountInformation.getTotalWalletBalance();
         final TreeMap<String,BigDecimal> assetInfo = new TreeMap<>();
         accountInformation.getAssets().forEach(asset -> {
-            if(!asset.getAvailableBalance().equals(BigDecimal.ZERO))
-               assetInfo.put(asset.getAsset(),asset.getAvailableBalance());
+            if(!asset.getMaxWithdrawAmount().equals(BigDecimal.ZERO)){
+                assetInfo.put(asset.getAsset(),asset.getMaxWithdrawAmount());
+            }
         });
 
         final TreeMap<String, String> positionMap = new TreeMap<>();
         accountInformation.getPositions().stream().filter(position -> new BigDecimal(position.getPositionAmt()).compareTo(BigDecimal.ZERO)!=0).
                 forEach(position -> positionMap.put(position.getSymbol(),position.getPositionAmt()));
         HashMap rtmap = new HashMap<>();
-        rtmap.put("balance",availableBalance);
+//        rtmap.put("balance",availableBalance);
         rtmap.put("asset",assetInfo);
         rtmap.put("position",positionMap);
 

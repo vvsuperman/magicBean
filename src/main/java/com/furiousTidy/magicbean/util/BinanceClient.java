@@ -1,6 +1,7 @@
 package com.furiousTidy.magicbean.util;
 
 import com.binance.api.client.BinanceApiClientFactory;
+import com.binance.api.client.BinanceApiMarginRestClient;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.client.RequestOptions;
@@ -33,6 +34,7 @@ public class BinanceClient {
     //binance spot client
     private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
     public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
+    public static BinanceApiMarginRestClient marginRestClient = clientFactory.newMarginRestClient();
 
     public static BinanceApiWebSocketClient spotSubsptClient = clientFactory.newWebSocketClient();
 

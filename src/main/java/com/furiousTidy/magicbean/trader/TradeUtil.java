@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.furiousTidy.magicbean.util.MarketCache.futureRateCache;
+
 @Service
 public class TradeUtil {
 
@@ -28,6 +30,17 @@ public class TradeUtil {
 
     @Autowired
     PairsTradeDao pairsTradeDao;
+
+
+    public boolean isTradeCanClosed(String symbol){
+        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_CLOSE)) return true;
+        if(futureRateCache.containsKey(symbol)) return false;
+        if(futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_THRESHOLD))>0){
+            return false;
+        }
+        return true;
+    }
+
 
     public List<String> getSymbolWatchList(){
         List<String> symbolList = new ArrayList<>();
@@ -48,7 +61,7 @@ public class TradeUtil {
 
 
 
-    //is enouf money
+    //is enough money
     public boolean isUSDTenough(){
         return new BigDecimal(MarketCache.spotBalanceCache.get("USDT").getFree()).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0
                 && MarketCache.futureBalanceCache.get("USDT").getWalletBalance().compareTo(BeanConfig.STANDARD_TRADE_UNIT) >0;
@@ -122,7 +135,8 @@ public class TradeUtil {
       }
 
       public static void main(String[] args){
-          System.out.println(TradeUtil.getCurrentTime());
+
+        System.out.println((Boolean.valueOf("true")));
       }
 
 

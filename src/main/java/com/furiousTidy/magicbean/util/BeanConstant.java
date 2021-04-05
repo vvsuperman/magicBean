@@ -29,4 +29,5 @@ public class BeanConstant {
 
     public static final String FUTURE_SELL_OPEN = "FSO";
     public static final String FUTURE_SELL_CLOSE = "FSC";
+
 }

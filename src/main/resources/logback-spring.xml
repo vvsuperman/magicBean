@@ -19,12 +19,13 @@
     <property name="pattern-color"
               value="%yellow(%d{yyyy-MM-dd HH:mm:ss.SSS}) [%thread] %highlight(%-5level) %green(%logger{50}) - %highlight(%msg) %n"/>
     <!--文件路径输出说明，会自动生成文件夹及log文件，但是由于我这个是多模块，默认生成在父目录下的logs文件夹下面，所以要在子模块下生成要再加一个路径-->
-    <property name="LOG_INFO_HOME" value="./springboot_log/"/>
-    <property name="LOG_ERROR_HOME" value="./springboot_log/"/>
+    <property name="LOG_INFO_HOME" value="./logs/"/>
+    <property name="LOG_ERROR_HOME" value="./logs/"/>
 
     <appender name="CONSOLE-LOG" class="ch.qos.logback.core.ConsoleAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>
+            <!--<pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>-->
+            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%-5p] %m%n</pattern>
         </layout>
     </appender>
     <!--获取比info级别高(包括info级别)但除error级别的日志-->
@@ -35,7 +36,8 @@
             <onMismatch>ACCEPT</onMismatch>
         </filter>
         <encoder>
-            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>
+            <!--<pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>-->
+            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.SSS}] [%-5p] %m%n</pattern>
         </encoder>
 
         <!--滚动策略-->
@@ -51,7 +53,7 @@
             <level>ERROR</level>
         </filter>
         <encoder>
-            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.sss}] [%C] [%t] [%L] [%-5p] %m%n</pattern>
+            <pattern>[%d{yyyy-MM-dd' 'HH:mm:ss.SSS}] [%C] [%t] [%L] [%-5p] %m%n</pattern>
         </encoder>
         <!--滚动策略-->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">

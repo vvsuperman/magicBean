@@ -28,6 +28,7 @@ import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.concurrent.locks.Lock;
 
+import static com.furiousTidy.magicbean.util.MarketCache.futureRateCache;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Service
@@ -48,7 +49,7 @@ public class FutureSubscription {
     public void fundingRateSub(){
         BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
             listMarkPrice.forEach(markPriceEvent -> {
-                MarketCache.futureRateCache.put(markPriceEvent.getSymbol(), markPriceEvent.getFundingRate());
+                futureRateCache.put(markPriceEvent.getSymbol(), markPriceEvent.getFundingRate());
                 MarketCache.fRateSymbolCache.put(markPriceEvent.getFundingRate(),markPriceEvent.getSymbol());
             });
         },null);

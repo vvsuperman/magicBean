@@ -53,7 +53,6 @@ public class OrderStoreService {
                 tradeInfo.setOrderId(clientOrderId);
                 tradeInfo.setFuturePrice(price);
                 tradeInfo.setFutureQty(qty);
-                tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
                 tradeInfoDao.insertTradeInfo(tradeInfo);
             }
             else{
@@ -69,6 +68,7 @@ public class OrderStoreService {
                             .add(tradeInfo.getFuturePrice().multiply(tradeInfo.getFutureQty()))
                             .divide(futureQty,priceSize);
                 }
+                log.info("future calculate ratio begin, tradeInfo={}", tradeInfo);
                 //calcualte ratio
                 if (tradeInfo.getSpotPrice() != null) {
                     BigDecimal spotPrice = tradeInfo.getSpotPrice();
@@ -108,7 +108,6 @@ public class OrderStoreService {
                 tradeInfo.setOrderId(clientOrderId);
                 tradeInfo.setSpotPrice(price);
                 tradeInfo.setSpotQty(qty);
-                tradeInfo.setCreateTime(TradeUtil.getCurrentTime());
                 log.info("spot store process insert, tradeInfo {}",tradeInfo);
 
                 tradeInfoDao.insertTradeInfo(tradeInfo);
@@ -130,7 +129,7 @@ public class OrderStoreService {
 
                 }
                 //calcualte ratio
-                log.info("calculate ratio begin, tradeInfo={}", tradeInfo);
+                log.info("spot calculate ratio begin, tradeInfo={}", tradeInfo);
                 if (tradeInfo.getFuturePrice() != null) {
                     BigDecimal futurePrice = tradeInfo.getFuturePrice();
                     calculateRatio(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
@@ -161,8 +160,10 @@ public class OrderStoreService {
                 pairsTradeModel.setSymbol(symbol);
                 pairsTradeModel.setOpenId(clientOrderId);
                 pairsTradeModel.setOpenRatio(ratio);
+                log.info("insert pairstrade,pairsTrade={}",pairsTradeModel);
                 pairsTradeDao.insertPairsTrade(pairsTradeModel);
             }else{
+                log.info("update pairstrade,pairsTrade={}",pairsTradeModel);
                 pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
             }
 

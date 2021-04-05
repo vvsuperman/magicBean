@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
@@ -134,14 +135,20 @@ public class PositionOpenService {
     //the central control to control the pair trade
     public void doPairsTradeRobot() throws InterruptedException {
         String symbol = "";
-        while(PositionOpenController.watchdog){
+        while(true){
+            if(PositionOpenController.watchdog == false) continue;
             //select futureBid from futureBid where symbol = symbol;
             List<PairsTradeModel> pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
+            //store trade_info in the map;
+            Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();
+            for(PairsTradeModel pairsTradeModel: pairsTradeList){
+                tradeInfoMap.put(pairsTradeModel.getOpenId(),tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()));
+            }
             //sort the mim one
             sortPairsTradeList(pairsTradeList);
             for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
-                    //re-compare the price in the cache
+                    //compare the price in the cache
                     symbol = entry.getKey();
                     if(!symbol.contains("USDT")) continue;
                     BigDecimal futureBidPrice = getFutureTickPrice(symbol,"bid");
@@ -157,41 +164,50 @@ public class PositionOpenService {
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
 
+//                        break;
 
                     }else {
-                        if(tradeUtil.inFutureRatingList(symbol)) continue;
+                        if(!tradeUtil.isTradeCanClosed(symbol)) continue;
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
                         List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
                                 BigDecimal futureAskPrice = getFutureTickPrice(symbol,"ask");
                                 BigDecimal spotBidPrice = getSpotTickPrice(symbol,"bid");
-                                BigDecimal closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP)
-                                        .add(pairsTradeModel.getOpenRatio());
+                                BigDecimal closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
                                 if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
-                                        && closeRatio.compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
+                                        && closeRatio.add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
                                     logger.info("begin to close symbol={}, closeRatio={}",symbol,closeRatio);
                                     //begin to close the symbol
                                     String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
+                                    //get qty from cache
+                                    String openId = pairsTradeModel.getOpenId();
+                                    TradeInfoModel tradeInfoModel = tradeInfoMap.containsKey(openId)?tradeInfoMap.get(openId):null;
+                                    if(tradeInfoModel == null){
+                                        tradeInfoModel =  tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
+                                    }
 
-                                    TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
                                     BigDecimal futrueQty = tradeInfoModel.getFutureQty();
                                     BigDecimal spotQty = tradeInfoModel.getSpotQty();
-
                                     pairsTradeModel.setCloseId(clientOrderId);
-                                    //update close id in pairstrade
-                                    pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
+                                    //set the lock
+                                    Lock closeLock = new ReentrantLock();
                                     MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-
+                                    closeLock.lock();
                                     doPairsTradeByQty(symbol, futrueQty,spotQty,futureAskPrice,spotBidPrice,
                                             BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
+                                    //update close id in pairstrade
+                                    pairsTradeDao.updatePairsTrade(pairsTradeModel);
+                                    closeLock.unlock();
+
+//                                    break;
                                 }
                             }
                         }
                     }
             }
-            Thread.sleep(5);
+            Thread.sleep(Long.valueOf(BeanConfig.SLEEP_TIME));
         }
     }
 
@@ -258,7 +274,7 @@ public class PositionOpenService {
         logger.info("trade future symbol:{}, qty:{} spot qty:{}",symbol,futureQuantity,spotQuantity);
         //do the order
         BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
-        logger.info("actual  qty:{}",qty);
+        logger.info("actual  qty:{},futureprice={},spotprice={}",qty,futurePrice,spotPrice);
 
 
         tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);

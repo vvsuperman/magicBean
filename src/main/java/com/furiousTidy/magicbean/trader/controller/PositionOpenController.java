@@ -64,6 +64,7 @@ public class PositionOpenController {
     }
 
 
+
     @RequestMapping("getCurrentPrice/{symbol}")
     public @ResponseBody Map getCurrentTick(@PathVariable String symbol){
         Map<String, Object> tickMap = new HashMap();
@@ -121,7 +122,8 @@ public class PositionOpenController {
         PairsTradeModel pairsTradeModel = new PairsTradeModel();
         pairsTradeModel.setOpenId(clientOrderId);
         pairsTradeModel.setOpenRatio(ratio);
-        pairsTradeDao.insertPairsTrade(pairsTradeModel);
+//        pairsTradeDao.insertPairsTrade(pairsTradeModel);
+        log.info("pairsTrade={}",pairsTradeDao.getPairsTradeByOpenId("LTCUSDT_FSO_2021_3_18_23_33_44"));
 
     }
 
@@ -134,6 +136,7 @@ public class PositionOpenController {
 
     @RequestMapping("storeallticks")
     public @ResponseBody void storeAllTicks() throws InterruptedException {
+        log.info("store all ticks.............");
         preTradeService.storeTicks();
     }
 

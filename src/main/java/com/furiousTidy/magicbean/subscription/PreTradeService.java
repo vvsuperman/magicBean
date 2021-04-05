@@ -56,6 +56,7 @@ public class PreTradeService {
             ratioMap.clear();
             for(Map.Entry<String, HashMap<String, BigDecimal>> entrySet:MarketCache.futureTickerMap.entrySet()){
                 symbol = entrySet.getKey();
+                if(!symbol.contains("USDT")) continue;
                 futureBidPrice = entrySet.getValue().get(BeanConstant.BEST_BID_PRICE);
                 futureAskPrice = entrySet.getValue().get(BeanConstant.BEST_ASK_PRICE);
                 if(!MarketCache.spotTickerMap.containsKey(symbol))  continue;

@@ -12,7 +12,4 @@ public class TradeInfoModel {
     BigDecimal futureQty;
     BigDecimal spotPrice;
     BigDecimal spotQty;
-    String createTime;
-
-
 }
