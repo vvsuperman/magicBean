@@ -52,6 +52,28 @@ public class PositionOpenService {
     @Autowired
     TradeService tradeService;
 
+
+    Set<String> closeProcessingSet = new HashSet<>();
+
+    List<PairsTradeModel> pairsTradeList;
+
+    Map<String, TradeInfoModel> tradeInfoMap;
+
+    String symbol = "";
+
+    BigDecimal futureBidPrice;
+
+    BigDecimal futureAskPrice;
+
+    BigDecimal spotAskPrice;
+
+    BigDecimal spotBidPrice;
+
+    BigDecimal closeRatio;
+
+    List<PairsTradeModel> symbolPairsTradeList;
+
+
     //处理资金费率
     public void processFundingRate(){
         MarketCache.markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
@@ -134,25 +156,25 @@ public class PositionOpenService {
 
     //the central control to control the pair trade
     public void doPairsTradeRobot() throws InterruptedException {
-        String symbol = "";
+
         while(true){
-            if(PositionOpenController.watchdog == false) continue;
+            if(BeanConstant.watchdog == false) continue;
             //select futureBid from futureBid where symbol = symbol;
-            List<PairsTradeModel> pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
+            pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
             //store trade_info in the map;
-            Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();
+            tradeInfoMap = new HashMap<>();
             for(PairsTradeModel pairsTradeModel: pairsTradeList){
                 tradeInfoMap.put(pairsTradeModel.getOpenId(),tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()));
             }
-            //sort the mim one
+            //sort the list min to high
             sortPairsTradeList(pairsTradeList);
             for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
                     //compare the price in the cache
                     symbol = entry.getKey();
                     if(!symbol.contains("USDT")) continue;
-                    BigDecimal futureBidPrice = getFutureTickPrice(symbol,"bid");
-                    BigDecimal spotAskPrice = getSpotTickPrice(symbol,"ask");
+                    futureBidPrice = getFutureTickPrice(symbol,"bid");
+                    spotAskPrice= getSpotTickPrice(symbol,"ask");
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
@@ -169,18 +191,23 @@ public class PositionOpenService {
                     }else {
                         if(!tradeUtil.isTradeCanClosed(symbol)) continue;
                         if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
-                        List<PairsTradeModel> symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
+                        symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
                         if(symbolPairsTradeList.size() != 0){
                             for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
-                                BigDecimal futureAskPrice = getFutureTickPrice(symbol,"ask");
-                                BigDecimal spotBidPrice = getSpotTickPrice(symbol,"bid");
-                                BigDecimal closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
+                                // if trade already in processing set, then skip the trade
+                                if(closeProcessingSet.contains(pairsTradeModel.getOpenId())) continue;
+
+                                futureAskPrice= getFutureTickPrice(symbol,"ask");
+                                spotBidPrice = getSpotTickPrice(symbol,"bid");
+                                closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
                                 if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
                                         && closeRatio.add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
                                     logger.info("begin to close symbol={}, closeRatio={}",symbol,closeRatio);
+                                    //add trade to processing set
+                                    closeProcessingSet.add(pairsTradeModel.getOpenId());
                                     //begin to close the symbol
                                     String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
-                                    //get qty from cache
+                                    //get qty from store
                                     String openId = pairsTradeModel.getOpenId();
                                     TradeInfoModel tradeInfoModel = tradeInfoMap.containsKey(openId)?tradeInfoMap.get(openId):null;
                                     if(tradeInfoModel == null){

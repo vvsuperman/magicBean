@@ -1,6 +1,6 @@
 package com.furiousTidy.magicbean;
 
-import com.furiousTidy.magicbean.trader.TradeSchedule;
+import com.furiousTidy.magicbean.trader.TradeScheduleService;
 import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class TradeTests {
 
     @Autowired
-    TradeSchedule tradeSchedule;
+    TradeScheduleService tradeSchedule;
 
     @Autowired
     PositionOpenController positionOpenController;

@@ -55,7 +55,6 @@ public class PositionOpenController {
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
 
-    public static boolean watchdog = true;
 
     @RequestMapping("changeLeverageLevel/{level}")
     public @ResponseBody String changeLeverageLevel(@PathVariable int level){
@@ -111,7 +110,7 @@ public class PositionOpenController {
     @RequestMapping("earnmoney")
     public @ResponseBody void earnMoney() throws InterruptedException {
         log.info("earn money begin..............");
-        PositionOpenController.watchdog = true;
+        BeanConstant.watchdog = true;
         positionOpenService.doPairsTradeRobot();
     }
 
@@ -130,8 +129,8 @@ public class PositionOpenController {
 
     @RequestMapping("switchwatchdog")
     public @ResponseBody boolean switchWagchDog(){
-        watchdog = (watchdog == true)?false:true;
-        return watchdog;
+        BeanConstant.watchdog = (BeanConstant.watchdog == true)?false:true;
+        return BeanConstant.watchdog;
     }
 
     @RequestMapping("storeallticks")
@@ -154,7 +153,7 @@ public class PositionOpenController {
                     Thread.sleep(200);
                 }
                 log.info("ratio:{}",ratioList);
-            } while(watchdog);
+            } while(BeanConstant.watchdog);
         }
         else if(listSymbol.equals("all")){
             TreeMap<BigDecimal,String > ratioMap = new TreeMap<>(
@@ -174,7 +173,7 @@ public class PositionOpenController {
                 }
                 log.info("ratio:{}",ratioMap);
                 Thread.sleep(1000);
-            }while (watchdog);
+            }while (BeanConstant.watchdog);
         }
     }
 
@@ -192,7 +191,7 @@ public class PositionOpenController {
                     Thread.sleep(200);
                 }
                 log.info("ratio:{}",ratioList);
-            } while(watchdog);
+            } while(BeanConstant.watchdog);
 
     }
 

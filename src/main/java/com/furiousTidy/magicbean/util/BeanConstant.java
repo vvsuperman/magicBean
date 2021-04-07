@@ -7,6 +7,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
 
+    public static boolean watchdog = true;
+
     public static final AtomicBoolean ENOUGH_MONEY= new AtomicBoolean(true);
 
     public static final String BEST_ASK_PRICE="bestAskPrice";

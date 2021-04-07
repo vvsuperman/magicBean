@@ -65,12 +65,33 @@ public class TradeService {
         PositionSide positionSide = null;
         int i=1;
 
-        while ( PositionOpenController.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+        while (BeanConstant.ENOUGH_MONEY.get() && BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
                     ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
-            Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
-                    futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
+
+            Order order = null;
+
+            try{
+                 order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
+                        futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
+            }catch (Exception e) {
+                if (e.getMessage().contains("insufficient")) {
+                    log.error("future insufficient money......exception{}", e);
+                    BeanConstant.ENOUGH_MONEY.set(false);
+                } else {
+                    log.error("future order exception={}", e);
+                }
+            }
+
+            // if insufficient, it maybe return null
+            if(order == null){
+                log.error("future is insufficient......");
+                BeanConstant.ENOUGH_MONEY.set(false);
+                return;
+            }
+
+
             log.info("futrue new order return: orderid={},status={},qty={}" , clientOrderId,order.getStatus(),order.getExecutedQty());
 
             if( order.getStatus().equals("FILLED")){
@@ -102,7 +123,7 @@ public class TradeService {
     public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
         int i=1;
 
-        while( PositionOpenController.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
+        while(BeanConstant.ENOUGH_MONEY.get() && BeanConstant.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             NewOrderResponse newOrderResponse = null;
             log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
@@ -121,20 +142,23 @@ public class TradeService {
                 }
             }catch (Exception e){
                 if(e.getMessage().contains("insufficient balance")){
-                    log.error("insufficient money......exception{}",e);
+                    log.error("spot insufficient money......exception{}",e);
                     BeanConstant.ENOUGH_MONEY.set(false);
                 }else{
                     log.error("spot order exception={}",e);
                 }
             }
 
-            log.info("new spot order return,order={}", newOrderResponse);
-
             // if insufficient, it maybe return null
             if(newOrderResponse == null){
+                log.error("spot is insufficient......");
                 BeanConstant.ENOUGH_MONEY.set(false);
                 return;
             }
+
+            log.info("new spot order return,order={}", newOrderResponse);
+
+
 
             if(newOrderResponse.getStatus() == OrderStatus.FILLED){
                 orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,spotQty);

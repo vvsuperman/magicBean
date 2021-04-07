@@ -57,7 +57,7 @@ public class MarketTradeService {
         PositionSide positionSide = null;
         int i=1;
 
-        while (PositionOpenController.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+        while (BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
                     ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
@@ -73,7 +73,7 @@ public class MarketTradeService {
     public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
         int i=1;
 
-        while(PositionOpenController.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
+        while(BeanConstant.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             NewOrderResponse newOrderResponse = null;
             log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
@@ -86,7 +86,6 @@ public class MarketTradeService {
             }
 
             log.info("new spot order return,order={}", newOrderResponse);
-
         }
     }
 
