@@ -48,6 +48,7 @@ public class FutureSubscription {
     //subscribe funding rate and store in the tree map
     public void fundingRateSub(){
         BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
+            MarketCache.fRateSymbolCache.clear();
             listMarkPrice.forEach(markPriceEvent -> {
                 futureRateCache.put(markPriceEvent.getSymbol(), markPriceEvent.getFundingRate());
                 MarketCache.fRateSymbolCache.put(markPriceEvent.getFundingRate(),markPriceEvent.getSymbol());

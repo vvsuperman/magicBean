@@ -1,5 +1,6 @@
 package com.furiousTidy.magicbean.trader.service;
 
+import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.MarkPrice;
@@ -17,6 +18,7 @@ import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -155,6 +157,7 @@ public class PositionOpenService {
     }
 
     //the central control to control the pair trade
+    @Async
     public void doPairsTradeRobot() throws InterruptedException {
 
         while(true){
@@ -168,7 +171,7 @@ public class PositionOpenService {
             }
             //sort the list min to high
             sortPairsTradeList(pairsTradeList);
-            for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
+            for(Map.Entry<String,SymbolInfo> entry: MarketCache.spotInfoCache.entrySet()) {
 
                     //compare the price in the cache
                     symbol = entry.getKey();
@@ -178,7 +181,7 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isUSDTenough() && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
+                    if(tradeUtil.isTradeCanOpen(symbol) && tradeUtil.isUSDTenough() && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
                         String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 

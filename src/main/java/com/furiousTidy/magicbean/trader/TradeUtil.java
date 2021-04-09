@@ -5,8 +5,6 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
-import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
-import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,7 +13,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoField;
-import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,14 +28,31 @@ public class TradeUtil {
     @Autowired
     PairsTradeDao pairsTradeDao;
 
+    public boolean isTradeCanOpen(String symbol){
+        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_OPEN)) {
+            return true;
+        }
+
+        //in top 10 && fundrate > 0.0012
+        if(inFutureRatingList(symbol) && futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_OPEN_THRESHOLD)) > 0){
+            return true;
+        }
+
+        return false;
+    }
+
 
     public boolean isTradeCanClosed(String symbol){
-        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_CLOSE)) return true;
-        if(futureRateCache.containsKey(symbol)) return false;
-        if(futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_THRESHOLD))>0){
-            return false;
+
+        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_CLOSE)) {
+            return true;
         }
-        return true;
+
+        //not in top 10 fundrate list && fundrate < 0.001
+        if(!inFutureRatingList(symbol) && futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_CLOSE_THRESHOLD)) < 0){
+            return true;
+        }
+        return false;
     }
 
 
@@ -73,6 +87,8 @@ public class TradeUtil {
         return today.getYear()+"_"+today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
                 +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND);
     }
+
+
 
     //future rate high or not
     public boolean inFutureRatingList(String symbol){

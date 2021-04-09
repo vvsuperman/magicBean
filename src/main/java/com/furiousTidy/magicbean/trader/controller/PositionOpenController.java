@@ -55,6 +55,8 @@ public class PositionOpenController {
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
 
+    static boolean robotStart = false;
+
 
     @RequestMapping("changeLeverageLevel/{level}")
     public @ResponseBody String changeLeverageLevel(@PathVariable int level){
@@ -108,10 +110,15 @@ public class PositionOpenController {
     }
 
     @RequestMapping("earnmoney")
-    public @ResponseBody void earnMoney() throws InterruptedException {
+    public @ResponseBody String earnMoney() throws InterruptedException {
         log.info("earn money begin..............");
+        if(robotStart) {
+            return "earn money already start!";
+        }
         BeanConstant.watchdog = true;
+        robotStart = true;
         positionOpenService.doPairsTradeRobot();
+        return "earn money start success";
     }
 
     @RequestMapping("checksql")
@@ -123,7 +130,6 @@ public class PositionOpenController {
         pairsTradeModel.setOpenRatio(ratio);
 //        pairsTradeDao.insertPairsTrade(pairsTradeModel);
         log.info("pairsTrade={}",pairsTradeDao.getPairsTradeByOpenId("LTCUSDT_FSO_2021_3_18_23_33_44"));
-
     }
 
 
@@ -134,9 +140,10 @@ public class PositionOpenController {
     }
 
     @RequestMapping("storeallticks")
-    public @ResponseBody void storeAllTicks() throws InterruptedException {
+    public @ResponseBody String storeAllTicks() throws InterruptedException {
         log.info("store all ticks.............");
         preTradeService.storeTicks();
+        return "store all ticks success";
     }
 
     @RequestMapping("futurespotratio/{listSymbol}")

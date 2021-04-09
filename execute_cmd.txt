@@ -22,3 +22,7 @@ FUTURE_ORDER_STATUS: PARTIALLY_FILLED
 database: Fw123456*
 
 mysql -h172.30.62.182 -u root -p
+
+
+echo "obase=16;15434" | bc
+top -H -p pid

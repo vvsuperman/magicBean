@@ -13,6 +13,7 @@ import org.influxdb.InfluxDB;
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ public class PreTradeService {
 
 
     //get all ticks in binance and store in the influxdb
+    @Async
     public void storeTicks() throws InterruptedException {
         TreeMap<BigDecimal,String > ratioMap = new TreeMap<>(
                 (o1, o2) -> o2.compareTo(o1));

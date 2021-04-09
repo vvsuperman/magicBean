@@ -65,7 +65,13 @@ public class TradeService {
         PositionSide positionSide = null;
         int i=1;
 
-        while (BeanConstant.ENOUGH_MONEY.get() && BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+
+        while (  BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+
+            if(!BeanConstant.ENOUGH_MONEY.get() && direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+                log.error("detect not enough money");
+                return;
+            }
 
             log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
                     ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
@@ -123,8 +129,14 @@ public class TradeService {
     public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
         int i=1;
 
-        while(BeanConstant.ENOUGH_MONEY.get() && BeanConstant.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
+        while( BeanConstant.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+
+            if(!BeanConstant.ENOUGH_MONEY.get() && direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+                log.error("detect not enough money");
+                return;
+            }
+
             NewOrderResponse newOrderResponse = null;
             log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
 
