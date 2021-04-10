@@ -59,7 +59,7 @@ public class PositionOpenService {
 
     List<PairsTradeModel> pairsTradeList;
 
-    Map<String, TradeInfoModel> tradeInfoMap;
+    Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();
 
     String symbol = "";
 
@@ -75,20 +75,23 @@ public class PositionOpenService {
 
     List<PairsTradeModel> symbolPairsTradeList;
 
+    String clientOrderId;
 
-    //处理资金费率
-    public void processFundingRate(){
-        MarketCache.markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
-        Collections.sort( MarketCache.markPriceList, new Comparator<MarkPrice>() {
-            @Override
-            public int compare(MarkPrice o1, MarkPrice o2) {
-                return o2.getLastFundingRate().compareTo(o1.getLastFundingRate());
-            }
-        });
-        for(MarkPrice markPrice : MarketCache.markPriceList){
-            logger.info(markPrice.getLastFundingRate().toString()+":"+markPrice.getSymbol());
-        }
-    }
+
+
+//    //处理资金费率
+//    public void processFundingRate(){
+//        MarketCache.markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
+//        Collections.sort( MarketCache.markPriceList, new Comparator<MarkPrice>() {
+//            @Override
+//            public int compare(MarkPrice o1, MarkPrice o2) {
+//                return o2.getLastFundingRate().compareTo(o1.getLastFundingRate());
+//            }
+//        });
+//        for(MarkPrice markPrice : MarketCache.markPriceList){
+//            logger.info(markPrice.getLastFundingRate().toString()+":"+markPrice.getSymbol());
+//        }
+//    }
 
 
     //处理list，获取资金费率最高的深度行情
@@ -163,15 +166,16 @@ public class PositionOpenService {
         while(true){
             if(BeanConstant.watchdog == false) continue;
             //select futureBid from futureBid where symbol = symbol;
+            pairsTradeList.clear();
             pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
             //store trade_info in the map;
-            tradeInfoMap = new HashMap<>();
+            tradeInfoMap.clear();
             for(PairsTradeModel pairsTradeModel: pairsTradeList){
                 tradeInfoMap.put(pairsTradeModel.getOpenId(),tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()));
             }
             //sort the list min to high
             sortPairsTradeList(pairsTradeList);
-            for(Map.Entry<String,SymbolInfo> entry: MarketCache.spotInfoCache.entrySet()) {
+            for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
                     //compare the price in the cache
                     symbol = entry.getKey();
@@ -183,7 +187,7 @@ public class PositionOpenService {
                     //price matched open
                     if(tradeUtil.isTradeCanOpen(symbol) && tradeUtil.isUSDTenough() && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
 
-                        String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
+                        clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
                         MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
@@ -301,10 +305,10 @@ public class PositionOpenService {
         BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
         //计算现货买单数量
         BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
-        logger.info("trade future symbol:{}, qty:{} spot qty:{}",symbol,futureQuantity,spotQuantity);
+//        logger.info("trade future symbol:{}, qty:{} spot qty:{}",symbol,futureQuantity,spotQuantity);
         //do the order
         BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
-        logger.info("actual  qty:{},futureprice={},spotprice={}",qty,futurePrice,spotPrice);
+//        logger.info("actual  qty:{},futureprice={},spotprice={}",qty,futurePrice,spotPrice);
 
 
         tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);

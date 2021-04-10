@@ -27,9 +27,13 @@ public class BeanConfig {
 //    public static  String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";
 //    public static  String FUTURE_SECRET_KEY = "a11b4277df6bd76ba52363acc509ffb2f8b346ee141aac8efe1ad0d1c1c4c83b";
 //
-//    //现货测试
+//    //现货测试 mengna
 //    public static  String SPOT_API_KEY = "AI349hcSE7HLymNLXTrpNfeCFptoqrhpAzblO0DPiRPj67Kq7QLG9AfEHBaObpH8";
 //    public static  String SPOT_SECRET_KEY = "LmPr3JxEeNbbcSEtJ6KCtXKCMXBmLc0LWDGKvEXdlk7xDhs4nFnWzOYTqcPNLfIk";
+
+    //现货测试 mengna-new
+//    public static  String SPOT_API_KEY = "8SU39DpTOwCozHKYZOeVBVmhhqDRqSFH4oBtF7Es0P7gFUD7dHKVa3s0DlOylRAj";
+//    public static  String SPOT_SECRET_KEY = "Qlnxc4rej7KIr7cPQ1Bf33eYwJAya3NrSpYM5LhcH9gRu1fc0aVOGLnnJKWe8wmM";
 
     //最小下单单元
 

@@ -48,8 +48,8 @@ public class MarketCache {
     //合约最佳挂单
     public static Map<String,HashMap<String,BigDecimal>> futureTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
 
-    //实时资金费率
-    public static List<MarkPrice> markPriceList = new LinkedList<>();
+//    //实时资金费率
+//    public static List<MarkPrice> markPriceList = new LinkedList<>();
 
     // 合约balance信息
     public static TreeMap<String, BalanceUpdate> futureBalanceCache = new TreeMap();

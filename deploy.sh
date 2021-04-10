@@ -52,7 +52,7 @@ health_check() {
 }
 start_application() {
     echo "starting java process"
-    nohup java -jar ${JAR_NAME} -Dlogging.path=${LOG_PATH}  --spring.config.location=${JAR_CONF} > ${JAVA_OUT} 2>&1 &
+    nohup java -jar -Xms512M -Xmx512M -Xmn128M -Xss256K ${JAR_NAME} -Dlogging.path=${LOG_PATH}  --spring.config.location=${JAR_CONF} > ${JAVA_OUT} 2>&1 &
     echo "started java process"
 }
 
