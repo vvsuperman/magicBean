@@ -77,7 +77,7 @@ public class TradeScheduleService {
             MarketCache.pairsGapCache.put(entry.getKey()
                     ,entry.getValue().multiply(BigDecimal.valueOf(2)).compareTo(
                             BeanConfig.OPEN_PRICE_GAP)>0
-                            ? entry.getValue().multiply(BigDecimal.valueOf(2))
+                            ? entry.getValue().multiply(BigDecimal.valueOf(2)).subtract(BeanConfig.GAP_FACTOR)
                             :BeanConfig.OPEN_PRICE_GAP);
                 }
         );

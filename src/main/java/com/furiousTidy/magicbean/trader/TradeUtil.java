@@ -156,4 +156,7 @@ public class TradeUtil {
       }
 
 
+    public BigDecimal getPairsGap(String symbol) {
+        return MarketCache.pairsGapCache.containsKey(symbol) ? MarketCache.pairsGapCache.get(symbol): BeanConfig.OPEN_PRICE_GAP;
+    }
 }

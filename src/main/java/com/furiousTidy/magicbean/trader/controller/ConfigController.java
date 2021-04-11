@@ -41,7 +41,7 @@ public class ConfigController {
         }else if(f.getType().getName().contains("int")){
             f.set(o,Integer.valueOf(value));
             return "success";
-        }else if(f.getType().getName().contains("long")){
+        }else if(f.getType().getName().contains("long") || f.getType().getName().contains("Long")){
             f.set(o,Long.valueOf(value));
             return "success";
         }else if(f.getType().getName().contains("String")){

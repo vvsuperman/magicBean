@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 @Data
 public class BeanConfig {
 
+    public static  BigDecimal GAP_FACTOR = new BigDecimal("0.0003");
     public static String TRADE_ALWAYS_OPEN = "false";
     public static  String TRADE_ALWAYS_CLOSE = "false";
 
@@ -21,7 +22,7 @@ public class BeanConfig {
 
     public static  int PRIOR_NUM =10;  //资金费率排名前10的
 
-    public static  String SLEEP_TIME = "1000";
+    public static  Long SLEEP_TIME = new Long("1000");
 
     //test future api
 //    public static  String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";

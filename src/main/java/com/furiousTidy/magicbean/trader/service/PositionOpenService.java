@@ -194,7 +194,7 @@ public class PositionOpenService {
                     //price matched open
                     if(tradeUtil.isTradeCanOpen(symbol) && tradeUtil.isUSDTenough()
                             && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4)
-                            .compareTo(MarketCache.pairsGapCache.get(symbol)) > 0){
+                            .compareTo(tradeUtil.getPairsGap(symbol)) > 0){
 
                         clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
@@ -250,7 +250,7 @@ public class PositionOpenService {
                         }
                     }
             }
-            Thread.sleep(Long.valueOf(BeanConfig.SLEEP_TIME));
+            Thread.sleep(BeanConfig.SLEEP_TIME);
         }
     }
 
