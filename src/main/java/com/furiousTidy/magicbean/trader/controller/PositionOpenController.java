@@ -13,6 +13,7 @@ import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
+import com.furiousTidy.magicbean.trader.TradeScheduleService;
 import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -54,6 +55,9 @@ public class PositionOpenController {
 
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
+
+    @Autowired
+    TradeScheduleService tradeScheduleService;
 
     static boolean robotStart = false;
 
@@ -256,6 +260,9 @@ public class PositionOpenController {
         //subscribe bookticker info
         futureSubscription.allBookTickerSubscription();
         spotSubscription.allBookTickSubscription();
+
+        //get pairs trade gap
+        tradeScheduleService.changePairsGap();
         return "success";
     }
 
