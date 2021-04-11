@@ -57,7 +57,7 @@ public class PositionOpenService {
 
     Set<String> closeProcessingSet = new HashSet<>();
 
-    List<PairsTradeModel> pairsTradeList;
+    List<PairsTradeModel> pairsTradeList = new ArrayList<>();
 
     Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();
 
@@ -160,21 +160,28 @@ public class PositionOpenService {
     }
 
     //the central control to control the pair trade
-    @Async
     public void doPairsTradeRobot() throws InterruptedException {
 
-        while(true){
+        for(;;){
             if(BeanConstant.watchdog == false) continue;
-            //select futureBid from futureBid where symbol = symbol;
-            pairsTradeList.clear();
-            pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
-            //store trade_info in the map;
-            tradeInfoMap.clear();
-            for(PairsTradeModel pairsTradeModel: pairsTradeList){
-                tradeInfoMap.put(pairsTradeModel.getOpenId(),tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()));
+
+            //if new pairs trade success, then get the pairs trade
+            if(BeanConstant.HAS_NEW_TRADE_OPEN.get() || pairsTradeList.size() ==0){
+                pairsTradeList.clear();
+                pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
+                //store trade_info in the map;
+                tradeInfoMap.clear();
+
+                pairsTradeList.forEach(pairsTradeModel ->
+                        tradeInfoMap.put(pairsTradeModel.getOpenId()
+                                ,tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()))
+                );
+
+                //sort the list min to high
+                sortPairsTradeList(pairsTradeList);
+                BeanConstant.HAS_NEW_TRADE_OPEN.set(false);
             }
-            //sort the list min to high
-            sortPairsTradeList(pairsTradeList);
+
             for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
                     //compare the price in the cache
@@ -185,7 +192,9 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isTradeCanOpen(symbol) && tradeUtil.isUSDTenough() && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4).compareTo(BeanConfig.OPEN_PRICE_GAP) > 0){
+                    if(tradeUtil.isTradeCanOpen(symbol) && tradeUtil.isUSDTenough()
+                            && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4)
+                            .compareTo(MarketCache.pairsGapCache.get(symbol)) > 0){
 
                         clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
@@ -193,7 +202,7 @@ public class PositionOpenService {
                         doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                                 BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
 
-//                        break;
+                        break;
 
                     }else {
                         if(!tradeUtil.isTradeCanClosed(symbol)) continue;
@@ -235,7 +244,7 @@ public class PositionOpenService {
                                     pairsTradeDao.updatePairsTrade(pairsTradeModel);
                                     closeLock.unlock();
 
-//                                    break;
+                                    break;
                                 }
                             }
                         }

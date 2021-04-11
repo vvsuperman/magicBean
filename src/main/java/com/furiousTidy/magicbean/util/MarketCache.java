@@ -19,11 +19,14 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
 @Service
 public class MarketCache {
+    //pairs trade's gap
+    public static Map<String, BigDecimal> pairsGapCache = new ConcurrentHashMap<>();
     //lock
     public static Map<String, Lock> eventLockCache = new HashMap<>();
 

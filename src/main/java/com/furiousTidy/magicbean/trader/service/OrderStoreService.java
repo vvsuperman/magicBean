@@ -33,7 +33,7 @@ public class OrderStoreService {
 
     @Async
     public void processFutureOrder(String clientOrderId, Order order){
-        log.info(" future store begin,symbol={}, price={},qty={}",order.getSymbol(),order.getPrice(),order.getExecutedQty());
+        log.info(" future store begin,symbol={}, price={},qty={}",order.getSymbol(),order.getPrice(),order.getAvgPrice());
 
         Lock eventLock = null;
         try {
@@ -44,7 +44,7 @@ public class OrderStoreService {
                 MarketCache.eventLockCache.put(clientOrderId, eventLock);
             }
             eventLock.lock();
-            BigDecimal price = order.getPrice();
+            BigDecimal price = order.getAvgPrice();
             BigDecimal qty = order.getExecutedQty();
             TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
             if(tradeInfo == null){
@@ -153,7 +153,7 @@ public class OrderStoreService {
         BigDecimal ratio;
         log.info("in calucalateRatio, symbol={}, clientorderid={}, futureprice={}, spotprice={}",symbol,clientOrderId,futurePrice,spotPrice);
         if (clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
-            ratio = futurePrice.subtract(spotPrice).divide(spotPrice, priceSize,RoundingMode.HALF_UP);
+            ratio = futurePrice.subtract(spotPrice).divide(spotPrice, 6,RoundingMode.HALF_UP);
             PairsTradeModel pairsTradeModel =pairsTradeDao.getPairsTradeByOpenId(clientOrderId);
             if(pairsTradeModel == null) {
                 pairsTradeModel = new PairsTradeModel();

@@ -11,7 +11,7 @@ import com.furiousTidy.magicbean.config.BeanConfig;
 
 public class BinanceClient {
 
-    //合约同步客户端
+//    //合约同步客户端
 //    public static SyncRequestClient futureSyncClient = SyncRequestClient.create(BeanConfig.FUTURE_API_KEY, BeanConfig.FUTURE_SECRET_KEY,
 //            new RequestOptions());
 //
@@ -22,6 +22,8 @@ public class BinanceClient {
 //    //binance spot client
 //    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.SPOT_API_KEY, BeanConfig.SPOT_SECRET_KEY);
 //    public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
+//    public static BinanceApiMarginRestClient marginRestClient = clientFactory.newMarginRestClient();
+
 
     //prd
     public static SyncRequestClient futureSyncClient = SyncRequestClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY,
@@ -35,6 +37,8 @@ public class BinanceClient {
     private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
     public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
     public static BinanceApiMarginRestClient marginRestClient = clientFactory.newMarginRestClient();
+
+
 
     public static BinanceApiWebSocketClient spotSubsptClient = clientFactory.newWebSocketClient();
 

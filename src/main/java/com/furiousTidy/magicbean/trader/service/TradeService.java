@@ -31,8 +31,7 @@ import java.math.RoundingMode;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
-import static com.binance.api.client.domain.account.NewOrder.limitBuy;
-import static com.binance.api.client.domain.account.NewOrder.limitSell;
+import static com.binance.api.client.domain.account.NewOrder.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Service
@@ -79,8 +78,10 @@ public class TradeService {
             Order order = null;
 
             try{
-                 order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
-                        futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
+//                 order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
+//                        futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
+                order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.MARKET, null,futureQty.toString(),
+                        null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
             }catch (Exception e) {
                 if (e.getMessage().contains("insufficient")) {
                     log.error("future insufficient money......exception{}", e);
@@ -98,12 +99,14 @@ public class TradeService {
             }
 
 
-            log.info("futrue new order return: orderid={},status={},qty={}" , clientOrderId,order.getStatus(),order.getExecutedQty());
+            log.info("futrue new order return: orderid={},status={},qty={},price={}" , clientOrderId,order.getStatus(),order.getExecutedQty(),order.getAvgPrice());
 
             if( order.getStatus().equals("FILLED")){
                 orderStoreService.processFutureOrder(clientOrderId,order);
                 if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
                     BeanConstant.ENOUGH_MONEY.set(true);
+                }else if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+                    BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
                 }
                 return;
                 // order has been partially filled, order status is partially filled, cancel order is null;
@@ -142,15 +145,19 @@ public class TradeService {
 
             try{
                 if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+//                    newOrderResponse = spotSyncClientProxy.newOrder(
+//                            limitBuy(symbol, com.binance.api.client.domain.TimeInForce.IOC,
+//                                    spotQty.toString(),
+//                                    spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
                     newOrderResponse = spotSyncClientProxy.newOrder(
-                            limitBuy(symbol, com.binance.api.client.domain.TimeInForce.IOC,
-                                    spotQty.toString(),
-                                    spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                            marketBuy(symbol, spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
                 }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
+//                    newOrderResponse = spotSyncClientProxy.newOrder(
+//                            limitSell(symbol, com.binance.api.client.domain.TimeInForce.IOC,
+//                                    spotQty.toString(),
+//                                    spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
                     newOrderResponse = spotSyncClientProxy.newOrder(
-                            limitSell(symbol, com.binance.api.client.domain.TimeInForce.IOC,
-                                    spotQty.toString(),
-                                    spotPrice.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                            marketSell(symbol,spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
                 }
             }catch (Exception e){
                 if(e.getMessage().contains("insufficient balance")){
@@ -161,21 +168,23 @@ public class TradeService {
                 }
             }
 
-            // if insufficient, it maybe return null
+            // if insufficient money, it maybe return null
             if(newOrderResponse == null){
                 log.error("spot is insufficient......");
                 BeanConstant.ENOUGH_MONEY.set(false);
                 return;
             }
 
-            log.info("new spot order return,order={}", newOrderResponse);
-
+            log.info("new spot order return,price={},qty={},order={}", newOrderResponse.getPrice(),newOrderResponse.getExecutedQty(),newOrderResponse);
 
 
             if(newOrderResponse.getStatus() == OrderStatus.FILLED){
-                orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,spotQty);
+                orderStoreService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
+                        ,new BigDecimal(newOrderResponse.getExecutedQty()));
                 if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
                     BeanConstant.ENOUGH_MONEY.set(true);
+                }else if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+                    BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
                 }
                 return;
             }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED ){
