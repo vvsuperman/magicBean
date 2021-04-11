@@ -68,7 +68,7 @@ public class TradeService {
         while (  BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             if(!BeanConstant.ENOUGH_MONEY.get() && direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                log.error("detect not enough money");
+                log.info("future trade detect not enough money,not trade");
                 return;
             }
 
@@ -136,7 +136,7 @@ public class TradeService {
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             if(!BeanConstant.ENOUGH_MONEY.get() && direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                log.error("detect not enough money");
+                log.info("spot trade detect not enough money,not trade");
                 return;
             }
 

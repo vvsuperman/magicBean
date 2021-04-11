@@ -168,7 +168,7 @@ public class OrderStoreService {
             }
 
         } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
-            ratio = spotPrice.subtract(futurePrice).divide(futurePrice, priceSize, RoundingMode.HALF_UP);
+            ratio = spotPrice.subtract(futurePrice).divide(futurePrice, 6, RoundingMode.HALF_UP);
             log.info("in calculate ratio, updateCloseRatioByCloseId,clientOrdeid={}, ratio={}",clientOrderId,ratio);
             pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
         }
