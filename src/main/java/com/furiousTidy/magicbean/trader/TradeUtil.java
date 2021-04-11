@@ -49,7 +49,9 @@ public class TradeUtil {
         }
 
         //not in top 10 fundrate list && fundrate < 0.001
-        if(!inFutureRatingList(symbol) && futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_CLOSE_THRESHOLD)) < 0){
+        if(!inFutureRatingList(symbol)
+//                && futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_CLOSE_THRESHOLD)) < 0
+                ){
             return true;
         }
         return false;

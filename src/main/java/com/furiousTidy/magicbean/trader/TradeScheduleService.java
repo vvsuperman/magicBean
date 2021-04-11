@@ -75,7 +75,7 @@ public class TradeScheduleService {
         log.info("change pairs gap............");
         MarketCache.futureRateCache.entrySet().stream().filter(entry -> entry.getKey().contains("USDT")).forEach(entry ->{
             MarketCache.pairsGapCache.put(entry.getKey()
-                    ,entry.getValue().multiply(BigDecimal.valueOf(2)).compareTo(
+                    ,entry.getValue().multiply(BigDecimal.valueOf(2)).subtract(BeanConfig.GAP_FACTOR).compareTo(
                             BeanConfig.OPEN_PRICE_GAP)>0
                             ? entry.getValue().multiply(BigDecimal.valueOf(2)).subtract(BeanConfig.GAP_FACTOR)
                             :BeanConfig.OPEN_PRICE_GAP);

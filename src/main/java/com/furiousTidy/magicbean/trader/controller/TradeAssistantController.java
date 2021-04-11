@@ -50,7 +50,6 @@ public class TradeAssistantController {
     }
 
 
-
     @RequestMapping("spotOrderTest")
     public @ResponseBody String spotOrderTest(){
        NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
@@ -61,8 +60,6 @@ public class TradeAssistantController {
        );
        return "success";
     }
-
-
 
     @RequestMapping("doBalance")
     public @ResponseBody String doBalance(){
@@ -88,7 +85,4 @@ public class TradeAssistantController {
         Field f = MarketCache.class.getField(name);
         return f.get(o);
     }
-
-
-
 }
