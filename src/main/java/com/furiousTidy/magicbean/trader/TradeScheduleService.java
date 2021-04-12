@@ -64,11 +64,17 @@ public class TradeScheduleService {
 
     //checkNetWork state
     @Scheduled(cron = "0 0/10 * * * ?")
-    public void checkNetWork(){
-        long start = System.currentTimeMillis();
-        BinanceClient.spotSyncClient.newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
-        long duration = System.currentTimeMillis()-start;
-        if(duration > 50){
+    public void checkNetWork() throws InterruptedException {
+        long duration = 0;
+        int n = 10;
+        for(int i=0;i<n;i++){
+            long start = System.currentTimeMillis();
+            BinanceClient.spotSyncClient.newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
+            duration += System.currentTimeMillis()-start;
+            Thread.sleep(10);
+        }
+
+        if(duration/n > 50){
             BeanConstant.NETWORK_DELAYED = true;
             log.info("network delayed, duration={}",duration);
         }else {
@@ -97,9 +103,8 @@ public class TradeScheduleService {
     @Scheduled(cron = "0 0/10 * * * ?")
     public void doFutureSpotBalance(){
         BeanConstant.watchdog =false;
-        AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
         final BigDecimal[] balances = new BigDecimal[2];
-        accountInformation.getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
+        BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
            balances[0] = asset.getMaxWithdrawAmount();
         });
 

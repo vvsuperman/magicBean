@@ -1,5 +1,6 @@
 package com.furiousTidy.magicbean.trader.service;
 
+import com.binance.api.client.domain.account.Trade;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
@@ -30,6 +31,9 @@ public class OrderStoreService {
 
     @Autowired
     PairsTradeDao pairsTradeDao;
+
+    @Autowired
+    TradeUtil tradeUtil;
 
     @Async
     public void processFutureOrder(String clientOrderId, Order order){
@@ -172,5 +176,9 @@ public class OrderStoreService {
             log.info("in calculate ratio, updateCloseRatioByCloseId,clientOrdeid={}, ratio={}",clientOrderId,ratio);
             pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
         }
+
+        tradeUtil.checkUSDEnough();
     }
+
+
 }

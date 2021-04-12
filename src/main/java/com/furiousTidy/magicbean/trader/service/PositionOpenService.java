@@ -14,6 +14,7 @@ import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -155,6 +156,7 @@ public class PositionOpenService {
     }
 
     //the central control to control the pair trade
+    @Async
     public void doPairsTradeRobot() throws InterruptedException {
 
         for(;;){
@@ -187,7 +189,7 @@ public class PositionOpenService {
                     if(futureBidPrice == null || spotAskPrice == null ||
                             futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
                     //price matched open
-                    if(tradeUtil.isTradeCanOpen(symbol) && tradeUtil.isUSDTenough()
+                    if( BeanConstant.ENOUGH_MONEY.get() && tradeUtil.isTradeCanOpen(symbol)
                             && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4)
                             .compareTo(tradeUtil.getPairsGap(symbol)) > 0){
 

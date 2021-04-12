@@ -5,6 +5,8 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -75,13 +77,29 @@ public class TradeUtil {
         return symbolList;
     }
 
+    public void checkUSDEnough(){
+        final BigDecimal[] balances = new BigDecimal[2];
+        BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
+            balances[0] = asset.getMaxWithdrawAmount();
+        });
 
-
-    //is enough money
-    public boolean isUSDTenough(){
-        return new BigDecimal(MarketCache.spotBalanceCache.get("USDT").getFree()).compareTo(BeanConfig.ENOUTH_MOENY_UNIT)>0
-                && MarketCache.futureBalanceCache.get("USDT").getWalletBalance().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) >0;
+        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
+                .forEach(assetBalance -> {
+                    balances[1] = new BigDecimal(assetBalance.getFree());
+                });
+        if(balances[0].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0
+                && balances[1].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0){
+            BeanConstant.ENOUGH_MONEY.set(true);
+        }else{
+            BeanConstant.ENOUGH_MONEY.set(false);
+        }
     }
+
+//    //is enough money
+//    public boolean isUSDTenough(){
+//        return new BigDecimal(MarketCache.spotBalanceCache.get("USDT").getFree()).compareTo(BeanConfig.ENOUTH_MOENY_UNIT)>0
+//                && MarketCache.futureBalanceCache.get("USDT").getWalletBalance().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) >0;
+//    }
 
     public static String getCurrentTime(){
         LocalDate today = LocalDate.now();

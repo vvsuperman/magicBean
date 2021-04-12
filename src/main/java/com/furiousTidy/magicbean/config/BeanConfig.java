@@ -18,7 +18,7 @@ public class BeanConfig {
     public static  BigDecimal CLOSE_PRICE_GAP = new BigDecimal("0.0023");  //平仓条件千分之2.3，不亏就行
     public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
     public static  BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
-    public static  BigDecimal ENOUTH_MOENY_UNIT =new BigDecimal("100"); //多线程并发太快，留100刀
+    public static  BigDecimal ENOUTH_MOENY_UNIT =new BigDecimal("60"); //多线程并发太快，留60刀
 
 
     public static  long ORDER_EXPIRE_TIME =3;// 订单失效时间

@@ -134,8 +134,9 @@ public class FutureSubscription {
                 //Listen key 失效了
                 logger.error("future sub listen key expired");
                 userDataUpdateSubscription();
+            }else{
+                logger.info("future other event={}",event);
             }
-            logger.info("future sub other event={}",event);
             BinanceClient.futureSyncClient.keepUserDataStream(listenKey);
         }), null);
     }
