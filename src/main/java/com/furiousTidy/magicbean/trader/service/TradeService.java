@@ -9,6 +9,7 @@ import com.binance.api.client.domain.account.request.CancelOrderResponse;
 import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.enums.*;
 import com.binance.client.model.trade.Order;
+import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
@@ -53,6 +54,9 @@ public class TradeService {
     @Autowired
     TradeUtil tradeUtil;
 
+    @Autowired
+    FutureSyncClientProxy futureSyncClientProxy;
+
 
 
     @Async
@@ -65,7 +69,7 @@ public class TradeService {
         int i=1;
 
 
-        while (  BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+        while (BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             if(!BeanConstant.ENOUGH_MONEY.get() && direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 log.info("future trade detect not enough money,not trade");
@@ -80,7 +84,7 @@ public class TradeService {
             try{
 //                 order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
 //                        futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
-                order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.MARKET, null,futureQty.toString(),
+                order = futureSyncClientProxy.postOrder(symbol,orderSide,positionSide, OrderType.MARKET, null,futureQty.toString(),
                         null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
             }catch (Exception e) {
                 if (e.getMessage().contains("insufficient")) {

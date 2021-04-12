@@ -7,6 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
 
+    public static boolean NETWORK_DELAYED = true;
     public static boolean watchdog = true;
 
     public static final AtomicBoolean HAS_NEW_TRADE_OPEN = new AtomicBoolean(false);

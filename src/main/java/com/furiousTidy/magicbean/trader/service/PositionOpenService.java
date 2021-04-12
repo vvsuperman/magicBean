@@ -1,9 +1,7 @@
 package com.furiousTidy.magicbean.trader.service;
 
-import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
-import com.binance.client.model.market.MarkPrice;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
@@ -11,14 +9,11 @@ import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
-import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import com.furiousTidy.magicbean.util.BeanConstant;
-import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -163,7 +158,7 @@ public class PositionOpenService {
     public void doPairsTradeRobot() throws InterruptedException {
 
         for(;;){
-            if(BeanConstant.watchdog == false) continue;
+            if(!BeanConstant.watchdog || BeanConstant.NETWORK_DELAYED) continue;
 
             //if new pairs trade success, then get the pairs trade
             if(BeanConstant.HAS_NEW_TRADE_OPEN.get() || pairsTradeList.size() ==0){

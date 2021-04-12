@@ -5,6 +5,8 @@ import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.market.BookTicker;
+import com.furiousTidy.magicbean.config.BeanConfig;
+import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;
@@ -30,7 +32,23 @@ public class SpotSyncClientProxy {
 
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public NewOrderResponse newOrder(NewOrder newOrder){
-        return BinanceClient.spotSyncClient.newOrder(newOrder);
+        long start = System.currentTimeMillis();
+        NewOrderResponse order =  BinanceClient.spotSyncClient.newOrder(newOrder);
+        long duration = System.currentTimeMillis() - start;
+        if(duration > 50){
+            log.info("spot network is too slow, stop trade, duration={}",duration);
+            BeanConstant.NETWORK_DELAYED = true;
+            new Thread(() -> {
+                try {
+                    Thread.sleep(BeanConfig.NET_DELAY_TIME);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    BeanConstant.NETWORK_DELAYED = false;
+                }
+            }).start();
+        }
+        return order;
     }
 
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -41,5 +59,20 @@ public class SpotSyncClientProxy {
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public List<BookTicker> getAllBookTickers(){
         return BinanceClient.spotSyncClient.getBookTickers();
+    }
+
+
+    public static void main(String[] args){
+        new Thread(() -> {
+            try {
+                log.info("doing 1");
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                log.info("doing 2");
+            }
+
+        }).start();
     }
 }

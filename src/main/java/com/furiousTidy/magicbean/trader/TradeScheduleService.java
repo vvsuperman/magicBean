@@ -5,9 +5,7 @@ import com.binance.client.model.trade.AccountInformation;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
-import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
-import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -16,18 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import sun.net.ftp.FtpClient;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import com.binance.api.client.domain.TransferType;
 
-import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 import static com.binance.api.client.domain.account.NewOrder.marketBuy;
 
 
@@ -69,6 +62,22 @@ public class TradeScheduleService {
         }
     }
 
+    //checkNetWork state
+    @Scheduled(cron = "0 0/10 * * * ?")
+    public void checkNetWork(){
+        long start = System.currentTimeMillis();
+        BinanceClient.spotSyncClient.newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
+        long duration = System.currentTimeMillis()-start;
+        if(duration > 50){
+            BeanConstant.NETWORK_DELAYED = true;
+            log.info("network delayed, duration={}",duration);
+        }else {
+            BeanConstant.NETWORK_DELAYED = false;
+            log.info("network Ok, duration={}",duration);
+        }
+
+    }
+
     //change gap according to future rate
     @Scheduled(cron = "0 0/10 * * * ?")
     public void changePairsGap(){
@@ -85,7 +94,7 @@ public class TradeScheduleService {
 
 
     //future and spot balance
-    @Scheduled(cron = "0 0/30 * * * ?")
+    @Scheduled(cron = "0 0/10 * * * ?")
     public void doFutureSpotBalance(){
         BeanConstant.watchdog =false;
         AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();

@@ -79,8 +79,8 @@ public class TradeUtil {
 
     //is enough money
     public boolean isUSDTenough(){
-        return new BigDecimal(MarketCache.spotBalanceCache.get("USDT").getFree()).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0
-                && MarketCache.futureBalanceCache.get("USDT").getWalletBalance().compareTo(BeanConfig.STANDARD_TRADE_UNIT) >0;
+        return new BigDecimal(MarketCache.spotBalanceCache.get("USDT").getFree()).compareTo(BeanConfig.ENOUTH_MOENY_UNIT)>0
+                && MarketCache.futureBalanceCache.get("USDT").getWalletBalance().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) >0;
     }
 
     public static String getCurrentTime(){
@@ -89,7 +89,6 @@ public class TradeUtil {
         return today.getYear()+"_"+today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
                 +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND);
     }
-
 
 
     //future rate high or not

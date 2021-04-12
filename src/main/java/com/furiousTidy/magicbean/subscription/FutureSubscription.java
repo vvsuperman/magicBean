@@ -112,6 +112,7 @@ public class FutureSubscription {
         BinanceClient.futureSubsptClient.subscribeUserDataEvent(listenKey, ((event) -> {
             //更新资金、持仓信息
             if(event.getEventType().equals("ACCOUNT_UPDATE")){
+                logger.info("future sub account_update event={}",event);
                 for(BalanceUpdate balanceUpdate:event.getAccountUpdate().getBalances()){
                     MarketCache.futureBalanceCache.put(balanceUpdate.getAsset(),balanceUpdate);
                 }
@@ -131,11 +132,11 @@ public class FutureSubscription {
                 }
             }else if(event.getEventType().equals("LISTEN_KEY_EXPIRED")){
                 //Listen key 失效了
-                logger.error("listen key expired");
+                logger.error("future sub listen key expired");
                 userDataUpdateSubscription();
             }
+            logger.info("future sub other event={}",event);
             BinanceClient.futureSyncClient.keepUserDataStream(listenKey);
-
         }), null);
     }
 
