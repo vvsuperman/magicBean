@@ -66,7 +66,7 @@ public class TradeScheduleService {
     @Scheduled(cron = "0 0/10 * * * ?")
     public void checkNetWork() throws InterruptedException {
         long duration = 0;
-        int n = 10;
+        int n = 5;
         for(int i=0;i<n;i++){
             long start = System.currentTimeMillis();
             BinanceClient.spotSyncClient.newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
