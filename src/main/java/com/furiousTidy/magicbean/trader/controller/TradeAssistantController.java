@@ -11,6 +11,10 @@ import com.binance.client.model.enums.TimeInForce;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
+import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
+import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeScheduleService;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -39,6 +43,22 @@ public class TradeAssistantController {
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
 
+    @Autowired
+    PairsTradeDao pairsTradeDao;
+
+    @Autowired
+    TradeInfoDao tradeInfoDao;
+
+    @RequestMapping("getMoneyEarn/{openIds}")
+    public @ResponseBody String getMoneyEarn(@PathVariable String[] openIds){
+        for (String openId : openIds) {
+            PairsTradeModel pairsTradeModel = pairsTradeDao.getPairsTradeByOpenId(openId);
+            TradeInfoModel openTradeInfo = tradeInfoDao.getTradeInfoByOrderId(openId);
+            TradeInfoModel closeTradeInfo = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getCloseId());
+
+        }
+        return "success";
+    }
 
     @RequestMapping("futureOrderTest")
     public @ResponseBody String futureOrderTest(){

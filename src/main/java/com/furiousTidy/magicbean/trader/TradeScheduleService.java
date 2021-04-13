@@ -76,10 +76,10 @@ public class TradeScheduleService {
 
         if(duration/n > 50){
             BeanConstant.NETWORK_DELAYED = true;
-            log.info("network delayed, duration={}",duration);
+            log.info("network delayed, duration={}",duration/n);
         }else {
             BeanConstant.NETWORK_DELAYED = false;
-            log.info("network Ok, duration={}",duration);
+            log.info("network Ok, duration={}",duration/n);
         }
 
     }

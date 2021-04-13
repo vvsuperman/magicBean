@@ -8,6 +8,7 @@ import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import java.util.Map;
 import static com.furiousTidy.magicbean.util.MarketCache.futureRateCache;
 
 @Service
+@Slf4j
 public class TradeUtil {
 
     @Autowired
@@ -92,6 +94,7 @@ public class TradeUtil {
             BeanConstant.ENOUGH_MONEY.set(true);
         }else{
             BeanConstant.ENOUGH_MONEY.set(false);
+            log.info("check usdt is not enough: spot={},future={}",balances[0],balances[1]);
         }
     }
 
