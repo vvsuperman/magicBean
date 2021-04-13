@@ -263,6 +263,9 @@ public class PositionOpenController {
 
         //get pairs trade gap
         tradeScheduleService.changePairsGap();
+
+        //set balance
+        preTradeService.initialBalance();
         return "success";
     }
 

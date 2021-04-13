@@ -36,6 +36,21 @@ public class PreTradeService {
     InfluxDbConnection influxDbConnection;
 
 
+    public void initialBalance(){
+        final BigDecimal[] balances = new BigDecimal[2];
+        BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
+            balances[0] = asset.getMaxWithdrawAmount();
+        });
+
+        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
+                .forEach(assetBalance -> {
+                    balances[1] = new BigDecimal(assetBalance.getFree());
+                });
+
+        MarketCache.futureBalance.set(balances[0]);
+        MarketCache.spotBalance.set(balances[1]);
+    }
+
     //change the leverage level
     public void changeLeverageLevel(int level){
         for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {

@@ -79,6 +79,8 @@ public class TradeUtil {
         return symbolList;
     }
 
+
+
     public void checkUSDEnough(){
         final BigDecimal[] balances = new BigDecimal[2];
         BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
@@ -89,6 +91,9 @@ public class TradeUtil {
                 .forEach(assetBalance -> {
                     balances[1] = new BigDecimal(assetBalance.getFree());
                 });
+
+
+
         if(balances[0].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0
                 && balances[1].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0){
             BeanConstant.ENOUGH_MONEY.set(true);

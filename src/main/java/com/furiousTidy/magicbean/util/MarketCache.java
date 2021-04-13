@@ -21,10 +21,16 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 
 @Service
 public class MarketCache {
+    //store future and spot balance
+    public static AtomicReference<BigDecimal> futureBalance = new AtomicReference<BigDecimal>(BigDecimal.ZERO);
+    public static AtomicReference<BigDecimal> spotBalance = new AtomicReference<BigDecimal>(BigDecimal.ZERO);
+
+
     //pairs trade's gap
     public static Map<String, BigDecimal> pairsGapCache = new ConcurrentHashMap<>();
     //lock
