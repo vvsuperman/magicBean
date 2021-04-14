@@ -87,16 +87,16 @@ public class TradeService {
                         null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
             }catch (Exception e) {
                 if (e.getMessage().contains("insufficient")) {
-                    log.error("future insufficient money......exception{}", e);
+                    log.error("future insufficient money exception......id={}, exception{}", clientOrderId,e);
                     BeanConstant.ENOUGH_MONEY.set(false);
                 } else {
-                    log.error("future order exception={}", e);
+                    log.error("future order exception...id={},exception={}",clientOrderId, e);
                 }
             }
 
             // if insufficient, it maybe return null
             if(order == null){
-                log.error("future is insufficient......");
+                log.error("future is insufficient null......id={}",clientOrderId);
                 BeanConstant.ENOUGH_MONEY.set(false);
                 return;
             }
@@ -164,16 +164,16 @@ public class TradeService {
                 }
             }catch (Exception e){
                 if(e.getMessage().contains("insufficient balance")){
-                    log.error("spot insufficient money......exception{}",e);
+                    log.error("spot insufficient money exception......id={},exception={}",clientOrderId,e);
                     BeanConstant.ENOUGH_MONEY.set(false);
                 }else{
-                    log.error("spot order exception={}",e);
+                    log.error("spot order exception...id={},exception={}",clientOrderId,e);
                 }
             }
 
             // if insufficient money, it maybe return null
             if(newOrderResponse == null){
-                log.error("spot is insufficient......");
+                log.error("spot is insufficient null......id={}",clientOrderId);
                 BeanConstant.ENOUGH_MONEY.set(false);
                 return;
             }

@@ -113,12 +113,15 @@ public class TradeScheduleService {
             //synchronize local cache
             while (MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
             while (MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
+            log.info("do balance future balance={}, spot balance={}",MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
         }else if(balances[1].subtract(balances[0]).compareTo(BigDecimal.ZERO)>0){
             BigDecimal transferUSDT = balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
             //synchronize local cache
             while (MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
             while (MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
+            log.info("do balance future balance={}, spot balance={}",MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
+
         }
         BeanConstant.watchdog =true;
     }

@@ -82,7 +82,7 @@ public class TradeAssistantController {
     }
 
     @RequestMapping("doBalance")
-    public @ResponseBody String doBalance(){
+    public @ResponseBody String doBalance() throws InterruptedException {
         tradeSchedule.doFutureSpotBalance();
         return "success";
     }

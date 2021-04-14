@@ -19,7 +19,7 @@ public class TradeTests {
     PositionOpenController positionOpenController;
 
     @Test
-    public void testTransfer(){
+    public void testTransfer() throws InterruptedException {
         tradeSchedule.doFutureSpotBalance();
 //        positionOpenController.doCache();
 //        tradeSchedule.buyBNB();
