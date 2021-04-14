@@ -103,7 +103,7 @@ public class TradeService {
             }
 
 
-            log.info("futrue new order return: orderid={},status={},qty={},price={}" , clientOrderId,order.getStatus(),order.getExecutedQty(),order.getAvgPrice());
+            log.info("futrue new order return: orderid={},status={},qty={},price={},order={}" , clientOrderId,order.getStatus(),order.getExecutedQty(),order.getAvgPrice(),order);
 
             if( order.getStatus().equals("FILLED")){
                 orderStoreService.processFutureOrder(clientOrderId,order);

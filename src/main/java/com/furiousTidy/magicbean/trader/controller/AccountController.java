@@ -44,7 +44,6 @@ public class AccountController {
     @RequestMapping("futureinfo")
     public @ResponseBody Map getFutureInfo(){
         AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
-        BigDecimal availableBalance = accountInformation.getTotalWalletBalance();
         final TreeMap<String,BigDecimal> assetInfo = new TreeMap<>();
         accountInformation.getAssets().forEach(asset -> {
             if(!asset.getMaxWithdrawAmount().equals(BigDecimal.ZERO)){

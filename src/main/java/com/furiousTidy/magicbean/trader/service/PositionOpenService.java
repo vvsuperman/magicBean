@@ -2,6 +2,7 @@ package com.furiousTidy.magicbean.trader.service;
 
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
+import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
@@ -49,6 +50,9 @@ public class PositionOpenService {
 
     @Autowired
     TradeService tradeService;
+
+    @Autowired
+    ProxyUtil proxyUtil;
 
 
     Set<String> closeProcessingSet = new HashSet<>();
@@ -319,7 +323,20 @@ public class PositionOpenService {
         BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
 //        logger.info("actual  qty:{},futureprice={},spotprice={}",qty,futurePrice,spotPrice);
 
+        // check money enough
+        BigDecimal newFutureBalance =   MarketCache.futureBalance.get().subtract(cost);
+        BigDecimal newSpotBalance =   MarketCache.spotBalance.get().subtract(cost);
+        logger.info("check money:clientOrderId={}, newfutureBalance={}, new spotbalance={}",clientOrderId,newFutureBalance,newSpotBalance);
+        if(newFutureBalance.compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 || newSpotBalance.compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 ){
+            logger.info("not enough for clientid={}, not trade", clientOrderId);
+            return;
+        }
 
+        //money enough, set balance
+        proxyUtil.changeBalance(cost.negate(),"future");
+        proxyUtil.changeBalance(cost.negate(),"spot");
+
+        //do trade real
         tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
         tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
     }

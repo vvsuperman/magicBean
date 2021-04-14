@@ -8,8 +8,8 @@ import com.binance.api.client.domain.market.BookTicker;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
-import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -26,6 +26,9 @@ import java.util.List;
 @Slf4j
 public class SpotSyncClientProxy {
 
+    @Autowired
+    ProxyUtil proxyUtil;
+
     @Retryable(value={SocketTimeoutException.class}, maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public ExchangeInfo getExchangeInfo(){
         log.info("try to get spot exchangeinfo");
@@ -35,26 +38,14 @@ public class SpotSyncClientProxy {
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public NewOrderResponse newOrder(NewOrder newOrder){
         long start = System.currentTimeMillis();
-        //check whether is enough
-        if(MarketCache.spotBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT)<0) {
-            log.info("not enough to make spot order");
-            return null;
-        }
+
         //make order
         NewOrderResponse order =  BinanceClient.spotSyncClient.newOrder(newOrder);
 
-        //check money enough
-        boolean success= false;
-        while (!success){
-            BigDecimal orignBalance = MarketCache.spotBalance.get();
-            BigDecimal newbalance = orignBalance.subtract(new BigDecimal(order.getFills().get(0).getPrice())
-                    .multiply(new BigDecimal(order.getFills().get(0).getQty())));
-            if(newbalance.compareTo(BeanConfig.ENOUTH_MOENY_UNIT)<0){
-                BeanConstant.ENOUGH_MONEY.set(false);
-            }
-            success = MarketCache.spotBalance.compareAndSet(orignBalance,newbalance);
-        }
+        // adjust balance
+        proxyUtil.changeBalance(BeanConfig.STANDARD_TRADE_UNIT.subtract(new BigDecimal(order.getFills().get(0).getPrice()).multiply(new BigDecimal(order.getFills().get(0).getQty()))),"spot");
 
+        //check if the order cost too long
         long duration = System.currentTimeMillis() - start;
         if(duration > 50){
             BeanConstant.NETWORK_DELAYED = true;

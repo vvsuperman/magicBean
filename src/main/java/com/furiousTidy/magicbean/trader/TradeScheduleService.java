@@ -1,7 +1,9 @@
 package com.furiousTidy.magicbean.trader;
 
+import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.client.model.trade.AccountInformation;
+import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
@@ -16,6 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Map;
 
@@ -42,6 +45,9 @@ public class TradeScheduleService {
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
 
+    @Autowired
+    ProxyUtil proxyUtil;
+
     //TODO adjust the position_open_gap according to future rate
     public void doFutureRateBalance(){
         // fund rate:3 -> open_gap: 5.5
@@ -62,27 +68,27 @@ public class TradeScheduleService {
         }
     }
 
-    //checkNetWork state
-    @Scheduled(cron = "0 0/10 * * * ?")
-    public void checkNetWork() throws InterruptedException {
-        long duration = 0;
-        int n = 5;
-        for(int i=0;i<n;i++){
-            long start = System.currentTimeMillis();
-            BinanceClient.spotSyncClient.newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
-            duration += System.currentTimeMillis()-start;
-            Thread.sleep(10);
-        }
-
-        if(duration/n > 50){
-            BeanConstant.NETWORK_DELAYED = true;
-            log.info("network delayed, duration={}",duration/n);
-        }else {
-            BeanConstant.NETWORK_DELAYED = false;
-            log.info("network Ok, duration={}",duration/n);
-        }
-
-    }
+    //checkNetWork state  test order has no use
+//    @Scheduled(cron = "0 0/10 * * * ?")
+//    public void checkNetWork() throws InterruptedException {
+//        long duration = 0;
+//        int n = 5;
+//        for(int i=0;i<n;i++){
+//            long start = System.currentTimeMillis();
+//            BinanceClient.spotSyncClient.newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
+//            duration += System.currentTimeMillis()-start;
+//            Thread.sleep(10);
+//        }
+//
+//        if(duration/n > 50){
+//            BeanConstant.NETWORK_DELAYED = true;
+//            log.info("network delayed, duration={}",duration/n);
+//        }else {
+//            BeanConstant.NETWORK_DELAYED = false;
+//            log.info("network Ok, duration={}",duration/n);
+//        }
+//
+//    }
 
     //change gap according to future rate
     @Scheduled(cron = "0 0/10 * * * ?")
@@ -114,9 +120,15 @@ public class TradeScheduleService {
                 });
 
         if(balances[0].subtract(balances[1]).compareTo(BigDecimal.ZERO)>0){
-            BinanceClient.marginRestClient.transfer("USDT",balances[0].subtract(balances[1]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN).toString(),TransferType.UMFUTURE_MAIN);
+            BigDecimal transferUSDT = balances[0].subtract(balances[1]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
+            BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
+            proxyUtil.changeBalance(transferUSDT,"spot");
+            proxyUtil.changeBalance(transferUSDT.negate(),"future");
         }else if(balances[1].subtract(balances[0]).compareTo(BigDecimal.ZERO)>0){
-            BinanceClient.marginRestClient.transfer("USDT",balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN).toString(),TransferType.MAIN_UMFUTURE);
+            BigDecimal transferUSDT = balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
+            BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
+            proxyUtil.changeBalance(transferUSDT.negate(),"spot");
+            proxyUtil.changeBalance(transferUSDT,"future");
         }
         BeanConstant.watchdog =true;
     }
@@ -147,10 +159,20 @@ public class TradeScheduleService {
         // buy some bnb
         if(balances[1].multiply(bnbPrice).compareTo(new BigDecimal(10))<0){
             BigDecimal bnbQty = new BigDecimal("15").divide(bnbPrice,stepSize[1],RoundingMode.HALF_UP);
-            spotSyncClientProxy.newOrder(
+            NewOrderResponse order = spotSyncClientProxy.newOrder(
                     marketBuy("BNBUSDT",
                             bnbQty.toString()).newOrderRespType(NewOrderResponseType.FULL));
+            BigDecimal price =   new BigDecimal(order.getFills().get(0).getPrice());
+            BigDecimal qty = new BigDecimal(order.getFills().get(0).getQty());
+            proxyUtil.changeBalance(price.multiply(qty).negate(),"spot");
+
         }
+    }
+
+    public static void main(String[] args){
+        BigDecimal a = new BigDecimal(BigInteger.valueOf(1));
+        BigDecimal b = new BigDecimal(BigInteger.valueOf(2));
+        System.out.println(b.add(a.negate()));
     }
 
 

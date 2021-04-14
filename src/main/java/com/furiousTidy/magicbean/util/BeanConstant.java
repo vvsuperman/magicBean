@@ -7,6 +7,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
 
+    public static Object MONEY_LOCK_OBJ=  new Object();
+
     public static boolean NETWORK_DELAYED = true;
     public static boolean watchdog = true;
 

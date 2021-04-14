@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 @Data
 public class BeanConfig {
     //network is poor,sleep 10 min
-    public static  long NET_DELAY_TIME = 6000000;
+    public static  long NET_DELAY_TIME = 12000000;
     public static  BigDecimal GAP_FACTOR = new BigDecimal("0.0003");
     public static  String TRADE_ALWAYS_OPEN = "false";
     public static  String TRADE_ALWAYS_CLOSE = "false";
