@@ -81,27 +81,27 @@ public class TradeUtil {
 
 
 
-    public void checkUSDEnough(){
-        final BigDecimal[] balances = new BigDecimal[2];
-        BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
-            balances[0] = asset.getMaxWithdrawAmount();
-        });
-
-        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
-                .forEach(assetBalance -> {
-                    balances[1] = new BigDecimal(assetBalance.getFree());
-                });
-
-
-
-        if(balances[0].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0
-                && balances[1].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0){
-            BeanConstant.ENOUGH_MONEY.set(true);
-        }else{
-            BeanConstant.ENOUGH_MONEY.set(false);
-            log.info("check usdt is not enough: spot={},future={}",balances[0],balances[1]);
-        }
-    }
+//    public void checkUSDEnough(){
+//        final BigDecimal[] balances = new BigDecimal[2];
+//        BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
+//            balances[0] = asset.getMaxWithdrawAmount();
+//        });
+//
+//        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
+//                .forEach(assetBalance -> {
+//                    balances[1] = new BigDecimal(assetBalance.getFree());
+//                });
+//
+//
+//
+//        if(balances[0].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0
+//                && balances[1].subtract(BeanConfig.ENOUTH_MOENY_UNIT).compareTo(BigDecimal.ZERO)>0){
+//            BeanConstant.ENOUGH_MONEY.set(true);
+//        }else{
+//            BeanConstant.ENOUGH_MONEY.set(false);
+//            log.info("check usdt is not enough: spot={},future={}",balances[0],balances[1]);
+//        }
+//    }
 
 //    //is enough money
 //    public boolean isUSDTenough(){

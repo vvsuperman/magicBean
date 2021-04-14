@@ -8,6 +8,7 @@ import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -48,25 +49,8 @@ public class TradeScheduleService {
     @Autowired
     ProxyUtil proxyUtil;
 
-    //TODO adjust the position_open_gap according to future rate
-    public void doFutureRateBalance(){
-        // fund rate:3 -> open_gap: 5.5
-        int i=0;
-        BigDecimal totalValue = BigDecimal.ZERO;
-        for(Map.Entry entry: MarketCache.fRateSymbolCache.entrySet()){
-            if( i > 10) {
-                break;
-            }
-            totalValue.add((BigDecimal) entry.getKey());
-            i++;
-        }
-        BigDecimal averageValue = totalValue.divide(BigDecimal.valueOf(10),5,RoundingMode.HALF_UP);
-        if(averageValue.compareTo(new BigDecimal(0.003))>0){
-            BeanConfig.OPEN_PRICE_GAP=new BigDecimal(0.0055);
-        }else{
-            BeanConfig.OPEN_PRICE_GAP=new BigDecimal(0.004);
-        }
-    }
+    @Autowired
+    PreTradeService preTradeService;
 
     //checkNetWork state  test order has no use
 //    @Scheduled(cron = "0 0/10 * * * ?")
@@ -89,11 +73,14 @@ public class TradeScheduleService {
 //        }
 //
 //    }
+    @Scheduled(cron = "0 0 1 * * ?")
+    public void changeLeverageLevel(){
+        preTradeService.changeLeverageLevel(1);
+    }
 
     //change gap according to future rate
     @Scheduled(cron = "0 0/10 * * * ?")
     public void changePairsGap(){
-        log.info("change pairs gap............");
         MarketCache.futureRateCache.entrySet().stream().filter(entry -> entry.getKey().contains("USDT")).forEach(entry ->{
             MarketCache.pairsGapCache.put(entry.getKey()
                     ,entry.getValue().multiply(BigDecimal.valueOf(2)).subtract(BeanConfig.GAP_FACTOR).compareTo(
@@ -104,11 +91,12 @@ public class TradeScheduleService {
         );
     }
 
-
-    //future and spot balance
+    //future and spot balance and synchronize the local balance with the binance exchange
     @Scheduled(cron = "0 0/10 * * * ?")
-    public void doFutureSpotBalance(){
+    public void doFutureSpotBalance() throws InterruptedException {
         BeanConstant.watchdog =false;
+        // sleep for 5 second, let on the way order finished, avoid incorrect balance in exchange cache
+        Thread.sleep(5000);
         final BigDecimal[] balances = new BigDecimal[2];
         BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
            balances[0] = asset.getMaxWithdrawAmount();
@@ -122,13 +110,15 @@ public class TradeScheduleService {
         if(balances[0].subtract(balances[1]).compareTo(BigDecimal.ZERO)>0){
             BigDecimal transferUSDT = balances[0].subtract(balances[1]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
-            proxyUtil.changeBalance(transferUSDT,"spot");
-            proxyUtil.changeBalance(transferUSDT.negate(),"future");
+            //synchronize local cache
+            while (MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
+            while (MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
         }else if(balances[1].subtract(balances[0]).compareTo(BigDecimal.ZERO)>0){
             BigDecimal transferUSDT = balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
-            proxyUtil.changeBalance(transferUSDT.negate(),"spot");
-            proxyUtil.changeBalance(transferUSDT,"future");
+            //synchronize local cache
+            while (MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
+            while (MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
         }
         BeanConstant.watchdog =true;
     }
@@ -162,10 +152,6 @@ public class TradeScheduleService {
             NewOrderResponse order = spotSyncClientProxy.newOrder(
                     marketBuy("BNBUSDT",
                             bnbQty.toString()).newOrderRespType(NewOrderResponseType.FULL));
-            BigDecimal price =   new BigDecimal(order.getFills().get(0).getPrice());
-            BigDecimal qty = new BigDecimal(order.getFills().get(0).getQty());
-            proxyUtil.changeBalance(price.multiply(qty).negate(),"spot");
-
         }
     }
 

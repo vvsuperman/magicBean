@@ -21,7 +21,7 @@ public class ProxyUtil {
     }
 
 
-    public void changeBalance(BigDecimal num, String type){
+    public void addBalance(BigDecimal num, String type){
         if(type.equals("spot")){
             while (!MarketCache.spotBalance.compareAndSet( MarketCache.spotBalance.get()
                     , MarketCache.spotBalance.get().add(num)

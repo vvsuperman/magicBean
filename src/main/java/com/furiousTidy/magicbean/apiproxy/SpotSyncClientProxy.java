@@ -43,7 +43,7 @@ public class SpotSyncClientProxy {
         NewOrderResponse order =  BinanceClient.spotSyncClient.newOrder(newOrder);
 
         // adjust balance
-        proxyUtil.changeBalance(BeanConfig.STANDARD_TRADE_UNIT.subtract(new BigDecimal(order.getFills().get(0).getPrice()).multiply(new BigDecimal(order.getFills().get(0).getQty()))),"spot");
+//        proxyUtil.addBalance(BeanConfig.STANDARD_TRADE_UNIT.subtract(new BigDecimal(order.getFills().get(0).getPrice()).multiply(new BigDecimal(order.getFills().get(0).getQty()))),"spot");
 
         //check if the order cost too long
         long duration = System.currentTimeMillis() - start;

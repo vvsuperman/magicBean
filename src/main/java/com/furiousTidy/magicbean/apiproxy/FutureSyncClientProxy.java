@@ -38,7 +38,7 @@ public class FutureSyncClientProxy {
         Order order = BinanceClient.futureSyncClient.postOrder(var1,var2,var3,var4,var5,var6,var7,var8,var9,var10,var11,var12);
 
         // adjust balance
-        proxyUtil.changeBalance(BeanConfig.STANDARD_TRADE_UNIT.subtract(order.getPrice().multiply(order.getExecutedQty())),"future");
+//        proxyUtil.addBalance(BeanConfig.STANDARD_TRADE_UNIT.subtract(order.getPrice().multiply(order.getExecutedQty())),"future");
         //
         long duration = System.currentTimeMillis() - start;
         if(duration > 50){

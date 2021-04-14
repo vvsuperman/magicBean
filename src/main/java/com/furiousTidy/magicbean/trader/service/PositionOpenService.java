@@ -210,7 +210,6 @@ public class PositionOpenService {
                 doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
                         BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
 
-
             }else {
                 if(!tradeUtil.isTradeCanClosed(symbol)) continue;
                 if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
@@ -256,6 +255,52 @@ public class PositionOpenService {
                 }
             }
         }
+    }
+
+    //do paris trade
+    private void doPairsTrade(String symbol, BigDecimal cost, BigDecimal futurePrice, BigDecimal spotPrice,
+                              String direct,String clientOrderId) throws InterruptedException {
+        //计算合约最小下单位数
+        Integer[] stepSize = tradeUtil.getStepSize(symbol);
+        //计算合约卖单数量
+        BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
+        //计算现货买单数量
+        BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
+        //取位数最大的数量，避免精度问题
+        BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
+
+        doPairsTradeByQty(symbol,qty,qty,futurePrice,spotPrice,direct,clientOrderId);
+
+    }
+
+    //do paris trade
+    private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice,
+                                   String direct,String clientOrderId) throws InterruptedException {
+
+        if (!checkMoney(futureQty, spotQty, futurePrice, spotPrice, clientOrderId)) return;
+
+
+        //计算合约最小下单位数
+        Integer[] stepSize = tradeUtil.getStepSize(symbol);
+
+        tradeService.doFutureTrade(symbol, futurePrice, futureQty, stepSize[0], direct, clientOrderId);
+        tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId);
+    }
+
+    private boolean checkMoney(BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice, String clientOrderId) {
+        // check money enough
+        logger.info("check money:clientOrderId={}, futureBalance={}, spotbalance={}",clientOrderId,MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
+
+        if(MarketCache.futureBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0
+                || MarketCache.spotBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 ){
+            logger.info("not enough for clientid={}, not trade", clientOrderId);
+            return false;
+        }
+
+        //money enough, set balance
+        proxyUtil.addBalance(futurePrice.multiply(futureQty).negate(),"future");
+        proxyUtil.addBalance( spotPrice.multiply(spotQty).negate(),"spot");
+        return true;
     }
 
     private BigDecimal getFutureTickPrice(String symbol,String type) {
@@ -309,57 +354,7 @@ public class PositionOpenService {
         return symbolPairsTradeList;
     }
 
-    //do paris trade
-    private void doPairsTrade(String symbol, BigDecimal cost, BigDecimal futurePrice, BigDecimal spotPrice,
-                              String direct,String clientOrderId) throws InterruptedException {
-        //计算合约最小下单位数
-        Integer[] stepSize = tradeUtil.getStepSize(symbol);
-        //计算合约卖单数量
-        BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
-        //计算现货买单数量
-        BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
-//        logger.info("trade future symbol:{}, qty:{} spot qty:{}",symbol,futureQuantity,spotQuantity);
-        //do the order
-        BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
-//        logger.info("actual  qty:{},futureprice={},spotprice={}",qty,futurePrice,spotPrice);
 
-        // check money enough
-        BigDecimal newFutureBalance =   MarketCache.futureBalance.get().subtract(cost);
-        BigDecimal newSpotBalance =   MarketCache.spotBalance.get().subtract(cost);
-        logger.info("check money:clientOrderId={}, newfutureBalance={}, new spotbalance={}",clientOrderId,newFutureBalance,newSpotBalance);
-        if(newFutureBalance.compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 || newSpotBalance.compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 ){
-            logger.info("not enough for clientid={}, not trade", clientOrderId);
-            return;
-        }
-
-        //money enough, set balance
-        proxyUtil.changeBalance(cost.negate(),"future");
-        proxyUtil.changeBalance(cost.negate(),"spot");
-
-        //do trade real
-        tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
-        tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
-    }
-
-    //do paris trade
-    private void doPairsTradeByQty(String symbol, BigDecimal qty, BigDecimal futurePrice, BigDecimal spotPrice,
-                              String direct,String clientOrderId) throws InterruptedException {
-        //计算合约最小下单位数
-        Integer[] stepSize = tradeUtil.getStepSize(symbol);
-
-        tradeService.doFutureTrade(symbol, futurePrice, qty, stepSize[0], direct, clientOrderId);
-        tradeService.doSpotTrade(symbol, spotPrice, qty, stepSize[1], direct, clientOrderId);
-    }
-
-    //do paris trade
-    private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice,
-                                   String direct,String clientOrderId) throws InterruptedException {
-        //计算合约最小下单位数
-        Integer[] stepSize = tradeUtil.getStepSize(symbol);
-
-        tradeService.doFutureTrade(symbol, futurePrice, futureQty, stepSize[0], direct, clientOrderId);
-        tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId);
-    }
 
 
 

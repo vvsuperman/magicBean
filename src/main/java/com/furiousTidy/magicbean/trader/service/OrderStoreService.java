@@ -143,8 +143,6 @@ public class OrderStoreService {
                 tradeInfo.setSpotPrice(spotPrice);
                 log.info("spot store process update, tradeInfo {}",tradeInfo);
                 tradeInfoDao.updateTradeInfoById(tradeInfo);
-
-
             }
         } catch (Exception e) {
             log.error("spot process......failed {}",e);
@@ -177,7 +175,7 @@ public class OrderStoreService {
             pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
         }
 
-        tradeUtil.checkUSDEnough();
+//        tradeUtil.checkUSDEnough();
     }
 
 
