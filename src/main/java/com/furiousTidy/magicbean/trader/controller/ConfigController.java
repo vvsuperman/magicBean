@@ -5,6 +5,7 @@ import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.trade.AccountInformation;
 import com.furiousTidy.magicbean.config.BeanConfig;
+import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
@@ -25,10 +26,16 @@ import java.util.TreeMap;
 @Slf4j
 public class ConfigController {
 
-    @RequestMapping("testchange/{key}")
-    public @ResponseBody String testConfig(@PathVariable String key) throws NoSuchFieldException {
-        Field f = BeanConfig.class.getField(key);
-        return BeanConfig.ORDER_EXPIRE_TIME+"";
+    @RequestMapping("getConfig")
+    public @ResponseBody Map getConfig() throws Exception {
+        Object o = BeanConfig.class.newInstance();
+        Map<String,Object> rtMap = new HashMap<>();
+        for (Field field : BeanConfig.class.getFields())
+        {
+            if(field.getName().equals("SECRET_KEY") || field.getName().equals("API_KEY")) continue;
+            rtMap.put(field.getName(),field.get(o));
+        }
+        return rtMap;
     }
 
     @RequestMapping("change/{key}/{value}")

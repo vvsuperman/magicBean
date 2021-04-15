@@ -129,7 +129,6 @@ public class SpotSubscription {
 //                            orderUpdate.getNewClientOrderId(),orderUpdate.getOrderStatus(),orderUpdate.getPrice(),orderUpdate.getAccumulatedQuantity(),response.toString());
 
                 }
-
             }
             logger.info("Waiting for spot balance or order events......");
             BinanceClient.spotSyncClient.keepAliveUserDataStream(listenKey);

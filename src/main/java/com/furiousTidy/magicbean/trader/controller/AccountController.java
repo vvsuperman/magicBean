@@ -6,11 +6,13 @@ import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.trade.AccountInformation;
 import com.furiousTidy.magicbean.config.BeanConfig;
+import com.furiousTidy.magicbean.trader.TradeScheduleService;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,13 +37,16 @@ public class AccountController {
     @Autowired
     AsyncTest asyncTest;
 
+    @Autowired
+    TradeScheduleService tradeScheduleService;
+
 
     @RequestMapping("testopen")
     public @ResponseBody String testConfig(){
         return BeanConfig.OPEN_PRICE_GAP.toString();
     }
 
-    @RequestMapping("futureinfo")
+    @RequestMapping("info")
     public @ResponseBody Map getFutureInfo(){
         AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
         final TreeMap<String,BigDecimal> assetInfo = new TreeMap<>();
@@ -63,6 +68,7 @@ public class AccountController {
         BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> new BigDecimal(assetBalance.getFree()).compareTo(BigDecimal.ZERO)>0)
                 .forEach(assetBalance -> spotBalanceMap.put(assetBalance.getAsset(),assetBalance.getFree()));
         rtmap.put("spotBalance",spotBalanceMap);
+        rtmap.put("totalBalance",tradeScheduleService.getAllBalance());
         return rtmap;
     }
 

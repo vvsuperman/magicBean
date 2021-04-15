@@ -21,6 +21,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.binance.api.client.domain.TransferType;
@@ -98,7 +99,8 @@ public class TradeScheduleService {
         // sleep for 5 second, let on the way order finished, avoid incorrect balance in exchange cache
         Thread.sleep(5000);
         final BigDecimal[] balances = new BigDecimal[2];
-        BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
+        AccountInformation accountInformation = BinanceClient.futureSyncClient.getAccountInformation();
+        accountInformation.getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
            balances[0] = asset.getMaxWithdrawAmount();
         });
 
@@ -124,6 +126,20 @@ public class TradeScheduleService {
 
         }
         BeanConstant.watchdog =true;
+    }
+
+    //get all balance
+    public Map getAllBalance(){
+        BigDecimal spotBalance = BigDecimal.ZERO;
+        BigDecimal futureBalance = BinanceClient.futureSyncClient.getAccountInformation().getTotalWalletBalance();
+        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> MarketCache.spotTickerMap.containsKey(assetBalance.getAsset())).forEach(assetBalance -> {
+                    spotBalance.add(new BigDecimal(assetBalance.getFree())
+                            .multiply(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_ASK_PRICE).add(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_ASK_PRICE)).divide(new BigDecimal(2))));
+                });
+        Map<String, BigDecimal> rtMap = new HashMap<>();
+        rtMap.put("spotTotalBalance",spotBalance);
+        rtMap.put("futureTotalBalance",futureBalance);
+        return rtMap;
     }
 
     //buy some bnb for exchange charge, check for 1 in the morning
