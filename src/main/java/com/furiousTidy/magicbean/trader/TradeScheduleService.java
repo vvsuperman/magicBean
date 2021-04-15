@@ -132,6 +132,7 @@ public class TradeScheduleService {
     //get all balance
     public Map getAllBalance(){
         final BigDecimal[] spotBalance = new BigDecimal[1];
+        spotBalance[0] = BigDecimal.ZERO;
         BigDecimal futureBalance = BinanceClient.futureSyncClient.getAccountInformation().getTotalWalletBalance();
         BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> MarketCache.spotTickerMap.containsKey(assetBalance.getAsset())).forEach(assetBalance -> {
                     spotBalance[0] = spotBalance[0].add(new BigDecimal(assetBalance.getFree())
