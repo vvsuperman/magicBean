@@ -254,8 +254,8 @@ public class PositionOpenController {
         futureSubscription.fundingRateSub();
 
         //subscribe order update info
-        futureSubscription.processFutureCache();
-        spotSubscription.processBalanceCache();
+//        futureSubscription.processFutureCache();
+//        spotSubscription.processBalanceCache();
 
         //subscribe bookticker info
         futureSubscription.allBookTickerSubscription();

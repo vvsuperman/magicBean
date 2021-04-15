@@ -23,6 +23,7 @@ import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.binance.api.client.domain.TransferType;
 
@@ -113,15 +114,15 @@ public class TradeScheduleService {
             BigDecimal transferUSDT = balances[0].subtract(balances[1]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
             //synchronize local cache
-            while (MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
-            while (MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
+            while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
+            while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
             log.info("do balance future balance={}, spot balance={}",MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
         }else if(balances[1].subtract(balances[0]).compareTo(BigDecimal.ZERO)>0){
             BigDecimal transferUSDT = balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
             //synchronize local cache
-            while (MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
-            while (MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
+            while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
+            while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
             log.info("do balance future balance={}, spot balance={}",MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
 
         }
@@ -130,14 +131,15 @@ public class TradeScheduleService {
 
     //get all balance
     public Map getAllBalance(){
-        BigDecimal spotBalance = BigDecimal.ZERO;
+        final BigDecimal[] spotBalance = new BigDecimal[1];
         BigDecimal futureBalance = BinanceClient.futureSyncClient.getAccountInformation().getTotalWalletBalance();
         BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> MarketCache.spotTickerMap.containsKey(assetBalance.getAsset())).forEach(assetBalance -> {
-                    spotBalance.add(new BigDecimal(assetBalance.getFree())
-                            .multiply(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_ASK_PRICE).add(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_ASK_PRICE)).divide(new BigDecimal(2))));
+                    spotBalance[0] = spotBalance[0].add(new BigDecimal(assetBalance.getFree())
+                            .multiply(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_ASK_PRICE).add(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_BID_PRICE)).divide(new BigDecimal(2))));
+
                 });
         Map<String, BigDecimal> rtMap = new HashMap<>();
-        rtMap.put("spotTotalBalance",spotBalance);
+        rtMap.put("spotTotalBalance",spotBalance[0]);
         rtMap.put("futureTotalBalance",futureBalance);
         return rtMap;
     }
@@ -175,9 +177,14 @@ public class TradeScheduleService {
     }
 
     public static void main(String[] args){
-        BigDecimal a = new BigDecimal(BigInteger.valueOf(1));
-        BigDecimal b = new BigDecimal(BigInteger.valueOf(2));
-        System.out.println(b.add(a.negate()));
+        AtomicReference<BigDecimal> newBigDeciaml = new AtomicReference<>(BigDecimal.TEN);
+        while (!newBigDeciaml.compareAndSet(newBigDeciaml.get(),newBigDeciaml.get().subtract(BigDecimal.ONE))){
+            System.out.println("do get={}" + newBigDeciaml.get());
+        };
+
+        System.out.println("do get final={}" + newBigDeciaml.get());
+
+
     }
 
 

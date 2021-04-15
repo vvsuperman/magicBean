@@ -72,15 +72,15 @@ public class AccountController {
         return rtmap;
     }
 
-    @RequestMapping("spotbalance")
-    public @ResponseBody String getSpotAssetUSDT(){
-        return  MarketCache.spotBalanceCache.get("USDT").getFree();
-    }
-
-    @RequestMapping("futurebalance")
-    public @ResponseBody String getFutureAssetUSDT(){
-        return MarketCache.futureBalanceCache.get("USDT").getWalletBalance().toString();
-    }
+//    @RequestMapping("spotbalance")
+//    public @ResponseBody String getSpotAssetUSDT(){
+//        return  MarketCache.spotBalanceCache.get("USDT").getFree();
+//    }
+//
+//    @RequestMapping("futurebalance")
+//    public @ResponseBody String getFutureAssetUSDT(){
+//        return MarketCache.futureBalanceCache.get("USDT").getWalletBalance().toString();
+//    }
 
     @RequestMapping("cancelallorder")
     public @ResponseBody void cancelallorder() {

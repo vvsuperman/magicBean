@@ -24,7 +24,7 @@ public class FutureSyncClientProxy {
 
     @Retryable( maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public ExchangeInformation getExchangeInfo(){
-        log.info("try to get spot exchangeinfo");
+        log.info("try to get future exchangeinfo");
         return BinanceClient.futureSyncClient.getExchangeInformation();
     }
 

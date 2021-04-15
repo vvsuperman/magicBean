@@ -15,6 +15,12 @@
 	<version>0.0.1</version>
 	<name>magicbean</name>
 	<description>Demo project for Spring Boot</description>
+
+    <!--<modules>-->
+        <!--<module>binanceFutureApi</module>-->
+        <!--<module>binanceSpotApi</module>-->
+    <!--</modules>-->
+
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
