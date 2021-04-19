@@ -1,6 +1,7 @@
 package com.furiousTidy.magicbean.trader.service;
 
 import com.binance.client.model.trade.Order;
+import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
@@ -32,9 +33,12 @@ public class AfterOrderService {
     @Autowired
     TradeUtil tradeUtil;
 
+    @Autowired
+    ProxyUtil proxyUtil;
+
     @Async
-    public void processFutureOrder(String clientOrderId, Order order){
-        log.info(" future store begin,symbol={}, price={},qty={}",order.getSymbol(),order.getPrice(),order.getAvgPrice());
+    public void processFutureOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty){
+        log.info(" future store begin,symbol={}, price={},qty={}",symbol,price,qty);
 
         Lock eventLock = null;
         try {
@@ -45,12 +49,11 @@ public class AfterOrderService {
                 MarketCache.eventLockCache.put(clientOrderId, eventLock);
             }
             eventLock.lock();
-            BigDecimal price = order.getAvgPrice();
-            BigDecimal qty = order.getExecutedQty();
+
             TradeInfoModel tradeInfo =  tradeInfoDao.getTradeInfoByOrderId(clientOrderId);
             if(tradeInfo == null){
                 tradeInfo = new TradeInfoModel();
-                tradeInfo.setSymbol(order.getSymbol());
+                tradeInfo.setSymbol(symbol);
                 tradeInfo.setOrderId(clientOrderId);
                 tradeInfo.setFuturePrice(price);
                 tradeInfo.setFutureQty(qty);
@@ -58,7 +61,7 @@ public class AfterOrderService {
             }
             else{
                 BigDecimal futurePrice, futureQty;
-                int priceSize = order.getPrice().toString().length() - order.getPrice().toString().indexOf(".");
+                int priceSize = price.toString().length() - price.toString().indexOf(".");
                 //calculate bid price
                 if(tradeInfo.getFuturePrice() == null){
                     futurePrice = price;
@@ -79,7 +82,7 @@ public class AfterOrderService {
                 //calcualte ratio
                 if (tradeInfo.getSpotPrice() != null) {
                     BigDecimal spotPrice = tradeInfo.getSpotPrice();
-                    calculateRatioAndProfit(order.getSymbol(),clientOrderId,futurePrice,spotPrice,priceSize);
+                    calculateRatioAndProfit(symbol,clientOrderId,futurePrice,spotPrice,priceSize);
                 }
             }
 
@@ -87,6 +90,13 @@ public class AfterOrderService {
             log.error("future process......failed {}",e);
         }finally {
             eventLock.unlock();
+        }
+
+
+        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
+            proxyUtil.addBalance(price.multiply(qty),"future");
+        }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
+            BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
         }
     }
 

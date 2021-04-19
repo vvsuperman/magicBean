@@ -98,23 +98,22 @@ public class TradeService {
             log.info("futrue new order return: orderid={},status={},qty={},price={},order={}" , clientOrderId,order.getStatus(),order.getExecutedQty(),order.getAvgPrice(),order);
 
 
+            BigDecimal price = order.getAvgPrice();
+            BigDecimal qty = order.getExecutedQty();
+
             if( order.getStatus().equals("FILLED")){
 
-                if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    proxyUtil.addBalance(futurePrice.multiply(futureQty),"future");
-                }else if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                    BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
-                }
 
-                afterOrderService.processFutureOrder(clientOrderId,order);
+
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty);
 
                 return;
                 // order has been partially filled, order status is partially filled, cancel order is null;
             }else if(order.getStatus().equals("PARTIALLY_FILLED" )){
-                afterOrderService.processFutureOrder(clientOrderId,order);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty);
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }else if(order.getStatus().equals("EXPIRED") && order.getExecutedQty().compareTo(BigDecimal.ZERO)>0){
-                afterOrderService.processFutureOrder(clientOrderId,order);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty);
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }
 

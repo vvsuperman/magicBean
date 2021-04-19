@@ -11,6 +11,7 @@ import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
+import com.furiousTidy.magicbean.trader.service.AfterOrderService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -62,13 +63,16 @@ public class TradeScheduleService {
     @Autowired
     InfluxDbConnection influxDbConnection;
 
+    @Autowired
+    AfterOrderService afterOrderService;
+
     @Scheduled(cron = "0 0/10 * * * ?")
     public void queryOrderStatus(){
         if(!MarketCache.rwFutureDictionary.isEmpty()){
             for(Map.Entry <String, String> entry :MarketCache.rwFutureDictionary.entrySet()){
                 Order order = BinanceClient.futureSyncClient.getOrder(entry.getValue(),null,entry.getKey());
                 if(order.getStatus().equals("FILLED")){
-
+                    afterOrderService.processFutureOrder(order.getClientOrderId(),order);
                 }
             }
         }
