@@ -3,20 +3,23 @@ package com.furiousTidy.magicbean.config;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Data
 public class BeanConfig {
+
+    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
+    public static BigDecimal TRADE_PROFIT = BeanConfig.STANDARD_TRADE_UNIT.divide(BigDecimal.valueOf(500),3,RoundingMode.HALF_UP);
     //network is poor,sleep 10 min
     public static  long NET_DELAY_TIME = 600000;
-    public static  BigDecimal GAP_FACTOR = new BigDecimal("0.0003");
+    public static  BigDecimal GAP_FACTOR = new BigDecimal("0.0001");
     public static  String TRADE_ALWAYS_OPEN = "true";
     public static  String TRADE_ALWAYS_CLOSE = "false";
 
     public static  String FUND_RATE_OPEN_THRESHOLD = "0.0012";
     public static  String FUND_RATE_CLOSE_THRESHOLD = "0.001";
     public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.004"); //交易条件，千分之五
-    public static  BigDecimal CLOSE_PRICE_GAP = new BigDecimal("0.0023");  //平仓条件千分之2.3，不亏就行
-    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
+    public static  BigDecimal CLOSE_PRICE_GAP = new BigDecimal("0.0024");  //平仓条件千分之2.3，不亏就行
     public static  BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
     public static  BigDecimal ENOUTH_MOENY_UNIT =new BigDecimal("30"); //多线程并发太快，留60刀
 
@@ -51,6 +54,6 @@ public class BeanConfig {
 
 
     public static void main(String[] args){
-        System.out.println(new BigDecimal("-0.001").subtract(CLOSE_PRICE_GAP));
+        System.out.println(TRADE_PROFIT);
     }
 }

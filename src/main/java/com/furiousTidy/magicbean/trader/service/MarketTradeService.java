@@ -1,7 +1,6 @@
 package com.furiousTidy.magicbean.trader.service;
 
 
-import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.client.model.enums.*;
@@ -11,17 +10,14 @@ import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.trader.TradeUtil;
-import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
-import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 import static com.binance.api.client.domain.account.NewOrder.*;
 
@@ -43,7 +39,7 @@ public class MarketTradeService {
     PairsTradeDao pairsTradeDao;
 
     @Autowired
-    OrderStoreService orderStoreService;
+    AfterOrderService orderStoreService;
 
     @Autowired
     TradeUtil tradeUtil;

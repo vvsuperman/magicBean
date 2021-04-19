@@ -15,10 +15,12 @@ import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
@@ -77,34 +79,9 @@ public class PositionOpenService {
 
     String clientOrderId;
 
+    BigDecimal profit;
 
 
-//    //处理资金费率
-//    public void processFundingRate(){
-//        MarketCache.markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
-//        Collections.sort( MarketCache.markPriceList, new Comparator<MarkPrice>() {
-//            @Override
-//            public int compare(MarkPrice o1, MarkPrice o2) {
-//                return o2.getLastFundingRate().compareTo(o1.getLastFundingRate());
-//            }
-//        });
-//        for(MarkPrice markPrice : MarketCache.markPriceList){
-//            logger.info(markPrice.getLastFundingRate().toString()+":"+markPrice.getSymbol());
-//        }
-//    }
-
-
-    //处理list，获取资金费率最高的深度行情
-    public void moneyProcess(List<MarkPriceEvent> markPrices){
-
-        //获取当前账户资金
-
-
-        //资金费率最高的标的
-        String symbol = markPrices.get(0).getSymbol();
-
-
-    }
 
 
 
@@ -171,7 +148,7 @@ public class PositionOpenService {
 
 
     public void doPairsTradeRobotInner() throws InterruptedException {
-        if(!BeanConstant.watchdog || BeanConstant.NETWORK_DELAYED) return;
+        if(!BeanConstant.watchdog) return;
 
         //if new pairs trade success, then get the pairs trade
         if(BeanConstant.HAS_NEW_TRADE_OPEN.get() || pairsTradeList.size() ==0){
@@ -221,23 +198,28 @@ public class PositionOpenService {
 
                         futureAskPrice= getFutureTickPrice(symbol,"ask");
                         spotBidPrice = getSpotTickPrice(symbol,"bid");
-                        closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
+//                        closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
+
+                        String openId = pairsTradeModel.getOpenId();
+                        TradeInfoModel tradeInfoModel = tradeInfoMap.containsKey(openId)?tradeInfoMap.get(openId):null;
+                        if(tradeInfoModel == null){
+                            tradeInfoModel =  tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
+                            logger.info("get  model from DB is null ,opnenId={}", openId);
+                            if(tradeInfoModel == null) return;
+                        }
+
+                        BigDecimal spotQty = tradeInfoModel.getSpotQty();
+                        BigDecimal futrueQty = tradeInfoModel.getFutureQty();
+                        profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice, tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
+
                         if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
-                                && closeRatio.add(pairsTradeModel.getOpenRatio()).compareTo(BeanConfig.CLOSE_PRICE_GAP) > 0){
-                            logger.info("begin to close symbol={}, closeRatio={}",symbol,closeRatio);
+                                && profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
                             //add trade to processing set
                             closeProcessingSet.add(pairsTradeModel.getOpenId());
                             //begin to close the symbol
                             String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
-                            //get qty from store
-                            String openId = pairsTradeModel.getOpenId();
-                            TradeInfoModel tradeInfoModel = tradeInfoMap.containsKey(openId)?tradeInfoMap.get(openId):null;
-                            if(tradeInfoModel == null){
-                                tradeInfoModel =  tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
-                            }
+                            logger.info("begin to close symbol={},openId={}, closeRatio={}",symbol,clientOrderId,profit);
 
-                            BigDecimal futrueQty = tradeInfoModel.getFutureQty();
-                            BigDecimal spotQty = tradeInfoModel.getSpotQty();
                             pairsTradeModel.setCloseId(clientOrderId);
 
                             //set the lock
@@ -277,7 +259,7 @@ public class PositionOpenService {
     private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice,
                                    String direct,String clientOrderId) throws InterruptedException {
 
-        if (!checkMoney(futureQty, spotQty, futurePrice, spotPrice, clientOrderId)) return;
+        if ( !checkMoney(futureQty, spotQty, futurePrice, spotPrice, clientOrderId,direct)) return;
 
 
         //计算合约最小下单位数
@@ -287,20 +269,23 @@ public class PositionOpenService {
         tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId);
     }
 
-    private boolean checkMoney(BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice, String clientOrderId) {
-        // check money enough
-        logger.info("check money:clientOrderId={}, futureBalance={}, spotbalance={}",clientOrderId,MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
+    // check money enough
+    private boolean checkMoney(BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice, String clientOrderId,String  direct) {
+//        logger.info("checkMoney for id={}, futureBalance={}, spotBalance={}", clientOrderId, MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
 
-        if(MarketCache.futureBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0
-                || MarketCache.spotBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 ){
-            logger.info("not enough for clientid={}, not trade", clientOrderId);
-            return false;
+        if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+            if(MarketCache.futureBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0
+                    || MarketCache.spotBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 ){
+                return false;
+            }
+
+            //money enough, set balance
+            proxyUtil.addBalance(futurePrice.multiply(futureQty).negate(),"future");
+            proxyUtil.addBalance( spotPrice.multiply(spotQty).negate(),"spot");
         }
 
-        //money enough, set balance
-        proxyUtil.addBalance(futurePrice.multiply(futureQty).negate(),"future");
-        proxyUtil.addBalance( spotPrice.multiply(spotQty).negate(),"spot");
         return true;
+
     }
 
     private BigDecimal getFutureTickPrice(String symbol,String type) {

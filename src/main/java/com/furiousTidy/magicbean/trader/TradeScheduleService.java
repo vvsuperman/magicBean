@@ -9,6 +9,7 @@ import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -20,6 +21,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,6 +57,9 @@ public class TradeScheduleService {
 
     @Autowired
     PreTradeService preTradeService;
+
+    @Autowired
+    InfluxDbConnection influxDbConnection;
 
     @Scheduled(cron = "0 0/10 * * * ?")
     public void queryOrderStatus(){
@@ -110,7 +115,7 @@ public class TradeScheduleService {
     }
 
     //future and spot balance and synchronize the local balance with the binance exchange
-    @Scheduled(cron = "0 0/10 * * * ?")
+    @Scheduled(cron = "0 0/5 * * * ?")
     public void doFutureSpotBalance() throws InterruptedException {
         BeanConstant.watchdog =false;
         // sleep for 5 second, let on the way order finished, avoid incorrect balance in exchange cache
@@ -125,40 +130,70 @@ public class TradeScheduleService {
                 .forEach(assetBalance -> {
                     balances[1] = new BigDecimal(assetBalance.getFree());
                 });
+        log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
+                ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
+
 
         if(balances[0].subtract(balances[1]).compareTo(BigDecimal.ZERO)>0){
             BigDecimal transferUSDT = balances[0].subtract(balances[1]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
+            if(transferUSDT.compareTo(BigDecimal.ZERO)==0) return;
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
             //synchronize local cache
             while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
-            log.info("do balance future balance={}, spot balance={}",MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
         }else if(balances[1].subtract(balances[0]).compareTo(BigDecimal.ZERO)>0){
+            log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
+                    ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
+
+
             BigDecimal transferUSDT = balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
+            if(transferUSDT.compareTo(BigDecimal.ZERO)==0) return;
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
             //synchronize local cache
             while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
-            log.info("do balance future balance={}, spot balance={}",MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
 
         }
         BeanConstant.watchdog =true;
     }
 
     //get all balance
-    public Map getAllBalance(){
+    @Scheduled(cron = "0 0 2 * * ?")
+    public BigDecimal getAllBalance(){
         final BigDecimal[] spotBalance = new BigDecimal[1];
         spotBalance[0] = BigDecimal.ZERO;
         BigDecimal futureBalance = BinanceClient.futureSyncClient.getAccountInformation().getTotalWalletBalance();
-        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> MarketCache.spotTickerMap.containsKey(assetBalance.getAsset())).forEach(assetBalance -> {
-                    spotBalance[0] = spotBalance[0].add(new BigDecimal(assetBalance.getFree())
-                            .multiply(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_ASK_PRICE).add(MarketCache.spotTickerMap.get(assetBalance.getAsset()).get(BeanConstant.BEST_BID_PRICE)).divide(new BigDecimal(2))));
+        BinanceClient.spotSyncClient.getAccount().getBalances()
+                .stream()
+                .filter(assetBalance -> new BigDecimal(assetBalance.getFree()).compareTo(BigDecimal.ZERO)>0)
+                .forEach(assetBalance -> {
+                    String symbol = assetBalance.getAsset()+"USDT";
+                    if(MarketCache.spotTickerMap.containsKey(symbol)){
+                        BigDecimal askPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                        BigDecimal bidPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                        spotBalance[0] = spotBalance[0].add(new BigDecimal(assetBalance.getFree()).multiply(askPrice.add(bidPrice).divide(new BigDecimal(2))));
+                    }else if(assetBalance.getAsset().equals("USDT")){
+                        spotBalance[0] = spotBalance[0].add(new BigDecimal(assetBalance.getFree()));
+                    }
 
-                });
-        Map<String, BigDecimal> rtMap = new HashMap<>();
-        rtMap.put("spotTotalBalance",spotBalance[0]);
-        rtMap.put("futureTotalBalance",futureBalance);
-        return rtMap;
+                    else{
+                        log.info("no symbol info, symbol={}",symbol);
+                    }
+
+        });
+
+        //store into database
+        log.info("spotbalance={}, futurebalance={}",spotBalance[0],futureBalance);
+        Map<String,String> tagMap = new HashMap<>();
+        Map<String,Object> fileMap = new HashMap<>();
+
+        tagMap.put("name","fangwei");
+        fileMap.put("balance",spotBalance[0].add(futureBalance));
+
+        influxDbConnection.insert("balance_info",tagMap,fileMap);
+
+
+        return spotBalance[0].add(futureBalance);
     }
 
     //buy some bnb for exchange charge, check for 1 in the morning

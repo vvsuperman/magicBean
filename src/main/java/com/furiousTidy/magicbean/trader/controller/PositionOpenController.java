@@ -127,13 +127,14 @@ public class PositionOpenController {
 
     @RequestMapping("checksql")
     public @ResponseBody void checkSql(){
-        String clientOrderId = "LTCUSDT_FSO_2021_3_18_23_33_44";
+        String clientOrderId = "ALICEUSDT_FSO_2021_3_18_23_33_44";
         BigDecimal ratio = new BigDecimal("0.006");
         PairsTradeModel pairsTradeModel = new PairsTradeModel();
         pairsTradeModel.setOpenId(clientOrderId);
         pairsTradeModel.setOpenRatio(ratio);
-//        pairsTradeDao.insertPairsTrade(pairsTradeModel);
-        log.info("pairsTrade={}",pairsTradeDao.getPairsTradeByOpenId("LTCUSDT_FSO_2021_3_18_23_33_44"));
+        pairsTradeModel.setSymbol("ALICEUSDT");
+        pairsTradeDao.insertPairsTrade(pairsTradeModel);
+        log.info("pairsTrade={}",pairsTradeDao.getPairsTradeByOpenId("ALICEUSDT_FSO_2021_3_18_23_33_44"));
     }
 
 
@@ -244,6 +245,7 @@ public class PositionOpenController {
 
     @RequestMapping("docache")
     public @ResponseBody String doCache(){
+
         //set the position side
 //        BinanceClient.futureSyncClient.changePositionSide(true);
         //get symbol info

@@ -4,36 +4,26 @@ package com.furiousTidy.magicbean.trader.service;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
-import com.binance.api.client.domain.account.request.CancelOrderRequest;
-import com.binance.api.client.domain.account.request.CancelOrderResponse;
-import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.enums.*;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
+import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
-import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
-import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
-import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import com.furiousTidy.magicbean.util.BeanConstant;
-import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
 
 import static com.binance.api.client.domain.account.NewOrder.*;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Service
 @Slf4j
@@ -49,13 +39,16 @@ public class TradeService {
     PairsTradeDao pairsTradeDao;
 
     @Autowired
-    OrderStoreService orderStoreService;
+    AfterOrderService afterOrderService;
 
     @Autowired
     TradeUtil tradeUtil;
 
     @Autowired
     FutureSyncClientProxy futureSyncClientProxy;
+
+    @Autowired
+    ProxyUtil proxyUtil;
 
 
 
@@ -75,8 +68,8 @@ public class TradeService {
                 return;
             }
 
-            log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
-                    ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
+            log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={},futureBalance={},spotBalance={}"
+                    ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId,MarketCache.futureBalance, MarketCache.spotBalance);
 
             Order order = null;
 
@@ -104,20 +97,24 @@ public class TradeService {
 
             log.info("futrue new order return: orderid={},status={},qty={},price={},order={}" , clientOrderId,order.getStatus(),order.getExecutedQty(),order.getAvgPrice(),order);
 
+
             if( order.getStatus().equals("FILLED")){
-                orderStoreService.processFutureOrder(clientOrderId,order);
+
                 if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    BeanConstant.ENOUGH_MONEY.set(true);
+                    proxyUtil.addBalance(futurePrice.multiply(futureQty),"future");
                 }else if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                     BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
                 }
+
+                afterOrderService.processFutureOrder(clientOrderId,order);
+
                 return;
                 // order has been partially filled, order status is partially filled, cancel order is null;
             }else if(order.getStatus().equals("PARTIALLY_FILLED" )){
-                orderStoreService.processFutureOrder(clientOrderId,order);
+                afterOrderService.processFutureOrder(clientOrderId,order);
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }else if(order.getStatus().equals("EXPIRED") && order.getExecutedQty().compareTo(BigDecimal.ZERO)>0){
-                orderStoreService.processFutureOrder(clientOrderId,order);
+                afterOrderService.processFutureOrder(clientOrderId,order);
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }
 
@@ -144,7 +141,8 @@ public class TradeService {
             }
 
             NewOrderResponse newOrderResponse = null;
-            log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
+            log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={},futureBalance={},spotBalance={}"
+                    ,i++,symbol,spotPrice,spotQty,direct,clientOrderId,MarketCache.futureBalance,MarketCache.spotBalance);
 
             try{
                 if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
@@ -178,11 +176,17 @@ public class TradeService {
                 return;
             }
 
-            log.info("new spot order return,price={},qty={},order={}", newOrderResponse.getPrice(),newOrderResponse.getExecutedQty(),newOrderResponse);
+            log.info("new spot order return,clientid={},price={},qty={},order={}", newOrderResponse.getClientOrderId()
+                    ,newOrderResponse.getFills().get(0).getPrice(),newOrderResponse.getExecutedQty(),newOrderResponse);
 
 
             if(newOrderResponse.getStatus() == OrderStatus.FILLED){
-                orderStoreService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
+
+                if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
+                    proxyUtil.addBalance( spotPrice.multiply(spotQty),"spot");
+                }
+
+                afterOrderService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
                         ,new BigDecimal(newOrderResponse.getExecutedQty()));
                 if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
                     BeanConstant.ENOUGH_MONEY.set(true);
@@ -191,10 +195,10 @@ public class TradeService {
                 }
                 return;
             }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED ){
-                orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
+                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }else if(newOrderResponse.getStatus() == OrderStatus.EXPIRED && new BigDecimal(newOrderResponse.getExecutedQty()).compareTo(BigDecimal.ZERO)>0){
-                orderStoreService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
+                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }
 

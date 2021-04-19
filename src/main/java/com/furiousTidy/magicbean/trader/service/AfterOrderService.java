@@ -1,6 +1,5 @@
 package com.furiousTidy.magicbean.trader.service;
 
-import com.binance.api.client.domain.account.Trade;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
@@ -19,12 +18,10 @@ import java.math.RoundingMode;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 
 @Service
 @Slf4j
-public class OrderStoreService {
+public class AfterOrderService {
 
     @Autowired
     TradeInfoDao tradeInfoDao;
@@ -72,17 +69,18 @@ public class OrderStoreService {
                             .add(tradeInfo.getFuturePrice().multiply(tradeInfo.getFutureQty()))
                             .divide(futureQty,priceSize);
                 }
-                log.info("future calculate ratio begin, tradeInfo={}", tradeInfo);
-                //calcualte ratio
-                if (tradeInfo.getSpotPrice() != null) {
-                    BigDecimal spotPrice = tradeInfo.getSpotPrice();
-                    calculateRatio(order.getSymbol(),clientOrderId,futurePrice,spotPrice,priceSize);
-                }
 
                 tradeInfo.setFutureQty(futureQty);
                 tradeInfo.setFuturePrice(futurePrice);
-
                 tradeInfoDao.updateTradeInfoById(tradeInfo);
+
+                log.info("future calculate ratio begin, tradeInfo={}", tradeInfo);
+
+                //calcualte ratio
+                if (tradeInfo.getSpotPrice() != null) {
+                    BigDecimal spotPrice = tradeInfo.getSpotPrice();
+                    calculateRatioAndProfit(order.getSymbol(),clientOrderId,futurePrice,spotPrice,priceSize);
+                }
             }
 
         } catch (Exception e) {
@@ -132,17 +130,18 @@ public class OrderStoreService {
                     log.info("spot store process calculate, tradeInfo {}",spotQty,spotPrice);
 
                 }
-                //calcualte ratio
-                log.info("spot calculate ratio begin, tradeInfo={}", tradeInfo);
-                if (tradeInfo.getFuturePrice() != null) {
-                    BigDecimal futurePrice = tradeInfo.getFuturePrice();
-                    calculateRatio(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
-                }
-
                 tradeInfo.setSpotQty(spotQty);
                 tradeInfo.setSpotPrice(spotPrice);
                 log.info("spot store process update, tradeInfo {}",tradeInfo);
                 tradeInfoDao.updateTradeInfoById(tradeInfo);
+
+                //calcualte ratio
+                log.info("spot calculate ratio begin, tradeInfo={}", tradeInfo);
+                if (tradeInfo.getFuturePrice() != null) {
+                    BigDecimal futurePrice = tradeInfo.getFuturePrice();
+                    calculateRatioAndProfit(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
+                }
+
             }
         } catch (Exception e) {
             log.error("spot process......failed {}",e);
@@ -151,8 +150,9 @@ public class OrderStoreService {
         }
     }
 
-    private void calculateRatio(String symbol,String clientOrderId, BigDecimal futurePrice, BigDecimal spotPrice, int priceSize) {
+    private void calculateRatioAndProfit(String symbol, String clientOrderId, BigDecimal futurePrice, BigDecimal spotPrice, int priceSize) {
         BigDecimal ratio;
+        BigDecimal profit;
         log.info("in calucalateRatio, symbol={}, clientorderid={}, futureprice={}, spotprice={}",symbol,clientOrderId,futurePrice,spotPrice);
         if (clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
             ratio = futurePrice.subtract(spotPrice).divide(spotPrice, 6,RoundingMode.HALF_UP);
@@ -170,9 +170,14 @@ public class OrderStoreService {
             }
 
         } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
+
+            PairsTradeModel pairsTradeModel = pairsTradeDao.getPairsTradeByCloseId(clientOrderId);
+            TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
+            profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(),tradeInfoModel.getSpotPrice(),futurePrice,spotPrice,tradeInfoModel.getFutureQty());
             ratio = spotPrice.subtract(futurePrice).divide(futurePrice, 6, RoundingMode.HALF_UP);
-            log.info("in calculate ratio, updateCloseRatioByCloseId,clientOrdeid={}, ratio={}",clientOrderId,ratio);
-            pairsTradeDao.updateCloseRatioByCloseId(clientOrderId, ratio);
+            pairsTradeModel.setProfit(profit);
+            pairsTradeModel.setCloseRatio(ratio);
+            pairsTradeDao.updatePairsTrade(pairsTradeModel);
         }
 
 //        tradeUtil.checkUSDEnough();

@@ -12,4 +12,5 @@ public class PairsTradeModel {
     String closeId;
     BigDecimal openRatio;
     BigDecimal closeRatio;
+    BigDecimal profit;
 }

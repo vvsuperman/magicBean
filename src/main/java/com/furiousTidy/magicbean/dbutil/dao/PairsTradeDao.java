@@ -21,7 +21,7 @@ public interface PairsTradeDao {
     Integer insertPairsTrade( PairsTradeModel PairsTradeModel);
 
     @Update("UPDATE pairs_trade SET openId=#{openId},openRatio=#{openRatio}" +
-            ",closeId=#{closeId}, closeRatio=#{closeRatio} WHERE id =#{id}")
+            ",closeId=#{closeId}, closeRatio=#{closeRatio},profit=#{profit} WHERE id =#{id}")
     void updatePairsTrade(PairsTradeModel pairsTradeModel);
 
     @Update("UPDATE pairs_trade SET openRatio=#{openRatio} WHERE openId =#{openId}")

@@ -16,6 +16,7 @@ import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeScheduleService;
+import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Map;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
@@ -49,15 +51,14 @@ public class TradeAssistantController {
     @Autowired
     TradeInfoDao tradeInfoDao;
 
-    @RequestMapping("getMoneyEarn/{openIds}")
-    public @ResponseBody String getMoneyEarn(@PathVariable String[] openIds){
-        for (String openId : openIds) {
-            PairsTradeModel pairsTradeModel = pairsTradeDao.getPairsTradeByOpenId(openId);
-            TradeInfoModel openTradeInfo = tradeInfoDao.getTradeInfoByOrderId(openId);
-            TradeInfoModel closeTradeInfo = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getCloseId());
+    @Autowired
+    TradeUtil tradeUtil;
 
-        }
-        return "success";
+
+
+    @RequestMapping("getMoneyEarn/{openIds}")
+    public @ResponseBody Map getMoneyEarn(@PathVariable List<String> openIds){
+        return tradeUtil.caculateProfit(openIds);
     }
 
     @RequestMapping("futureOrderTest")

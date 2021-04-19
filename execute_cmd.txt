@@ -23,6 +23,8 @@ database: Fw123456*
 
 mysql -h172.30.62.182 -u root -p
 
+ALTER TABLE pairs_trade ADD profit varchar(20) NULL;
+
 
 echo "obase=16;15434" | bc
 top -H -p pid

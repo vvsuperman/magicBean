@@ -28,13 +28,25 @@ public class ConfigController {
 
     @RequestMapping("getConfig")
     public @ResponseBody Map getConfig() throws Exception {
-        Object o = BeanConfig.class.newInstance();
         Map<String,Object> rtMap = new HashMap<>();
+
+        Object o = BeanConfig.class.newInstance();
+        Map<String,Object> configMap = new HashMap<>();
         for (Field field : BeanConfig.class.getFields())
         {
             if(field.getName().equals("SECRET_KEY") || field.getName().equals("API_KEY")) continue;
-            rtMap.put(field.getName(),field.get(o));
+            configMap.put(field.getName(),field.get(o));
         }
+
+        Object o1 = BeanConstant.class.newInstance();
+        Map<String,Object> constantMap = new HashMap<>();
+        for (Field field : BeanConstant.class.getFields())
+        {
+            constantMap.put(field.getName(),field.get(o1));
+        }
+
+        rtMap.put("config",configMap);
+        rtMap.put("constant", constantMap);
         return rtMap;
     }
 

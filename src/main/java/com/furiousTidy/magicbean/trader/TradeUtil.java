@@ -2,6 +2,7 @@ package com.furiousTidy.magicbean.trader;
 
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
+import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.client.model.enums.NewOrderRespType;
@@ -17,6 +18,7 @@ import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +55,7 @@ public class TradeUtil {
     public void closeTrade(List<String> openIds){
         List<PairsTradeModel> pairsTradeModels = new ArrayList<>() ;
         if(openIds.get(0).equals("all")) {
-           pairsTradeModels = pairsTradeDao.getPairsTradeOpen();
+            pairsTradeModels = pairsTradeDao.getPairsTradeOpen();
         }else{
             for (String openId : openIds) {
                 pairsTradeModels.add(pairsTradeDao.getPairsTradeByOpenId(openId));
@@ -62,20 +65,63 @@ public class TradeUtil {
             TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
             Order order =futureSyncClientProxy.postOrder(tradeInfoModel.getSymbol(), OrderSide.BUY,null, OrderType.LIMIT, TimeInForce.GTC
                     ,tradeInfoModel.getFutureQty().toString(),
-                  MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString(),null,null,null,null, NewOrderRespType.RESULT);
+                    MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString(),null,null,null,null, NewOrderRespType.RESULT);
 
             NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
-                        limitSell(tradeInfoModel.getSymbol(), com.binance.api.client.domain.TimeInForce.IOC,
-                                tradeInfoModel.getSpotQty().toString(),
-                                MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_ASK_PRICE).toString())
-                                .newOrderRespType(NewOrderResponseType.FULL));
+                    limitSell(tradeInfoModel.getSymbol(), com.binance.api.client.domain.TimeInForce.IOC,
+                            tradeInfoModel.getSpotQty().toString(),
+                            MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_ASK_PRICE).toString())
+                            .newOrderRespType(NewOrderResponseType.FULL));
 
             MarketCache.rwFutureDictionary.put(order.getOrderId(), pairsTradeModel.getSymbol());
             MarketCache.rwSpotDictionary.put(newOrderResponse.getOrderId(),pairsTradeModel.getSymbol());
 
         }
 
+    }
 
+
+    public Map caculateProfit(List<String> openIds){
+
+        final Map<String, BigDecimal> rtMap = new HashMap<>();
+        openIds.forEach(openId->{
+
+            TradeInfoModel tradeOpenInfo = tradeInfoDao.getTradeInfoByOrderId(openId);
+            PairsTradeModel pairsTradeModel = pairsTradeDao.getPairsTradeByOpenId(openId);
+            TradeInfoModel tradeCloseInfo = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getCloseId());
+
+            BigDecimal openFuturePrice = tradeOpenInfo.getFuturePrice();
+            BigDecimal openSpotPrice = tradeOpenInfo.getSpotPrice();
+            BigDecimal closeFuturePrice = tradeCloseInfo.getFuturePrice();
+            BigDecimal closeSpotPrice = tradeCloseInfo.getSpotPrice();
+            BigDecimal qty = tradeOpenInfo.getFutureQty();
+
+
+            BigDecimal moneyEarn = getProfit(openFuturePrice, openSpotPrice, closeFuturePrice, closeSpotPrice, qty);
+            rtMap.put(openId,moneyEarn);
+        });
+
+        return rtMap;
+    }
+
+    public BigDecimal getProfit(BigDecimal openFuturePrice, BigDecimal openSpotPrice, BigDecimal closeFuturePrice, BigDecimal closeSpotPrice, BigDecimal qty) {
+        BigDecimal spotCommission;
+        BigDecimal futureCommission;
+        BigDecimal gapPrice;
+        spotCommission = openSpotPrice.add(closeSpotPrice).multiply(BigDecimal.valueOf(0.00075));
+        futureCommission = openFuturePrice.add(closeFuturePrice).multiply(BigDecimal.valueOf(0.00036));
+
+        if(openFuturePrice.compareTo(closeFuturePrice)>0){
+            gapPrice = openFuturePrice.subtract(closeFuturePrice).subtract(
+                    openSpotPrice.subtract(closeSpotPrice)
+            );
+
+        }else{
+            gapPrice = closeSpotPrice.subtract(openSpotPrice).subtract(
+                    closeFuturePrice.subtract(openFuturePrice)
+            );
+        }
+        return gapPrice.subtract(spotCommission).subtract(futureCommission).multiply(qty);
     }
 
     public boolean isTradeCanOpen(String symbol){
@@ -224,12 +270,19 @@ public class TradeUtil {
       }
 
       public static void main(String[] args){
+          TradeUtil tradeUtil = new TradeUtil();
+          System.out.println(tradeUtil.getProfit(
+                  new BigDecimal("0.41474"),new BigDecimal("0.41293000")
+                  ,new BigDecimal("0.480934"),new BigDecimal("0.48")
+                  ,new BigDecimal("36")));
 
-        System.out.println((Boolean.valueOf("true")));
       }
 
 
     public BigDecimal getPairsGap(String symbol) {
         return MarketCache.pairsGapCache.containsKey(symbol) ? MarketCache.pairsGapCache.get(symbol): BeanConfig.OPEN_PRICE_GAP;
     }
+
+
+
 }
