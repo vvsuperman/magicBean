@@ -62,19 +62,23 @@ public class TradeUtil {
             }
         }
         for (PairsTradeModel pairsTradeModel : pairsTradeModels) {
+            String symbol = pairsTradeModel.getSymbol();
+            String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
+
             TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
             Order order =futureSyncClientProxy.postOrder(tradeInfoModel.getSymbol(), OrderSide.BUY,null, OrderType.LIMIT, TimeInForce.GTC
                     ,tradeInfoModel.getFutureQty().toString(),
-                    MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString(),null,null,null,null, NewOrderRespType.RESULT);
+                    MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString()
+                    ,null,clientOrderId,null,null, NewOrderRespType.RESULT);
 
             NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
                     limitSell(tradeInfoModel.getSymbol(), com.binance.api.client.domain.TimeInForce.IOC,
                             tradeInfoModel.getSpotQty().toString(),
                             MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_ASK_PRICE).toString())
-                            .newOrderRespType(NewOrderResponseType.FULL));
+                            .newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
 
-            MarketCache.rwFutureDictionary.put(order.getOrderId(), pairsTradeModel.getSymbol());
-            MarketCache.rwSpotDictionary.put(newOrderResponse.getOrderId(),pairsTradeModel.getSymbol());
+            MarketCache.rwFutureDictionary.put(clientOrderId, pairsTradeModel.getSymbol());
+            MarketCache.rwSpotDictionary.put(clientOrderId,pairsTradeModel.getSymbol());
 
         }
 

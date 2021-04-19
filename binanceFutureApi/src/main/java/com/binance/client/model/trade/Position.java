@@ -5,7 +5,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.math.BigDecimal;
 
-public class Position {
+public class
+Position {
 
     private Boolean isolated;
 

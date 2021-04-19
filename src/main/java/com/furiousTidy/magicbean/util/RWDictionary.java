@@ -1,19 +1,29 @@
 package com.furiousTidy.magicbean.util;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class RWDictionary {
 
-    private final Map<Long, String> m = new TreeMap<Long, String>();
+    private final Map<String, String> m = new TreeMap();
 
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 
     private final Lock r = rwl.readLock();
 
     private final Lock w = rwl.writeLock();
+
+    public Set<Map.Entry<String,String>> entrySet(){
+        r.lock();
+        try {
+            return m.entrySet();
+        } finally {
+            r.unlock();
+        }
+    }
 
 
     public boolean isEmpty(){
@@ -25,7 +35,7 @@ public class RWDictionary {
         }
     }
 
-    public String get(Long key) {
+    public String get(String key) {
 
         r.lock();
         try {
@@ -36,18 +46,18 @@ public class RWDictionary {
 
     }
 
-    public Long[] allKeys() {
+    public String[] allKeys() {
 
         r.lock();
         try {
-            return (Long[]) m.keySet().toArray();
+            return (String[]) m.keySet().toArray();
         } finally {
             r.unlock();
         }
 
     }
 
-    public String put(Long key, String value) {
+    public String put(String key, String value) {
 
         w.lock();
         try {
@@ -58,7 +68,7 @@ public class RWDictionary {
 
     }
 
-    public boolean contain(Long key) {
+    public boolean contain(String key) {
         w.lock();
         try {
             return m.containsKey(key);
@@ -67,7 +77,7 @@ public class RWDictionary {
         }
     }
 
-    public String remove(Long key) {
+    public String remove(String key) {
         w.lock();
         try {
             return m.remove(key);

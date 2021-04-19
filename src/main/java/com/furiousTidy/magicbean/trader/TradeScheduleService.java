@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import com.binance.api.client.domain.TransferType;
 
@@ -64,10 +65,8 @@ public class TradeScheduleService {
     @Scheduled(cron = "0 0/10 * * * ?")
     public void queryOrderStatus(){
         if(!MarketCache.rwFutureDictionary.isEmpty()){
-            long orderId = Arrays.stream(MarketCache.rwFutureDictionary.allKeys()).findFirst().get();
-            String symbol = MarketCache.rwFutureDictionary.get(orderId);
-            List<Order> futureOrders = BinanceClient.futureSyncClient.getAllOrders(symbol, orderId, null, null, null);
-            for (Order order : futureOrders){
+            for(Map.Entry <String, String> entry :MarketCache.rwFutureDictionary.entrySet()){
+                Order order = BinanceClient.futureSyncClient.getOrder(entry.getValue(),null,entry.getKey());
                 if(order.getStatus().equals("FILLED")){
 
                 }
