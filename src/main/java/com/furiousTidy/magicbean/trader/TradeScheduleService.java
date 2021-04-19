@@ -3,6 +3,7 @@ package com.furiousTidy.magicbean.trader;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.client.model.trade.AccountInformation;
+import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
@@ -19,9 +20,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -53,6 +55,20 @@ public class TradeScheduleService {
 
     @Autowired
     PreTradeService preTradeService;
+
+    @Scheduled(cron = "0 0/10 * * * ?")
+    public void queryOrderStatus(){
+        if(!MarketCache.rwFutureDictionary.isEmpty()){
+            long orderId = Arrays.stream(MarketCache.rwFutureDictionary.allKeys()).findFirst().get();
+            String symbol = MarketCache.rwFutureDictionary.get(orderId);
+            List<Order> futureOrders = BinanceClient.futureSyncClient.getAllOrders(symbol, orderId, null, null, null);
+            for (Order order : futureOrders){
+                if(order.getStatus().equals("FILLED")){
+
+                }
+            }
+        }
+    }
 
     //checkNetWork state  test order has no use
 //    @Scheduled(cron = "0 0/10 * * * ?")

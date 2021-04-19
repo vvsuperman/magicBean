@@ -1,12 +1,22 @@
 package com.furiousTidy.magicbean.trader;
 
+import com.binance.api.client.domain.account.NewOrderResponse;
+import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
+import com.binance.client.model.enums.NewOrderRespType;
+import com.binance.client.model.enums.OrderSide;
+import com.binance.client.model.enums.OrderType;
+import com.binance.client.model.enums.TimeInForce;
+import com.binance.client.model.trade.Order;
+import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
+import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.util.BeanConstant;
-import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.binance.api.client.domain.account.NewOrder.limitSell;
 import static com.furiousTidy.magicbean.util.MarketCache.futureRateCache;
 
 @Service
@@ -31,6 +42,41 @@ public class TradeUtil {
 
     @Autowired
     PairsTradeDao pairsTradeDao;
+
+    @Autowired
+    FutureSyncClientProxy futureSyncClientProxy;
+
+    @Autowired
+    SpotSyncClientProxy spotSyncClientProxy;
+
+    public void closeTrade(List<String> openIds){
+        List<PairsTradeModel> pairsTradeModels = new ArrayList<>() ;
+        if(openIds.get(0).equals("all")) {
+           pairsTradeModels = pairsTradeDao.getPairsTradeOpen();
+        }else{
+            for (String openId : openIds) {
+                pairsTradeModels.add(pairsTradeDao.getPairsTradeByOpenId(openId));
+            }
+        }
+        for (PairsTradeModel pairsTradeModel : pairsTradeModels) {
+            TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
+            Order order =futureSyncClientProxy.postOrder(tradeInfoModel.getSymbol(), OrderSide.BUY,null, OrderType.LIMIT, TimeInForce.GTC
+                    ,tradeInfoModel.getFutureQty().toString(),
+                  MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString(),null,null,null,null, NewOrderRespType.RESULT);
+
+            NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
+                        limitSell(tradeInfoModel.getSymbol(), com.binance.api.client.domain.TimeInForce.IOC,
+                                tradeInfoModel.getSpotQty().toString(),
+                                MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_ASK_PRICE).toString())
+                                .newOrderRespType(NewOrderResponseType.FULL));
+
+            MarketCache.rwFutureDictionary.put(order.getOrderId(), pairsTradeModel.getSymbol());
+            MarketCache.rwSpotDictionary.put(newOrderResponse.getOrderId(),pairsTradeModel.getSymbol());
+
+        }
+
+
+    }
 
     public boolean isTradeCanOpen(String symbol){
         if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_OPEN)) {

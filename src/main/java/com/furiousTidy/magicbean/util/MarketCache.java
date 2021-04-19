@@ -19,13 +19,19 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 
 @Service
 public class MarketCache {
+    public static RWDictionary rwFutureDictionary = new RWDictionary();
+    public static RWDictionary rwSpotDictionary = new RWDictionary();
+
+
     //store future and spot balance
     public static AtomicReference<BigDecimal> futureBalance = new AtomicReference<BigDecimal>(BigDecimal.ZERO);
     public static AtomicReference<BigDecimal> spotBalance = new AtomicReference<BigDecimal>(BigDecimal.ZERO);
