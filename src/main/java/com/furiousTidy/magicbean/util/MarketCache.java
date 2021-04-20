@@ -27,8 +27,8 @@ import java.util.concurrent.locks.Lock;
 @Service
 public class MarketCache {
 
-    public static RWDictionary rwFutureDictionary = new RWDictionary();
-    public static RWDictionary rwSpotDictionary = new RWDictionary();
+    public static  ConcurrentHashMap<String, String> futureOrderCache = new ConcurrentHashMap();
+    public static ConcurrentHashMap<String, String> spotOrderCache = new ConcurrentHashMap ();
 
     //store future and spot balance
     public static AtomicReference<BigDecimal> futureBalance = new AtomicReference<BigDecimal>(BigDecimal.ZERO);
@@ -71,7 +71,7 @@ public class MarketCache {
     public static TreeMap futurePositionCache = new TreeMap();
 
     // 合约订单信息
-    public static HashMap<Long,OrderUpdate> futureOrderCache = new HashMap();
+//    public static HashMap<Long,OrderUpdate> futureOrderCache = new HashMap();
 
 
     //现货最佳挂单
@@ -82,7 +82,7 @@ public class MarketCache {
     public static HashMap<String , AssetBalance> spotBalanceCache = new HashMap();
 
     // 现货用户订单信息
-    public static HashMap<Long,OrderTradeUpdateEvent> spotOrderCache = new HashMap();
+//    public static HashMap<Long,OrderTradeUpdateEvent> spotOrderCache = new HashMap();
 
 
 }

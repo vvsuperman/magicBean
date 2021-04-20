@@ -28,3 +28,4 @@ ALTER TABLE pairs_trade ADD profit varchar(20) NULL;
 
 echo "obase=16;15434" | bc
 top -H -p pid
+

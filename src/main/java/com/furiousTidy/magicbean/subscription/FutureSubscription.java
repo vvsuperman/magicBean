@@ -123,7 +123,7 @@ public class FutureSubscription {
                 //更新订单信息
             }else if(event.getEventType().equals("ORDER_TRADE_UPDATE")){
                 OrderUpdate orderUpdate = event.getOrderUpdate();
-                MarketCache.futureOrderCache.put(orderUpdate.getOrderId(),orderUpdate);
+//                MarketCache.futureOrderCache.put(orderUpdate.getOrderId(),orderUpdate);
 //                logger.info("future trade_update event: orderstatus={},clientId={},price={},qty={},event={}",
 //                        orderUpdate.getOrderStatus(),orderUpdate.getClientOrderId(),orderUpdate.getAvgPrice(),orderUpdate.getCumulativeFilledQty(),event);
                 if(orderUpdate.getOrderStatus().equals("FILLED") || orderUpdate.getOrderStatus().equals("PARTIALLY_FILLED")){

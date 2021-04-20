@@ -70,7 +70,7 @@ public class AfterOrderService {
                     futureQty = qty.add(tradeInfo.getFutureQty());
                     futurePrice = price.multiply(qty)
                             .add(tradeInfo.getFuturePrice().multiply(tradeInfo.getFutureQty()))
-                            .divide(futureQty,priceSize);
+                            .divide(futureQty,priceSize,RoundingMode.HALF_UP);
                 }
 
                 tradeInfo.setFutureQty(futureQty);
@@ -92,10 +92,11 @@ public class AfterOrderService {
             eventLock.unlock();
         }
 
-
-        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
-            proxyUtil.addBalance(price.multiply(qty),"future");
-        }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
+        //doing some money problem
+//        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
+//            proxyUtil.addBalance(price.multiply(qty),"future");
+//        }
+        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
             BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
         }
     }
@@ -151,13 +152,19 @@ public class AfterOrderService {
                     BigDecimal futurePrice = tradeInfo.getFuturePrice();
                     calculateRatioAndProfit(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
                 }
-
             }
         } catch (Exception e) {
             log.error("spot process......failed {}",e);
         }finally {
             eventLock.unlock();
         }
+
+        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
+            BeanConstant.ENOUGH_MONEY.set(true);
+        }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
+            BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
+        }
+
     }
 
     private void calculateRatioAndProfit(String symbol, String clientOrderId, BigDecimal futurePrice, BigDecimal spotPrice, int priceSize) {

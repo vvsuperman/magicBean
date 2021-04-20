@@ -121,7 +121,7 @@ public class SpotSubscription {
 
             } else if(response.getEventType() == ORDER_TRADE_UPDATE) {
                 OrderTradeUpdateEvent orderUpdate = response.getOrderTradeUpdateEvent();
-                MarketCache.spotOrderCache.put(orderUpdate.getOrderId(), orderUpdate);
+//                MarketCache.spotOrderCache.put(orderUpdate.getOrderId(), orderUpdate);
 
                 if(orderUpdate.getOrderStatus()==OrderStatus.FILLED ||
                         orderUpdate.getOrderStatus() == OrderStatus.PARTIALLY_FILLED){

@@ -1,7 +1,9 @@
 package com.furiousTidy.magicbean.trader;
 
+import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
+import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
@@ -22,14 +24,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.binance.api.client.domain.TransferType;
 
@@ -66,16 +63,31 @@ public class TradeScheduleService {
     @Autowired
     AfterOrderService afterOrderService;
 
-    @Scheduled(cron = "0 0/10 * * * ?")
-    public void queryOrderStatus(){
-        if(!MarketCache.rwFutureDictionary.isEmpty()){
-            for(Map.Entry <String, String> entry :MarketCache.rwFutureDictionary.entrySet()){
-                Order order = BinanceClient.futureSyncClient.getOrder(entry.getValue(),null,entry.getKey());
-                if(order.getStatus().equals("FILLED")){
-                    afterOrderService.processFutureOrder(order.getClientOrderId(),order);
-                }
+    @Scheduled(cron = "0 0/5 * * * ?")
+    public void queryOrder(){
+        for(Map.Entry <String, String> entry :MarketCache.futureOrderCache.entrySet()){
+            String clientOrderId = entry.getKey();
+            String symbol = entry.getValue();
+            Order order = BinanceClient.futureSyncClient.getOrder(symbol,null,clientOrderId);
+            log.info("get futrure  order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(), order);
+            if(order.getStatus().equals("FILLED")){
+                afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty());
+                MarketCache.futureOrderCache.remove(order.getClientOrderId());
             }
         }
+
+        for(Map.Entry <String, String> entry :MarketCache.spotOrderCache.entrySet()){
+            String clientOrderId = entry.getKey();
+            String symbol = entry.getValue();
+            com.binance.api.client.domain.account.Order order = BinanceClient.spotSyncClient.getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
+            log.info("get spot order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(),order);
+            if(order.getStatus() == OrderStatus.FILLED){
+                afterOrderService.processSpotOrder(symbol, clientOrderId, new BigDecimal(order.getPrice()), new BigDecimal(order.getExecutedQty()));
+                MarketCache.spotOrderCache.remove(order.getClientOrderId());
+            }
+        }
+
+
     }
 
     //checkNetWork state  test order has no use
@@ -232,12 +244,44 @@ public class TradeScheduleService {
     }
 
     public static void main(String[] args){
-        AtomicReference<BigDecimal> newBigDeciaml = new AtomicReference<>(BigDecimal.TEN);
-        while (!newBigDeciaml.compareAndSet(newBigDeciaml.get(),newBigDeciaml.get().subtract(BigDecimal.ONE))){
-            System.out.println("do get={}" + newBigDeciaml.get());
-        };
+        ConcurrentHashMap<String, Integer> testMap = new ConcurrentHashMap<>();
+        for(int i=0;i<10000;i++){
+            testMap.put("test"+i,i);
+        }
+        Iterator<Map.Entry<String, Integer>> iterator= testMap.entrySet().iterator();
 
-        System.out.println("do get final={}" + newBigDeciaml.get());
+
+        new Runnable(){
+            @Override
+            public void run() {
+//                while (iterator.hasNext()){
+//                    Map.Entry<String, Integer> entry = iterator.next();
+//                    if(entry.getValue()%2==0){
+//                        iterator.remove();
+//                    }
+//                }
+
+                for(Map.Entry <String, Integer> entry : testMap.entrySet()){
+                    if(entry.getValue() % 2 == 0){
+                        testMap.remove(entry.getKey());
+                    }
+                }
+
+
+            }
+        }.run();
+
+
+        new Runnable(){
+            @Override
+            public void run() {
+                for(int i=10000;i<20000;i++){
+                    testMap.put("test"+i,i);
+                }
+            }
+        }.run();
+
+        System.out.println(testMap.size());
 
 
     }

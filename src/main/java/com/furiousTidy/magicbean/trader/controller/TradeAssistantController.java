@@ -54,7 +54,17 @@ public class TradeAssistantController {
     @Autowired
     TradeUtil tradeUtil;
 
+    @RequestMapping("queryOrder")
+    public @ResponseBody String queryOrder(){
+        tradeSchedule.queryOrder();
+        return "success";
+    }
 
+    @RequestMapping("closeTrade/{openIds}")
+    public @ResponseBody String closeTrade(@PathVariable List<String> openIds){
+         tradeUtil.closeTrade(openIds);
+         return "success";
+    }
 
     @RequestMapping("getMoneyEarn/{openIds}")
     public @ResponseBody Map getMoneyEarn(@PathVariable List<String> openIds){

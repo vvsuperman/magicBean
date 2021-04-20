@@ -181,17 +181,10 @@ public class TradeService {
 
             if(newOrderResponse.getStatus() == OrderStatus.FILLED){
 
-                if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    proxyUtil.addBalance( spotPrice.multiply(spotQty),"spot");
-                }
 
                 afterOrderService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
                         ,new BigDecimal(newOrderResponse.getExecutedQty()));
-                if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                    BeanConstant.ENOUGH_MONEY.set(true);
-                }else if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                    BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
-                }
+
                 return;
             }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED ){
                 afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
