@@ -1,11 +1,17 @@
 package com.furiousTidy.magicbean.util;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
+    public static Set<String> impactSet = new HashSet<>();
+
+    public static Set<String> closeProcessingSet = new HashSet<>();
+
 
 
     public static boolean NETWORK_DELAYED = false;

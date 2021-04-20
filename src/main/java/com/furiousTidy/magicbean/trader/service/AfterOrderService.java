@@ -93,10 +93,10 @@ public class AfterOrderService {
         }
 
         //doing some money problem
-//        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
-//            proxyUtil.addBalance(price.multiply(qty),"future");
-//        }
-        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
+        if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
+           // proxyUtil.addBalance(price.multiply(qty),"future");
+            BeanConstant.closeProcessingSet.remove(clientOrderId);
+        }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
             BeanConstant.HAS_NEW_TRADE_OPEN.set(true);
         }
     }

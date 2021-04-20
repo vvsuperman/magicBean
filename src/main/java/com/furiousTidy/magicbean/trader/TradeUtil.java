@@ -17,6 +17,7 @@ import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,14 @@ public class TradeUtil {
 
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
+
+    public void testSubDelay(){
+        BinanceClient.spotSubsptClient.onTickerEvent("BTCUSDT", tickEvent->{
+            log.info("sub delay time ={}ms",System.currentTimeMillis() - tickEvent.getEventTime());
+        });
+
+    }
+
 
     public void closeTrade(List<String> openIds){
         String futurePrice, futureQty, spotPrice, spotQty;
@@ -279,6 +288,7 @@ public class TradeUtil {
 
       public static void main(String[] args){
           TradeUtil tradeUtil = new TradeUtil();
+
           System.out.println(tradeUtil.getProfit(
                   new BigDecimal("0.41474"),new BigDecimal("0.41293000")
                   ,new BigDecimal("0.480934"),new BigDecimal("0.48")

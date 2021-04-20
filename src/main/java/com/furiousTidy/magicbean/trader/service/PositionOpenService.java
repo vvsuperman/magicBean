@@ -12,6 +12,7 @@ import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.MarketCache;
+import javafx.geometry.Pos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,7 @@ public class PositionOpenService {
     ProxyUtil proxyUtil;
 
 
-    Set<String> closeProcessingSet = new HashSet<>();
+
 
     List<PairsTradeModel> pairsTradeList = new ArrayList<>();
 
@@ -80,6 +81,10 @@ public class PositionOpenService {
     String clientOrderId;
 
     BigDecimal profit;
+
+    static int counter=0;
+
+
 
 
 
@@ -167,6 +172,12 @@ public class PositionOpenService {
             BeanConstant.HAS_NEW_TRADE_OPEN.set(false);
         }
 
+        counter++;
+        if(counter+1 == 300000) {
+            counter = 1;
+            BeanConstant.impactSet.clear();
+        }
+
         for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
 
             //compare the price in the cache
@@ -194,12 +205,13 @@ public class PositionOpenService {
                 if(symbolPairsTradeList.size() != 0){
                     for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
                         // if trade already in processing set, then skip the trade
-                        if(closeProcessingSet.contains(pairsTradeModel.getOpenId())) continue;
+                        if(BeanConstant.closeProcessingSet.contains(pairsTradeModel.getOpenId())) continue;
 
                         futureAskPrice= getFutureTickPrice(symbol,"ask");
                         spotBidPrice = getSpotTickPrice(symbol,"bid");
 //                        closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
 
+                        //get tradeinfo from cache or db
                         String openId = pairsTradeModel.getOpenId();
                         TradeInfoModel tradeInfoModel = tradeInfoMap.containsKey(openId)?tradeInfoMap.get(openId):null;
                         if(tradeInfoModel == null){
@@ -208,14 +220,20 @@ public class PositionOpenService {
                             if(tradeInfoModel == null) return;
                         }
 
+                        //get qty form trade info
                         BigDecimal spotQty = tradeInfoModel.getSpotQty();
                         BigDecimal futrueQty = tradeInfoModel.getFutureQty();
+                        //calculate profit
                         profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice, tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
-
+                        if(profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
+                            BeanConstant.impactSet.add(symbol+counter);
+                        }else{
+                            continue;
+                        }
                         if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
-                                && profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
+                              && checkProfit(symbol,counter)   ){
                             //add trade to processing set
-                            closeProcessingSet.add(pairsTradeModel.getOpenId());
+                            BeanConstant.closeProcessingSet.add(pairsTradeModel.getOpenId());
                             //begin to close the symbol
                             String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
                             logger.info("begin to close symbol={},openId={}, closeRatio={}",symbol,clientOrderId,profit);
@@ -267,6 +285,16 @@ public class PositionOpenService {
 
         tradeService.doFutureTrade(symbol, futurePrice, futureQty, stepSize[0], direct, clientOrderId);
         tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId);
+    }
+
+    private boolean checkProfit(String symbol, int counter){
+        for(int i =0;i < BeanConfig.IMPACT_COUNTER; i++){
+            String symbolcounter = symbol + (counter-i);
+            if(!BeanConstant.impactSet.contains(symbolcounter)){
+                return false;
+            }
+        }
+        return true;
     }
 
     // check money enough
@@ -348,10 +376,9 @@ public class PositionOpenService {
 //       String value = "0.0001";
 //        MathContext mathContext = new MathContext(2,RoundingMode.HALF_UP);
 //        System.out.println(new BigDecimal(value));
-        LocalDate today = LocalDate.now();
 
-        LocalTime time = LocalTime.now();
-        System.out.println(today.getYear()+"/"+today.getMonthValue()+"/"+today.getDayOfMonth()+" "+time);
+
+        System.out.println(BeanConstant.impactSet.remove("abc"));
 
     }
 }
