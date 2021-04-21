@@ -8,13 +8,13 @@ import java.math.RoundingMode;
 @Data
 public class BeanConfig {
 
-    public static  int IMPACT_COUNTER = 1;
+    public static  int IMPACT_COUNTER = 2;
     public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
     public static BigDecimal TRADE_PROFIT = BeanConfig.STANDARD_TRADE_UNIT.divide(BigDecimal.valueOf(500),3,RoundingMode.HALF_UP);
     //network is poor,sleep 10 min
     public static  long NET_DELAY_TIME = 600000;
     public static  BigDecimal GAP_FACTOR = new BigDecimal("0.0001");
-    public static  String TRADE_ALWAYS_OPEN = "true";
+    public static  String TRADE_ALWAYS_OPEN = "false";
     public static  String TRADE_ALWAYS_CLOSE = "false";
 
     public static  String FUND_RATE_OPEN_THRESHOLD = "0.0012";
@@ -29,7 +29,7 @@ public class BeanConfig {
 
     public static  int PRIOR_NUM =10;  //资金费率排名前10的
 
-    public static  Long SLEEP_TIME = new Long("500");
+    public static  Long SLEEP_TIME = new Long("100");
 
     //test future api
 //    public static  String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";

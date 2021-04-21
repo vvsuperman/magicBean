@@ -4,6 +4,7 @@ package com.furiousTidy.magicbean.subscription;
 * 工具类，缓存行情
 * */
 
+import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
 import com.binance.client.model.trade.Position;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 
 import static com.furiousTidy.magicbean.util.MarketCache.futureRateCache;
@@ -47,6 +49,13 @@ public class FutureSubscription {
 
     //subscribe funding rate and store in the tree map
     public void fundingRateSub(){
+        List<MarkPrice> markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
+        markPriceList.stream().filter(markPrice -> markPrice.getSymbol().contains("USDT"))
+                .forEach(markPrice -> {
+                    futureRateCache.put(markPrice.getSymbol(), markPrice.getLastFundingRate());
+                    MarketCache.fRateSymbolCache.put(markPrice.getLastFundingRate(),markPrice.getSymbol());
+                });
+
         BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
             MarketCache.fRateSymbolCache.clear();
             listMarkPrice.forEach(markPriceEvent -> {

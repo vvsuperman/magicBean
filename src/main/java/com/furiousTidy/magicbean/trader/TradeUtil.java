@@ -146,8 +146,8 @@ public class TradeUtil {
             return true;
         }
 
-        //in top 10 && fundrate > 0.0012
-        if(inFutureRatingList(symbol) && futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_OPEN_THRESHOLD)) > 0){
+
+        if(futureRateCache.containsKey(symbol) && futureRateCache.get(symbol).compareTo(BigDecimal.ZERO) > 0){
             return true;
         }
 
