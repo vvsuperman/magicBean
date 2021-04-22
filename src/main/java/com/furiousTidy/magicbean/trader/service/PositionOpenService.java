@@ -1,6 +1,5 @@
 package com.furiousTidy.magicbean.trader.service;
 
-import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
@@ -12,18 +11,13 @@ import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.MarketCache;
-import javafx.geometry.Pos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -83,6 +77,8 @@ public class PositionOpenService {
     BigDecimal profit;
 
     static int counter=0;
+
+    BigDecimal openRatio;
 
 
 
@@ -175,7 +171,8 @@ public class PositionOpenService {
         counter++;
         if(counter+1 == 300000) {
             counter = 1;
-            BeanConstant.impactSet.clear();
+            BeanConstant.closeImpactSet.clear();
+            BeanConstant.openImpactSet.clear();
         }
 
         for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
@@ -187,10 +184,15 @@ public class PositionOpenService {
             spotAskPrice= getSpotTickPrice(symbol,"ask");
             if(futureBidPrice == null || spotAskPrice == null ||
                     futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
+            if(futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4)
+                    .compareTo(tradeUtil.getPairsGap(symbol)) > 0){
+                BeanConstant.openImpactSet.add(symbol+counter);
+            }
             //price matched open
             if( BeanConstant.ENOUGH_MONEY.get() && tradeUtil.isTradeCanOpen(symbol)
-                    && futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4)
-                    .compareTo(tradeUtil.getPairsGap(symbol)) > 0){
+                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)){
+
+//              logger.info("check open ratio success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.openImpactSet);
 
                 clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
@@ -226,12 +228,15 @@ public class PositionOpenService {
                         //calculate profit
                         profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice, tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
                         if(profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
-                            BeanConstant.impactSet.add(symbol+counter);
+                            BeanConstant.closeImpactSet.add(symbol+counter);
                         }else{
                             continue;
                         }
                         if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
-                              && checkProfit(symbol,counter)   ){
+                              && checkImpactSet(symbol,counter, BeanConstant.closeImpactSet, BeanConfig.CLOSE_IMPACT_COUNTER)   ){
+
+                            logger.info("check profit success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.closeImpactSet);
+
                             //add trade to processing set
                             BeanConstant.closeProcessingSet.add(pairsTradeModel.getOpenId());
                             //begin to close the symbol
@@ -287,10 +292,11 @@ public class PositionOpenService {
         tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId);
     }
 
-    private boolean checkProfit(String symbol, int counter){
-        for(int i =0;i < BeanConfig.IMPACT_COUNTER; i++){
+    private boolean checkImpactSet(String symbol, int counter, Set<String> impactSet,int n ){
+
+        for(int i = 0; i < n; i++){
             String symbolcounter = symbol + (counter-i);
-            if(!BeanConstant.impactSet.contains(symbolcounter)){
+            if(!impactSet.contains(symbolcounter)){
                 return false;
             }
         }
@@ -377,8 +383,8 @@ public class PositionOpenService {
 //        MathContext mathContext = new MathContext(2,RoundingMode.HALF_UP);
 //        System.out.println(new BigDecimal(value));
 
-
-        System.out.println(BeanConstant.impactSet.remove("abc"));
+        BeanConstant.closeImpactSet.add("test1");
+        System.out.println(BeanConstant.closeImpactSet.remove("abc"));
 
     }
 }

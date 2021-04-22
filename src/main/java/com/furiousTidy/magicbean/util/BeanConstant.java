@@ -8,7 +8,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
-    public static Set<String> impactSet = new HashSet<>();
+
+    public static Set<String> openImpactSet = new HashSet<>();
+
+    public static Set<String> closeImpactSet = new HashSet<>();
 
     public static Set<String> closeProcessingSet = new HashSet<>();
 
