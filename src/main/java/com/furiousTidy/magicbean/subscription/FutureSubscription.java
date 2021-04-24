@@ -4,6 +4,8 @@ package com.furiousTidy.magicbean.subscription;
 * 工具类，缓存行情
 * */
 
+import com.binance.client.SubscriptionErrorHandler;
+import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
@@ -16,6 +18,7 @@ import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoService;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
+import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -46,6 +49,9 @@ public class FutureSubscription {
 
     @Autowired
     TradeInfoService tradeInfoService;
+
+    @Autowired
+    PositionOpenService positionOpenService;
 
     //subscribe funding rate and store in the tree map
     public void fundingRateSub(){
@@ -79,15 +85,35 @@ public class FutureSubscription {
     //存储合约最佳挂单行情
     public void allBookTickerSubscription(){
         getAllBookTikcers();
-        BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent)->{
-            HashMap map = new HashMap();
-            map.put(BeanConstant.BEST_ASK_PRICE,symbolBookTickerEvent.getBestAskPrice());
-            map.put(BeanConstant.BEST_ASK_Qty,symbolBookTickerEvent.getBestAskQty());
-            map.put(BeanConstant.BEST_BID_PRICE,symbolBookTickerEvent.getBestBidPrice());
-            map.put(BeanConstant.BEST_BID_QTY,symbolBookTickerEvent.getBestBidQty());
-            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),map);
+        BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent) -> {
+            if (!symbolBookTickerEvent.getSymbol().contains("USDT")) return;
 
-        },null);
+            HashMap map = new HashMap();
+            map.put(BeanConstant.BEST_ASK_PRICE, symbolBookTickerEvent.getBestAskPrice());
+            map.put(BeanConstant.BEST_ASK_Qty, symbolBookTickerEvent.getBestAskQty());
+            map.put(BeanConstant.BEST_BID_PRICE, symbolBookTickerEvent.getBestBidPrice());
+            map.put(BeanConstant.BEST_BID_QTY, symbolBookTickerEvent.getBestBidQty());
+            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(), map);
+            if (BeanConstant.watchdog
+                    &&symbolBookTickerEvent.getBestBidPrice()!=null && symbolBookTickerEvent.getBestAskPrice()!= null
+                    && MarketCache.spotTickerMap.containsKey(symbolBookTickerEvent.getSymbol())) {
+                try {
+
+                    positionOpenService.processPairsTrade(symbolBookTickerEvent.getSymbol(),symbolBookTickerEvent.getBestBidPrice(), symbolBookTickerEvent.getBestAskPrice()
+                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
+                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE));
+                } catch (Exception e) {
+                    logger.error("do future pairs trade exception={}", e);
+                }
+            }
+
+
+        }, new SubscriptionErrorHandler() {
+            @Override
+            public void onError(BinanceApiException exception) {
+                logger.error("future sub all tick exctpion={}",exception);
+            }
+        });
     }
 
     //initial user's future accout info

@@ -1,13 +1,42 @@
 package com.furiousTidy.magicbean.util;
 
-import java.util.HashSet;
-import java.util.Set;
+import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
+import sun.rmi.server.InactiveGroupException;
+
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
+
+
+    public static Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();
+    public static List<PairsTradeModel> pairsTradeList = new ArrayList<>();
+
+
+
+    public static BigDecimal b4 = new BigDecimal("0.004");
+    public static BigDecimal b5 = new BigDecimal("0.005");
+    public static BigDecimal b6 = new BigDecimal("0.006");
+    public static BigDecimal b7 = new BigDecimal("0.007");
+    public static BigDecimal b8 = new BigDecimal("0.008");
+    public static BigDecimal b9 = new BigDecimal("0.009");
+    public static BigDecimal b10 = new BigDecimal("0.01");
+
+    public static int BigThanB4 = 0;
+    public static int BigThanB5 = 0;
+    public static int BigThanB6 = 0;
+    public static int BigThanB7 = 0;
+    public static int BigThanB8 = 0;
+    public static int BigThanB9 = 0;
+    public static int BigThanB10 = 0;
+
+
 
     public static Set<String> openImpactSet = new HashSet<>();
 

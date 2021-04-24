@@ -14,6 +14,7 @@ import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.trader.service.AfterOrderService;
+import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -63,6 +64,26 @@ public class TradeScheduleService {
     @Autowired
     AfterOrderService afterOrderService;
 
+    @Autowired
+    PositionOpenService positionOpenService;
+
+    //get all the open pairs trade for close
+    @Scheduled(cron = "0 0/5 * * * ?")
+    public void getAllOpenOrder(){
+        BeanConstant.pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
+        //store trade_info in the map;
+
+        BeanConstant.pairsTradeList.forEach(pairsTradeModel ->{
+            BeanConstant.tradeInfoMap.put(pairsTradeModel.getOpenId()
+                    ,tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()));
+            }
+
+        );
+
+        //sort the list min to high
+        positionOpenService.sortPairsTradeList(BeanConstant.pairsTradeList);
+    }
+
     @Scheduled(cron = "0 0/5 * * * ?")
     public void queryOrder(){
         for(Map.Entry <String, String> entry :MarketCache.futureOrderCache.entrySet()){
@@ -86,8 +107,6 @@ public class TradeScheduleService {
                 MarketCache.spotOrderCache.remove(order.getClientOrderId());
             }
         }
-
-
     }
 
     //checkNetWork state  test order has no use

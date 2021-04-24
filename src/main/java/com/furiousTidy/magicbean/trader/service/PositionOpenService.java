@@ -23,6 +23,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
+import static com.furiousTidy.magicbean.util.BeanConstant.b4;
 
 
 /*
@@ -52,11 +53,9 @@ public class PositionOpenService {
     ProxyUtil proxyUtil;
 
 
-
-
-    List<PairsTradeModel> pairsTradeList = new ArrayList<>();
-
-    Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();
+//    List<PairsTradeModel> pairsTradeList = new ArrayList<>();
+//
+//    Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();
 
     String symbol = "";
 
@@ -79,12 +78,6 @@ public class PositionOpenService {
     static int counter=0;
 
     BigDecimal openRatio;
-
-
-
-
-
-
 
     /*
     *
@@ -152,21 +145,21 @@ public class PositionOpenService {
         if(!BeanConstant.watchdog) return;
 
         //if new pairs trade success, then get the pairs trade
-        if(BeanConstant.HAS_NEW_TRADE_OPEN.get() || pairsTradeList.size() ==0){
-            pairsTradeList.clear();
-            pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
-            //store trade_info in the map;
-            tradeInfoMap.clear();
-
-            pairsTradeList.forEach(pairsTradeModel ->
-                    tradeInfoMap.put(pairsTradeModel.getOpenId()
-                            ,tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()))
-            );
-
-            //sort the list min to high
-            sortPairsTradeList(pairsTradeList);
-            BeanConstant.HAS_NEW_TRADE_OPEN.set(false);
-        }
+//        if(BeanConstant.HAS_NEW_TRADE_OPEN.get() || pairsTradeList.size() ==0){
+//            pairsTradeList.clear();
+//            pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
+//            //store trade_info in the map;
+//            tradeInfoMap.clear();
+//
+//            pairsTradeList.forEach(pairsTradeModel ->
+//                    tradeInfoMap.put(pairsTradeModel.getOpenId()
+//                            ,tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()))
+//            );
+//
+//            //sort the list min to high
+//            sortPairsTradeList(pairsTradeList);
+//            BeanConstant.HAS_NEW_TRADE_OPEN.set(false);
+//        }
 
         counter++;
         if(counter+1 == 300000) {
@@ -181,84 +174,118 @@ public class PositionOpenService {
             symbol = entry.getKey();
             if(!symbol.contains("USDT")) continue;
             futureBidPrice = getFutureTickPrice(symbol,"bid");
+            futureAskPrice = getFutureTickPrice(symbol,"ask");
+            spotBidPrice = getSpotTickPrice(symbol,"bid");
             spotAskPrice= getSpotTickPrice(symbol,"ask");
-            if(futureBidPrice == null || spotAskPrice == null ||
-                    futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) continue;
-            if(futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4)
-                    .compareTo(tradeUtil.getPairsGap(symbol)) > 0){
-                BeanConstant.openImpactSet.add(symbol+counter);
-            }
-            //price matched open
-            if( BeanConstant.ENOUGH_MONEY.get() && tradeUtil.isTradeCanOpen(symbol)
-                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)){
+            processPairsTrade(symbol,futureBidPrice,futureAskPrice,spotBidPrice,spotAskPrice);
+        }
+    }
 
-//              logger.info("check open ratio success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.openImpactSet);
+    @Async
+    public void processPairsTrade(String symbol, BigDecimal futureBidPrice, BigDecimal futureAskPrice,
+                                  BigDecimal spotBidPrice, BigDecimal spotAskPrice) throws InterruptedException {
 
-                clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
+        if(futureBidPrice == null || spotAskPrice == null ||
+                futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) return;
 
-                MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-                doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
-                        BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
+        openRatio = futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4);
 
-            }else {
-                if(!tradeUtil.isTradeCanClosed(symbol)) continue;
-                if(pairsTradeList == null || pairsTradeList.size() == 0) continue;
-                symbolPairsTradeList = getPairsTradeInList(symbol,pairsTradeList);
-                if(symbolPairsTradeList.size() != 0){
-                    for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
-                        // if trade already in processing set, then skip the trade
-                        if(BeanConstant.closeProcessingSet.contains(pairsTradeModel.getOpenId())) continue;
+//            if(openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0){
+//                BeanConstant.openImpactSet.add(symbol+counter);
+//            }
 
-                        futureAskPrice= getFutureTickPrice(symbol,"ask");
-                        spotBidPrice = getSpotTickPrice(symbol,"bid");
-//                        closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
+        countRatio(openRatio);
+        //price matched open
+        if( BeanConstant.ENOUGH_MONEY.get() && tradeUtil.isTradeCanOpen(symbol)
+//                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)
+                && openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0
+                ){
 
-                        //get tradeinfo from cache or db
-                        String openId = pairsTradeModel.getOpenId();
-                        TradeInfoModel tradeInfoModel = tradeInfoMap.containsKey(openId)?tradeInfoMap.get(openId):null;
-                        if(tradeInfoModel == null){
-                            tradeInfoModel =  tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
-                            logger.info("get  model from DB is null ,opnenId={}", openId);
-                            if(tradeInfoModel == null) return;
-                        }
+            logger.info("check open ratio success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.openImpactSet);
 
-                        //get qty form trade info
-                        BigDecimal spotQty = tradeInfoModel.getSpotQty();
-                        BigDecimal futrueQty = tradeInfoModel.getFutureQty();
-                        //calculate profit
-                        profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice, tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
-                        if(profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
-                            BeanConstant.closeImpactSet.add(symbol+counter);
-                        }else{
-                            continue;
-                        }
-                        if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
-                              && checkImpactSet(symbol,counter, BeanConstant.closeImpactSet, BeanConfig.CLOSE_IMPACT_COUNTER)   ){
+            clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
-                            logger.info("check profit success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.closeImpactSet);
+            MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
+            doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
+                    BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
 
-                            //add trade to processing set
-                            BeanConstant.closeProcessingSet.add(pairsTradeModel.getOpenId());
-                            //begin to close the symbol
-                            String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
-                            logger.info("begin to close symbol={},openId={}, closeRatio={}",symbol,clientOrderId,profit);
+        }else {
+            if(!tradeUtil.isTradeCanClosed(symbol)) return;
+            if(BeanConstant.pairsTradeList == null || BeanConstant.pairsTradeList.size() == 0) return;
+            symbolPairsTradeList = getPairsTradeInList(symbol,BeanConstant.pairsTradeList);
+            if(symbolPairsTradeList.size() != 0){
+                for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
+                    // if trade already in processing set, then skip the trade
+                    if(BeanConstant.closeProcessingSet.contains(pairsTradeModel.getOpenId())) continue;
 
-                            pairsTradeModel.setCloseId(clientOrderId);
+//                  closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
 
-                            //set the lock
-                            Lock closeLock = new ReentrantLock();
-                            MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-                            closeLock.lock();
-                            doPairsTradeByQty(symbol, futrueQty,spotQty,futureAskPrice,spotBidPrice,
-                                    BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
-                            //update close id in pairstrade
-                            pairsTradeDao.updatePairsTrade(pairsTradeModel);
-                            closeLock.unlock();
+                    //get tradeinfo from cache or db
+                    String openId = pairsTradeModel.getOpenId();
+                    TradeInfoModel tradeInfoModel = BeanConstant.tradeInfoMap.containsKey(openId)? BeanConstant.tradeInfoMap.get(openId):null;
+                    if(tradeInfoModel == null){
+                        tradeInfoModel =  tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
+                        logger.info("get  model from DB is null ,opnenId={}", openId);
+                        if(tradeInfoModel == null) return;
+                    }
 
-                        }
+                    //get qty form trade info
+                    BigDecimal spotQty = tradeInfoModel.getSpotQty();
+                    BigDecimal futrueQty = tradeInfoModel.getFutureQty();
+                    //calculate profit
+                    profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice, tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
+//                    if(profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
+//                        BeanConstant.closeImpactSet.add(symbol+counter);
+//                    }else{
+//                        continue;
+//                    }
+                    if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
+//                            && checkImpactSet(symbol,counter, BeanConstant.closeImpactSet, BeanConfig.CLOSE_IMPACT_COUNTER)
+                            && profit.compareTo(BeanConfig.TRADE_PROFIT) > 0
+                            ){
+
+                        logger.info("check profit success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.closeImpactSet);
+
+                        //add trade to processing set
+                        BeanConstant.closeProcessingSet.add(pairsTradeModel.getOpenId());
+                        //begin to close the symbol
+                        String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
+                        logger.info("begin to close symbol={},openId={}, closeRatio={}",symbol,clientOrderId,profit);
+
+                        pairsTradeModel.setCloseId(clientOrderId);
+
+                        //set the lock
+                        Lock closeLock = new ReentrantLock();
+                        MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
+                        closeLock.lock();
+                        doPairsTradeByQty(symbol, futrueQty,spotQty,futureAskPrice,spotBidPrice,
+                                BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
+                        //update close id in pairstrade
+                        pairsTradeDao.updatePairsTrade(pairsTradeModel);
+                        closeLock.unlock();
+
                     }
                 }
             }
+        }
+    }
+
+    private void countRatio(BigDecimal openRatio) {
+
+        if(openRatio.compareTo(BeanConstant.b10)>0){
+            BeanConstant.BigThanB10++;
+        }else if(openRatio.compareTo(BeanConstant.b9)>0){
+            BeanConstant.BigThanB9++;
+        }else if(openRatio.compareTo(BeanConstant.b8)>0){
+            BeanConstant.BigThanB8++;
+        }else if(openRatio.compareTo(BeanConstant.b7)>0){
+            BeanConstant.BigThanB7++;
+        }else if(openRatio.compareTo(BeanConstant.b6)>0){
+            BeanConstant.BigThanB6++;
+        }else if(openRatio.compareTo(BeanConstant.b5)>0){
+            BeanConstant.BigThanB5++;
+        }else if(openRatio.compareTo(BeanConstant.b4)>0){
+            BeanConstant.BigThanB4++;
         }
     }
 
@@ -295,8 +322,7 @@ public class PositionOpenService {
     private boolean checkImpactSet(String symbol, int counter, Set<String> impactSet,int n ){
 
         for(int i = 0; i < n; i++){
-            String symbolcounter = symbol + (counter-i);
-            if(!impactSet.contains(symbolcounter)){
+            if(!impactSet.contains(symbol + (counter-i))){
                 return false;
             }
         }
@@ -347,7 +373,7 @@ public class PositionOpenService {
         }
     }
 
-    private void sortPairsTradeList(List<PairsTradeModel> pairsTradeList) {
+    public void sortPairsTradeList(List<PairsTradeModel> pairsTradeList) {
         if(pairsTradeList!=null && pairsTradeList.size()>0){
             Collections.sort(pairsTradeList,
                     (Comparator<PairsTradeModel>) (a, b) -> {

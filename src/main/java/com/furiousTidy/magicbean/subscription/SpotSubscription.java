@@ -10,6 +10,7 @@ import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
+import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -42,6 +43,9 @@ public class SpotSubscription {
 
     @Autowired
     PairsTradeDao pairsTradeDao;
+
+    @Autowired
+    PositionOpenService positionOpenService;
 
     public void symbolBookTickSubscription(String symbol){
 
@@ -76,13 +80,35 @@ public class SpotSubscription {
 
         //subscribe bookticker
         BinanceClient.spotSubsptClient.onAllBookTickersEvent(bookTickerEvent -> {
+            if (!bookTickerEvent.getSymbol().contains("USDT")) return;
+
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTickerEvent.getAskPrice()));
             map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTickerEvent.getAskQuantity()));
             map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTickerEvent.getBidPrice()));
             map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTickerEvent.getBidQuantity()));
             MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
+
+            if(BeanConstant.watchdog
+                    && bookTickerEvent.getBidPrice() != null && bookTickerEvent.getBidPrice() != null
+                    && MarketCache.futureTickerMap.containsKey(bookTickerEvent.getSymbol())){
+                try {
+                    positionOpenService.processPairsTrade(bookTickerEvent.getSymbol(),
+                            MarketCache.futureTickerMap.get(bookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
+                            ,MarketCache.futureTickerMap.get(bookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE)
+                            ,new BigDecimal(bookTickerEvent.getBidPrice())
+                            ,new BigDecimal(bookTickerEvent.getAskPrice())
+                    );
+                } catch (InterruptedException e) {
+                    logger.error("do spot pairs trade exception={}",e);
+                }
+            }
+
+
+
             });
+
+
     }
 
     /**

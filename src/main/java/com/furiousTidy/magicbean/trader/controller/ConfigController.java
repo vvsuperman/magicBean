@@ -34,7 +34,8 @@ public class ConfigController {
         Map<String,Object> configMap = new HashMap<>();
         for (Field field : BeanConfig.class.getFields())
         {
-            if(field.getName().equals("SECRET_KEY") || field.getName().equals("API_KEY")) continue;
+            if(field.getName().equals("SECRET_KEY") || field.getName().equals("API_KEY")
+                    || field.getName().equals("tradeInfoMap") || field.getName().equals("pairsTradeList")) continue;
             configMap.put(field.getName(),field.get(o));
         }
 
@@ -42,6 +43,8 @@ public class ConfigController {
         Map<String,Object> constantMap = new HashMap<>();
         for (Field field : BeanConstant.class.getFields())
         {
+            if(field.getName().equals("SECRET_KEY") || field.getName().equals("API_KEY")
+                    || field.getName().equals("tradeInfoMap") || field.getName().equals("pairsTradeList")) continue;
             constantMap.put(field.getName(),field.get(o1));
         }
 

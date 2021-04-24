@@ -255,6 +255,9 @@ public class PositionOpenController {
         //subscribe future ratio
         futureSubscription.fundingRateSub();
 
+        //get all the open order
+        tradeScheduleService.getAllOpenOrder();
+
         //subscribe order update info
 //        futureSubscription.processFutureCache();
 //        spotSubscription.processBalanceCache();
@@ -265,6 +268,7 @@ public class PositionOpenController {
 
         //get pairs trade gap
         tradeScheduleService.changePairsGap();
+
 
         //set balance
         preTradeService.initialBalance();
