@@ -221,8 +221,8 @@ public class TradeUtil {
     public static String getCurrentTime(){
         LocalDate today = LocalDate.now();
         LocalTime time = LocalTime.now();
-        return today.getYear()+"_"+today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
-                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND);
+        return today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
+                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND)+"_"+Thread.currentThread().getId();
     }
 
 

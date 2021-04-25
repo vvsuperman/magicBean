@@ -103,8 +103,6 @@ public class TradeService {
 
             if( order.getStatus().equals("FILLED")){
 
-
-
                 afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty);
 
                 return;

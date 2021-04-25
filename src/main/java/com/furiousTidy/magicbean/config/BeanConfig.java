@@ -19,7 +19,7 @@ public class BeanConfig {
 
     public static  String FUND_RATE_OPEN_THRESHOLD = "0.0012";
     public static  String FUND_RATE_CLOSE_THRESHOLD = "0.001";
-    public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.01"); //交易条件，千分之五
+    public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.008"); //交易条件，千分之五
     public static  BigDecimal CLOSE_PRICE_GAP = new BigDecimal("0.005");  //平仓条件千分之2.3，不亏就行
     public static  BigDecimal MIN_OPEN_UNIT = new BigDecimal(10);
     public static  BigDecimal ENOUTH_MOENY_UNIT =new BigDecimal("30"); //多线程并发太快，留60刀
