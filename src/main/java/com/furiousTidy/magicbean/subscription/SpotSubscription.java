@@ -89,20 +89,20 @@ public class SpotSubscription {
             map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTickerEvent.getBidQuantity()));
             MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),map);
 
-            if(BeanConstant.watchdog
-                    && bookTickerEvent.getBidPrice() != null && bookTickerEvent.getBidPrice() != null
-                    && MarketCache.futureTickerMap.containsKey(bookTickerEvent.getSymbol())){
-                try {
-                    positionOpenService.processPairsTrade(bookTickerEvent.getSymbol(),
-                            MarketCache.futureTickerMap.get(bookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
-                            ,MarketCache.futureTickerMap.get(bookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE)
-                            ,new BigDecimal(bookTickerEvent.getBidPrice())
-                            ,new BigDecimal(bookTickerEvent.getAskPrice())
-                    );
-                } catch (InterruptedException e) {
-                    logger.error("do spot pairs trade exception={}",e);
-                }
-            }
+//            if(BeanConstant.watchdog
+//                    && bookTickerEvent.getBidPrice() != null && bookTickerEvent.getBidPrice() != null
+//                    && MarketCache.futureTickerMap.containsKey(bookTickerEvent.getSymbol())){
+//                try {
+//                    positionOpenService.processPairsTrade(bookTickerEvent.getSymbol(),
+//                            MarketCache.futureTickerMap.get(bookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
+//                            ,MarketCache.futureTickerMap.get(bookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE)
+//                            ,new BigDecimal(bookTickerEvent.getBidPrice())
+//                            ,new BigDecimal(bookTickerEvent.getAskPrice())
+//                    );
+//                } catch (InterruptedException e) {
+//                    logger.error("do spot pairs trade exception={}",e);
+//                }
+//            }
 
 
 

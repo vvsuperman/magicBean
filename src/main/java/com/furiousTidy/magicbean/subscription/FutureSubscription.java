@@ -94,18 +94,18 @@ public class FutureSubscription {
             map.put(BeanConstant.BEST_BID_PRICE, symbolBookTickerEvent.getBestBidPrice());
             map.put(BeanConstant.BEST_BID_QTY, symbolBookTickerEvent.getBestBidQty());
             MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(), map);
-            if (BeanConstant.watchdog
-                    &&symbolBookTickerEvent.getBestBidPrice()!=null && symbolBookTickerEvent.getBestAskPrice()!= null
-                    && MarketCache.spotTickerMap.containsKey(symbolBookTickerEvent.getSymbol())) {
-                try {
-
-                    positionOpenService.processPairsTrade(symbolBookTickerEvent.getSymbol(),symbolBookTickerEvent.getBestBidPrice(), symbolBookTickerEvent.getBestAskPrice()
-                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
-                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE));
-                } catch (Exception e) {
-                    logger.error("do future pairs trade exception={}", e);
-                }
-            }
+//            if (BeanConstant.watchdog
+//                    &&symbolBookTickerEvent.getBestBidPrice()!=null && symbolBookTickerEvent.getBestAskPrice()!= null
+//                    && MarketCache.spotTickerMap.containsKey(symbolBookTickerEvent.getSymbol())) {
+//                try {
+//
+//                    positionOpenService.processPairsTrade(symbolBookTickerEvent.getSymbol(),symbolBookTickerEvent.getBestBidPrice(), symbolBookTickerEvent.getBestAskPrice()
+//                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
+//                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE));
+//                } catch (Exception e) {
+//                    logger.error("do future pairs trade exception={}", e);
+//                }
+//            }
 
 
         }, new SubscriptionErrorHandler() {
