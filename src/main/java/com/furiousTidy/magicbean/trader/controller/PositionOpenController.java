@@ -269,7 +269,8 @@ public class PositionOpenController {
         //get pairs trade gap
         tradeScheduleService.changePairsGap();
 
-
+        //change leveragelevel to 1
+        preTradeService.changeLeverageLevel(1);
         //set balance
         preTradeService.initialBalance();
         return "success";

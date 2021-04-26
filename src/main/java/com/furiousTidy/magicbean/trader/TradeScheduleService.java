@@ -221,7 +221,7 @@ public class TradeScheduleService {
         Map<String,String> tagMap = new HashMap<>();
         Map<String,Object> fileMap = new HashMap<>();
 
-        tagMap.put("name","fangwei");
+        tagMap.put("name","mengna");
         fileMap.put("balance",spotBalance[0].add(futureBalance));
 
         influxDbConnection.insert("balance_info",tagMap,fileMap);
