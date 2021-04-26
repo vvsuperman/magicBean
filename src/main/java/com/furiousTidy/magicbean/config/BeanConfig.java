@@ -47,12 +47,12 @@ public class BeanConfig {
     //最小下单单元
 
     //prd mengna
-//  public static final String API_KEY = "4bXoFQbvoe18Xy2B7dWJxqfRTU78DPduiBDHScIHQ0aFXI6tNYeVEIsdNwfTjmX9";
-//  public static final String SECRET_KEY = "Io5imcwwWzKyW1oWsJ9LjjIY9Dk2fkpqtjuZwrdRYzDON8UEDP5sjPPDMIhKC9KK";
+      public static final String API_KEY = "4bXoFQbvoe18Xy2B7dWJxqfRTU78DPduiBDHScIHQ0aFXI6tNYeVEIsdNwfTjmX9";
+      public static final String SECRET_KEY = "Io5imcwwWzKyW1oWsJ9LjjIY9Dk2fkpqtjuZwrdRYzDON8UEDP5sjPPDMIhKC9KK";
 
     //prd laoma
-    public static final String API_KEY = "ypDfS0pu16G7MrY1LD7PFXeIqNoWUI84l19XDrT2WCq4vQKLtHUfkgiQ3nFO8kX5";
-    public static final String SECRET_KEY = "MWPNHKLB9nMD4L9V7Q1WevicWmswVqMJmPS5hbBwf0XzbxdJNzTFNcEqtEcUJ2kc";
+//    public static final String API_KEY = "ypDfS0pu16G7MrY1LD7PFXeIqNoWUI84l19XDrT2WCq4vQKLtHUfkgiQ3nFO8kX5";
+//    public static final String SECRET_KEY = "MWPNHKLB9nMD4L9V7Q1WevicWmswVqMJmPS5hbBwf0XzbxdJNzTFNcEqtEcUJ2kc";
 
 
     public static void main(String[] args){
