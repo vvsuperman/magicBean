@@ -5,6 +5,7 @@ import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import sun.rmi.server.InactiveGroupException;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +14,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
+
+    public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
 
     public static Map<String, TradeInfoModel> tradeInfoMap = new HashMap<>();

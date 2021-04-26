@@ -12,11 +12,14 @@ import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.beans.beancontext.BeanContextChild;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Date;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -58,6 +61,7 @@ public class AfterOrderService {
                 tradeInfo.setOrderId(clientOrderId);
                 tradeInfo.setFuturePrice(price);
                 tradeInfo.setFutureQty(qty);
+                tradeInfo.setCreateTime(BeanConstant.dateFormat.format(new Date()));
                 tradeInfoDao.insertTradeInfo(tradeInfo);
             }
             else{
@@ -76,6 +80,7 @@ public class AfterOrderService {
 
                 tradeInfo.setFutureQty(futureQty);
                 tradeInfo.setFuturePrice(futurePrice);
+                tradeInfo.setUpdateTime(BeanConstant.dateFormat.format(new Date()));
                 tradeInfoDao.updateTradeInfoById(tradeInfo);
 
                 log.info("future calculate ratio begin, tradeInfo={}", tradeInfo);
@@ -122,6 +127,7 @@ public class AfterOrderService {
                 tradeInfo.setOrderId(clientOrderId);
                 tradeInfo.setSpotPrice(price);
                 tradeInfo.setSpotQty(qty);
+                tradeInfo.setCreateTime(BeanConstant.dateFormat.format(new Date()));
                 log.info("spot store process insert, tradeInfo {}",tradeInfo);
 
                 tradeInfoDao.insertTradeInfo(tradeInfo);
@@ -144,6 +150,7 @@ public class AfterOrderService {
                 }
                 tradeInfo.setSpotQty(spotQty);
                 tradeInfo.setSpotPrice(spotPrice);
+                tradeInfo.setUpdateTime(BeanConstant.dateFormat.format(new Date()));
                 log.info("spot store process update, tradeInfo {}",tradeInfo);
                 tradeInfoDao.updateTradeInfoById(tradeInfo);
 
@@ -180,6 +187,7 @@ public class AfterOrderService {
                 pairsTradeModel.setSymbol(symbol);
                 pairsTradeModel.setOpenId(clientOrderId);
                 pairsTradeModel.setOpenRatio(ratio);
+                pairsTradeModel.setCreateTime(BeanConstant.dateFormat.format(new Date()));
                 log.info("insert pairstrade,pairsTrade={}",pairsTradeModel);
                 pairsTradeDao.insertPairsTrade(pairsTradeModel);
             }else{
@@ -195,6 +203,7 @@ public class AfterOrderService {
             ratio = spotPrice.subtract(futurePrice).divide(futurePrice, 6, RoundingMode.HALF_UP);
             pairsTradeModel.setProfit(profit);
             pairsTradeModel.setCloseRatio(ratio);
+            pairsTradeModel.setUpdateTime(BeanConstant.dateFormat.format(new Date()));
             pairsTradeDao.updatePairsTrade(pairsTradeModel);
         }
 

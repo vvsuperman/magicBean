@@ -22,6 +22,12 @@ FUTURE_ORDER_STATUS: PARTIALLY_FILLED
 database: Fw123456*
 
 mysql -h172.30.62.182 -u root -p
+ select count(openRatio) from pairs_trade where openId like "%FSO_4_26%";
+
+alter table pairs_trade add createTime varchar(30);
+alter table pairs_trade add updateTime varchar(30);
+alter table trade_info add createTime varchar(30);
+alter table trade_info add updateTime varchar(30);
 
 
 echo "obase=16;15434" | bc

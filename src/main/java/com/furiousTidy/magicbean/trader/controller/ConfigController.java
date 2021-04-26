@@ -44,7 +44,8 @@ public class ConfigController {
         for (Field field : BeanConstant.class.getFields())
         {
             if(field.getName().equals("SECRET_KEY") || field.getName().equals("API_KEY")
-                    || field.getName().equals("tradeInfoMap") || field.getName().equals("pairsTradeList")) continue;
+                    || field.getName().equals("tradeInfoMap") || field.getName().equals("pairsTradeList")
+            || field.getName().equals("dateFormat")) continue;
             constantMap.put(field.getName(),field.get(o1));
         }
 
