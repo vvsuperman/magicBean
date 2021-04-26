@@ -21,6 +21,7 @@ FUTURE_ORDER_STATUS: PARTIALLY_FILLED
 
 database: Fw123456*
 
+service mysqld start
 mysql -h172.30.62.182 -u root -p
 
 mysqldump --single-transaction -u root -p magic_bean pairs_trade > '/home/sqldump/pairs_trade.sql'
@@ -37,3 +38,5 @@ top -H -p pid
 
 
  select sum(profit) from pairs_trade where closeId like "%2021_4_23%";
+
+ grep "TOMOUSDT_FSC_4_25_22_32_12_891_51" /home/admin/application/logs/start.log
