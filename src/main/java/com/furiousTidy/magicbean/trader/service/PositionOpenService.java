@@ -144,23 +144,6 @@ public class PositionOpenService {
     public void doPairsTradeRobotInner() throws InterruptedException {
         if(!BeanConstant.watchdog) return;
 
-        //if new pairs trade success, then get the pairs trade
-//        if(BeanConstant.HAS_NEW_TRADE_OPEN.get() || pairsTradeList.size() ==0){
-//            pairsTradeList.clear();
-//            pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
-//            //store trade_info in the map;
-//            tradeInfoMap.clear();
-//
-//            pairsTradeList.forEach(pairsTradeModel ->
-//                    tradeInfoMap.put(pairsTradeModel.getOpenId()
-//                            ,tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()))
-//            );
-//
-//            //sort the list min to high
-//            sortPairsTradeList(pairsTradeList);
-//            BeanConstant.HAS_NEW_TRADE_OPEN.set(false);
-//        }
-
         counter++;
         if(counter+1 == 300000) {
             counter = 1;

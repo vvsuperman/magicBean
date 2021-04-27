@@ -20,6 +20,7 @@ import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -188,6 +189,9 @@ public class TradeScheduleService {
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
 
         }
+
+        //spot account will take a delay for transfer money
+        Thread.sleep(30000);
         BeanConstant.watchdog =true;
     }
 
@@ -221,7 +225,7 @@ public class TradeScheduleService {
         Map<String,String> tagMap = new HashMap<>();
         Map<String,Object> fileMap = new HashMap<>();
 
-        tagMap.put("name","mengna");
+        tagMap.put("name", BeanConstant.USER_NAME);
         fileMap.put("balance",spotBalance[0].add(futureBalance));
 
         influxDbConnection.insert("balance_info",tagMap,fileMap);

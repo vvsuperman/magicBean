@@ -22,7 +22,7 @@ FUTURE_ORDER_STATUS: PARTIALLY_FILLED
 database: Fw123456*
 
 service mysqld start
-mysql -h172.30.62.182 -u root -p
+mysql -u root -p
 
 mysqldump --single-transaction -u root -p magic_bean pairs_trade > '/home/sqldump/pairs_trade.sql'
 create index idx_openId on pairs_trade(openId);
