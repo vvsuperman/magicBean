@@ -9,9 +9,9 @@ SELECT (("spotBidPrice"-"futureAskPrice")/"futureAskPrice") as "spotRatio",  (("
 
 
 mvn -B clean package -Dmaven.test.skip=true -Dautoconfig.skip
-scp ./target/magicbean-0.0.1.jar root@47.245.35.226:/home/admin/application/target
-scp ./target/application.properties root@47.245.35.226:/home/admin/application/conf
-ssh root@47.245.35.226
+scp ./target/magicbean-0.0.1.jar root@8.209.248.166:/home/admin/application/target
+scp ./target/application.properties root@8.209.248.166:/home/admin/application/conf
+ssh root@8.209.248.166
 . /home/admin/application/deploy.sh restart
 
 #退出sqlite
