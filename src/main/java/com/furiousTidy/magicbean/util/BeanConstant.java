@@ -2,7 +2,6 @@ package com.furiousTidy.magicbean.util;
 
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
-import sun.rmi.server.InactiveGroupException;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;

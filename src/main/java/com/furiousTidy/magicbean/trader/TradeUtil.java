@@ -143,10 +143,14 @@ public class TradeUtil {
     }
 
     public boolean isTradeCanOpen(String symbol){
+
+        if(Boolean.valueOf(BeanConfig.STOP_TRADE)){
+            return false;
+        }
+
         if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_OPEN)) {
             return true;
         }
-
 
         if(futureRateCache.containsKey(symbol) && futureRateCache.get(symbol).compareTo(BigDecimal.ZERO) > 0){
             return true;

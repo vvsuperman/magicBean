@@ -179,12 +179,12 @@ public class PositionOpenService {
 
         countRatio(openRatio);
         //price matched open
-        if( BeanConstant.ENOUGH_MONEY.get() && tradeUtil.isTradeCanOpen(symbol)
+        if( checkMoney()  && tradeUtil.isTradeCanOpen(symbol)
 //                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)
                 && openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0
                 ){
 
-            logger.info("check open ratio success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.openImpactSet);
+            logger.info("check open ratio success, symbol={}, openRatio={}", symbol, openRatio);
 
             clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
@@ -292,7 +292,6 @@ public class PositionOpenService {
     private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice,
                                    String direct,String clientOrderId) throws InterruptedException {
 
-        if ( !checkMoney(futureQty, spotQty, futurePrice, spotPrice, clientOrderId,direct)) return;
 
 
         //计算合约最小下单位数
@@ -313,19 +312,18 @@ public class PositionOpenService {
     }
 
     // check money enough
-    private boolean checkMoney(BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice, String clientOrderId,String  direct) {
+    private boolean checkMoney() {
 //        logger.info("checkMoney for id={}, futureBalance={}, spotBalance={}", clientOrderId, MarketCache.futureBalance.get(),MarketCache.spotBalance.get());
 
-        if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-            if(MarketCache.futureBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0
-                    || MarketCache.spotBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0 ){
-                return false;
-            }
-
-            //money enough, set balance
-            proxyUtil.addBalance(futurePrice.multiply(futureQty).negate(),"future");
-            proxyUtil.addBalance( spotPrice.multiply(spotQty).negate(),"spot");
+        if(MarketCache.futureBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0
+                || MarketCache.spotBalance.get().compareTo(BeanConfig.ENOUTH_MOENY_UNIT) <0
+                || !BeanConstant.ENOUGH_MONEY.get()){
+            return false;
         }
+
+        //money enough, set balance
+        proxyUtil.addBalance(BeanConfig.STANDARD_TRADE_UNIT.negate(),"future");
+        proxyUtil.addBalance(BeanConfig.STANDARD_TRADE_UNIT.negate(),"spot");
 
         return true;
 
