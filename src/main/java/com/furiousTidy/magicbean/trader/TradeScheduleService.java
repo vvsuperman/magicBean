@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.binance.api.client.domain.TransferType;
 
@@ -169,14 +170,14 @@ public class TradeScheduleService {
                 ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
 
 
-        if(balances[0].subtract(balances[1]).compareTo(BigDecimal.ZERO)>0){
+        if(balances[0].subtract(balances[1]).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0){
             BigDecimal transferUSDT = balances[0].subtract(balances[1]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             if(transferUSDT.compareTo(BigDecimal.ZERO)==0) return;
             BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
             //synchronize local cache
             while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
-        }else if(balances[1].subtract(balances[0]).compareTo(BigDecimal.ZERO)>0){
+        }else if(balances[1].subtract(balances[0]).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0){
             log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
                     ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
 
@@ -187,8 +188,11 @@ public class TradeScheduleService {
             //synchronize local cache
             while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
-
+        }else{
+            while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0]));
+            while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1]));
         }
+
 
         //spot account will take a delay for transfer money
         Thread.sleep(30000);
@@ -267,44 +271,9 @@ public class TradeScheduleService {
     }
 
     public static void main(String[] args){
-        ConcurrentHashMap<String, Integer> testMap = new ConcurrentHashMap<>();
-        for(int i=0;i<10000;i++){
-            testMap.put("test"+i,i);
-        }
-        Iterator<Map.Entry<String, Integer>> iterator= testMap.entrySet().iterator();
-
-
-        new Runnable(){
-            @Override
-            public void run() {
-//                while (iterator.hasNext()){
-//                    Map.Entry<String, Integer> entry = iterator.next();
-//                    if(entry.getValue()%2==0){
-//                        iterator.remove();
-//                    }
-//                }
-
-                for(Map.Entry <String, Integer> entry : testMap.entrySet()){
-                    if(entry.getValue() % 2 == 0){
-                        testMap.remove(entry.getKey());
-                    }
-                }
-
-
-            }
-        }.run();
-
-
-        new Runnable(){
-            @Override
-            public void run() {
-                for(int i=10000;i<20000;i++){
-                    testMap.put("test"+i,i);
-                }
-            }
-        }.run();
-
-        System.out.println(testMap.size());
+        MarketCache.spotBalance = new AtomicReference<BigDecimal>(new BigDecimal("2"));
+        while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),new BigDecimal("10")));
+        System.out.println(MarketCache.spotBalance);
 
 
     }

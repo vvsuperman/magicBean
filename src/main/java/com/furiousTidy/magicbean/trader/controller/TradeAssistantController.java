@@ -8,7 +8,9 @@ import com.binance.client.model.enums.NewOrderRespType;
 import com.binance.client.model.enums.OrderSide;
 import com.binance.client.model.enums.OrderType;
 import com.binance.client.model.enums.TimeInForce;
+import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Order;
+import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
@@ -17,18 +19,23 @@ import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeScheduleService;
 import com.furiousTidy.magicbean.trader.TradeUtil;
+import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 import static com.binance.api.client.domain.account.NewOrder.marketBuy;
@@ -54,6 +61,9 @@ public class TradeAssistantController {
     @Autowired
     TradeUtil tradeUtil;
 
+    @Autowired
+    FutureSyncClientProxy futureSyncClientProxy;
+
     @RequestMapping("queryOrder")
     public @ResponseBody String queryOrder(){
         tradeSchedule.queryOrder();
@@ -64,6 +74,32 @@ public class TradeAssistantController {
     public @ResponseBody String closeTrade(@PathVariable List<String> openIds){
          tradeUtil.closeTrade(openIds);
          return "success";
+    }
+
+    @RequestMapping("closeAllPosition")
+    public @ResponseBody String closeAllPosition(){
+//        AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
+//        final TreeMap<String,BigDecimal> assetInfo = new TreeMap<>();
+//        accountInformation.getAssets().forEach(asset -> {
+//            if(!asset.getMaxWithdrawAmount().equals(BigDecimal.ZERO)){
+//                String clientOrderId = asset.getAsset()+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ tradeUtil.getCurrentTime();
+//
+//                Order order =futureSyncClientProxy.postOrder(asset.getAsset(), OrderSide.BUY,null, OrderType.LIMIT, TimeInForce.GTC
+//                        ,futureQty,  futurePrice
+//                        ,null,clientOrderId,null,null, NewOrderRespType.RESULT);
+//
+//                assetInfo.put(asset.getAsset(),asset.getMaxWithdrawAmount());
+//            }
+//        });
+//
+//        final TreeMap<String, String> positionMap = new TreeMap<>();
+//        accountInformation.getPositions().stream().filter(position -> new BigDecimal(position.getPositionAmt()).compareTo(BigDecimal.ZERO)!=0).
+//                forEach(position -> positionMap.put(position.getSymbol(),position.getPositionAmt()));
+//        HashMap rtmap = new HashMap<>();
+////        rtmap.put("balance",availableBalance);
+//        rtmap.put("asset",assetInfo);
+//        rtmap.put("position",positionMap);
+        return "success";
     }
 
     @RequestMapping("getMoneyEarn/{openIds}")
