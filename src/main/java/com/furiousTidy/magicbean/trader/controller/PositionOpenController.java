@@ -59,6 +59,9 @@ public class PositionOpenController {
     @Autowired
     TradeScheduleService tradeScheduleService;
 
+    @Autowired
+    BinanceClient binanceClient;
+
     static boolean robotStart = false;
 
 
@@ -75,14 +78,14 @@ public class PositionOpenController {
         Map<String, Object> tickMap = new HashMap();
 
         if(symbol == null ){
-            List<SymbolOrderBook> futureOrderBookList =  BinanceClient.futureSyncClient.getSymbolOrderBookTicker(null);
+            List<SymbolOrderBook> futureOrderBookList =  binanceClient.getFutureSyncClient().getSymbolOrderBookTicker(null);
             List<BookTicker> bookTickerList = spotSyncClientProxy.getAllBookTickers();
             tickMap.put("futureQuery",futureOrderBookList);
             tickMap.put("futurecache",MarketCache.futureTickerMap);
             tickMap.put("spotQuery",bookTickerList);
             tickMap.put("spotcache",MarketCache.spotTickerMap);
         }else{
-            List<SymbolOrderBook> futureOrderBookList =  BinanceClient.futureSyncClient.getSymbolOrderBookTicker(symbol);
+            List<SymbolOrderBook> futureOrderBookList =  binanceClient.getFutureSyncClient().getSymbolOrderBookTicker(symbol);
             BookTicker bookTicker = spotSyncClientProxy.getBookTicker(symbol);
             tickMap.put("futureQuery",futureOrderBookList);
             tickMap.put("futurecache",MarketCache.futureTickerMap.get(symbol));
@@ -209,36 +212,36 @@ public class PositionOpenController {
 
     @RequestMapping("spotbookticker/{symbol}")
     public @ResponseBody BookTicker getSpotBookTicker(@PathVariable String symbol){
-        return BinanceClient.spotSyncClient.getBookTicker(symbol);
+        return binanceClient.getSpotSyncClient().getBookTicker(symbol);
     }
 
     @RequestMapping("futurebookticker/{symbol}")
     public @ResponseBody List<SymbolOrderBook>  getFutureBookTicker(@PathVariable String symbol){
-        return BinanceClient.futureSyncClient.getSymbolOrderBookTicker(symbol);
+        return binanceClient.getFutureSyncClient().getSymbolOrderBookTicker(symbol);
     }
 
 
     @RequestMapping("spotorder/{symbol}/{orderId}")
     public @ResponseBody Order getOrderStatusSpot(@PathVariable String symbol, @PathVariable Long orderId){
         OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol,orderId);
-        return BinanceClient.spotSyncClient.getOrderStatus(orderStatusRequest);
+        return binanceClient.getSpotSyncClient().getOrderStatus(orderStatusRequest);
     }
 
     @RequestMapping("spotallorders/{symbol}")
     public @ResponseBody
     List<Order> getAllOrdersSpot(@PathVariable String symbol){
         AllOrdersRequest allOrdersRequest = new AllOrdersRequest(symbol);
-        return BinanceClient.spotSyncClient.getAllOrders(allOrdersRequest);
+        return binanceClient.getSpotSyncClient().getAllOrders(allOrdersRequest);
     }
 
     @RequestMapping("futureorders/{symbol}")
     public @ResponseBody List<com.binance.client.model.trade.Order> getAllOrdersFuture(@PathVariable String symbol){
-        return BinanceClient.futureSyncClient.getAllOrders(symbol,null,null,null,null);
+        return binanceClient.getFutureSyncClient().getAllOrders(symbol,null,null,null,null);
     }
 
     @RequestMapping("futureallorders")
     public @ResponseBody List<com.binance.client.model.trade.Order> getAllOrdersFuture(){
-        return BinanceClient.futureSyncClient.getAllOrders(null,null,null,null,null);
+        return binanceClient.getFutureSyncClient().getAllOrders(null,null,null,null,null);
     }
 
 
@@ -247,7 +250,7 @@ public class PositionOpenController {
     public @ResponseBody String doCache(){
 
         //set the position side
-//        BinanceClient.futureSyncClient.changePositionSide(true);
+//        binanceClient.getFutureSyncClient().changePositionSide(true);
         //get symbol info
         preTradeService.futureExchangeInfo();
         preTradeService.spotExchangeInfo();

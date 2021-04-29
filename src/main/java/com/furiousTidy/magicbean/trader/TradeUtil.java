@@ -52,8 +52,10 @@ public class TradeUtil {
     @Autowired
     SpotSyncClientProxy spotSyncClientProxy;
 
+    BinanceClient binanceClient;
+
     public void testSubDelay(){
-        BinanceClient.spotSubsptClient.onTickerEvent("BTCUSDT", tickEvent->{
+        binanceClient.getSpotSubsptClient().onTickerEvent("BTCUSDT", tickEvent->{
             log.info("sub delay time ={}ms",System.currentTimeMillis() - tickEvent.getEventTime());
         });
 
@@ -197,11 +199,11 @@ public class TradeUtil {
 
 //    public void checkUSDEnough(){
 //        final BigDecimal[] balances = new BigDecimal[2];
-//        BinanceClient.futureSyncClient.getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
+//        binanceClient.getFutureSyncClient().getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
 //            balances[0] = asset.getMaxWithdrawAmount();
 //        });
 //
-//        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
+//        binanceClient.getSpotSyncClient().getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
 //                .forEach(assetBalance -> {
 //                    balances[1] = new BigDecimal(assetBalance.getFree());
 //                });

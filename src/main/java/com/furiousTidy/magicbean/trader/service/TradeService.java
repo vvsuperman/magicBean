@@ -74,7 +74,7 @@ public class TradeService {
             Order order = null;
 
             try{
-//                 order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
+//                 order = binanceClient.getFutureSyncClient().postOrder(symbol,orderSide,positionSide, OrderType.LIMIT, TimeInForce.IOC,futureQty.toString(),
 //                        futurePrice.toString(),null,clientOrderId,null,null, NewOrderRespType.RESULT);
                 order = futureSyncClientProxy.postOrder(symbol,orderSide,positionSide, OrderType.MARKET, null,futureQty.toString(),
                         null,null,clientOrderId,null,null, NewOrderRespType.RESULT);

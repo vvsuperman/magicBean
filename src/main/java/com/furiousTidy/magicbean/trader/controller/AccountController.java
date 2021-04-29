@@ -40,6 +40,9 @@ public class AccountController {
     @Autowired
     TradeScheduleService tradeScheduleService;
 
+    @Autowired
+    BinanceClient binanceClient;
+
 
     @RequestMapping("testopen")
     public @ResponseBody String testConfig(){
@@ -48,7 +51,7 @@ public class AccountController {
 
     @RequestMapping("info")
     public @ResponseBody Map getFutureInfo(){
-        AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
+        AccountInformation accountInformation =  binanceClient.getFutureSyncClient().getAccountInformation();
         final TreeMap<String,BigDecimal> assetInfo = new TreeMap<>();
         accountInformation.getAssets().forEach(asset -> {
             if(!asset.getMaxWithdrawAmount().equals(BigDecimal.ZERO)){
@@ -65,7 +68,7 @@ public class AccountController {
         rtmap.put("position",positionMap);
 
         final TreeMap<String, String> spotBalanceMap = new TreeMap<>();
-        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> new BigDecimal(assetBalance.getFree()).compareTo(BigDecimal.ZERO)>0)
+        binanceClient.getSpotSyncClient().getAccount().getBalances().stream().filter(assetBalance -> new BigDecimal(assetBalance.getFree()).compareTo(BigDecimal.ZERO)>0)
                 .forEach(assetBalance -> spotBalanceMap.put(assetBalance.getAsset(),assetBalance.getFree()));
         rtmap.put("spotBalance",spotBalanceMap);
         rtmap.put("totalBalance",tradeScheduleService.getAllBalance());
@@ -85,8 +88,8 @@ public class AccountController {
     @RequestMapping("cancelallorder")
     public @ResponseBody void cancelallorder() {
         for (Map.Entry<String, ExchangeInfoEntry> entry : MarketCache.futureInfoCache.entrySet()) {
-            BinanceClient.futureSyncClient.cancelAllOpenOrder(entry.getKey());
-            BinanceClient.spotSyncClient.cancelOrder(new CancelOrderRequest(entry.getKey(),""));
+            binanceClient.getFutureSyncClient().cancelAllOpenOrder(entry.getKey());
+            binanceClient.getSpotSyncClient().cancelOrder(new CancelOrderRequest(entry.getKey(),""));
         }
     }
 }

@@ -69,6 +69,9 @@ public class TradeScheduleService {
     @Autowired
     PositionOpenService positionOpenService;
 
+    @Autowired
+    BinanceClient binanceClient;
+
     //get all the open pairs trade for close
     @Scheduled(cron = "0 0/5 * * * ?")
     public void getAllOpenOrder(){
@@ -91,7 +94,7 @@ public class TradeScheduleService {
         for(Map.Entry <String, String> entry :MarketCache.futureOrderCache.entrySet()){
             String clientOrderId = entry.getKey();
             String symbol = entry.getValue();
-            Order order = BinanceClient.futureSyncClient.getOrder(symbol,null,clientOrderId);
+            Order order = binanceClient.getFutureSyncClient().getOrder(symbol,null,clientOrderId);
             log.info("get futrure  order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(), order);
             if(order.getStatus().equals("FILLED")){
                 afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty());
@@ -102,7 +105,7 @@ public class TradeScheduleService {
         for(Map.Entry <String, String> entry :MarketCache.spotOrderCache.entrySet()){
             String clientOrderId = entry.getKey();
             String symbol = entry.getValue();
-            com.binance.api.client.domain.account.Order order = BinanceClient.spotSyncClient.getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
+            com.binance.api.client.domain.account.Order order = binanceClient.getSpotSyncClient().getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
             log.info("get spot order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(),order);
             if(order.getStatus() == OrderStatus.FILLED){
                 afterOrderService.processSpotOrder(symbol, clientOrderId, new BigDecimal(order.getPrice()), new BigDecimal(order.getExecutedQty()));
@@ -118,7 +121,7 @@ public class TradeScheduleService {
 //        int n = 5;
 //        for(int i=0;i<n;i++){
 //            long start = System.currentTimeMillis();
-//            BinanceClient.spotSyncClient.newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
+//            binanceClient.getSpotSyncClient().newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
 //            duration += System.currentTimeMillis()-start;
 //            Thread.sleep(10);
 //        }
@@ -157,12 +160,12 @@ public class TradeScheduleService {
         // sleep for 5 second, let on the way order finished, avoid incorrect balance in exchange cache
         Thread.sleep(5000);
         final BigDecimal[] balances = new BigDecimal[2];
-        AccountInformation accountInformation = BinanceClient.futureSyncClient.getAccountInformation();
+        AccountInformation accountInformation = binanceClient.getFutureSyncClient().getAccountInformation();
         accountInformation.getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
            balances[0] = asset.getMaxWithdrawAmount();
         });
 
-        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
+        binanceClient.getSpotSyncClient().getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("USDT"))
                 .forEach(assetBalance -> {
                     balances[1] = new BigDecimal(assetBalance.getFree());
                 });
@@ -173,7 +176,7 @@ public class TradeScheduleService {
         if(balances[0].subtract(balances[1]).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0){
             BigDecimal transferUSDT = balances[0].subtract(balances[1]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             if(transferUSDT.compareTo(BigDecimal.ZERO)==0) return;
-            BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
+            binanceClient.getMarginRestClient().transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
             //synchronize local cache
             while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
@@ -184,7 +187,7 @@ public class TradeScheduleService {
 
             BigDecimal transferUSDT = balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             if(transferUSDT.compareTo(BigDecimal.ZERO)==0) return;
-            BinanceClient.marginRestClient.transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
+            binanceClient.getMarginRestClient().transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
             //synchronize local cache
             while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
@@ -204,8 +207,8 @@ public class TradeScheduleService {
     public BigDecimal getAllBalance(){
         final BigDecimal[] spotBalance = new BigDecimal[1];
         spotBalance[0] = BigDecimal.ZERO;
-        BigDecimal futureBalance = BinanceClient.futureSyncClient.getAccountInformation().getTotalWalletBalance();
-        BinanceClient.spotSyncClient.getAccount().getBalances()
+        BigDecimal futureBalance = binanceClient.getFutureSyncClient().getAccountInformation().getTotalWalletBalance();
+        binanceClient.getSpotSyncClient().getAccount().getBalances()
                 .stream()
                 .filter(assetBalance -> new BigDecimal(assetBalance.getFree()).compareTo(BigDecimal.ZERO)>0)
                 .forEach(assetBalance -> {
@@ -242,13 +245,13 @@ public class TradeScheduleService {
     @Scheduled(cron = "0 0 1 * * ?")
     public void buyBNB(){
         log.info("buy some bnb for exchange charge");
-        AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
+        AccountInformation accountInformation =  binanceClient.getFutureSyncClient().getAccountInformation();
         final BigDecimal[] balances = new BigDecimal[2];
         accountInformation.getAssets().stream().filter(asset -> asset.getAsset().equals("BNB")).forEach(asset -> {
             balances[0] = asset.getMaxWithdrawAmount();
         });
 
-        BinanceClient.spotSyncClient.getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("BNB"))
+        binanceClient.getSpotSyncClient().getAccount().getBalances().stream().filter(assetBalance -> assetBalance.getAsset().equals("BNB"))
                 .forEach(assetBalance -> {
                     balances[1] = new BigDecimal(assetBalance.getFree());
                 });
@@ -258,7 +261,7 @@ public class TradeScheduleService {
         log.info("future bnb={}, spot bnb={}", balances[0],balances[1]);
         //transfer some bnb to u coin
         if(balances[0].multiply(bnbPrice).compareTo(new BigDecimal(10))<0){
-            BinanceClient.marginRestClient.transfer("BNB",balances[1].divide(new BigDecimal(2),4,RoundingMode.HALF_DOWN).toString(),TransferType.MAIN_UMFUTURE);
+            binanceClient.getMarginRestClient().transfer("BNB",balances[1].divide(new BigDecimal(2),4,RoundingMode.HALF_DOWN).toString(),TransferType.MAIN_UMFUTURE);
         }
 
         // buy some bnb

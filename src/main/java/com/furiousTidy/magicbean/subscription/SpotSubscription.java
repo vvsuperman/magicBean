@@ -8,8 +8,6 @@ import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
-import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
-import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -22,11 +20,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
-import java.util.concurrent.locks.Lock;
 
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ACCOUNT_POSITION_UPDATE;
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ORDER_TRADE_UPDATE;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 //现货订阅类
 @Service
@@ -47,9 +43,12 @@ public class SpotSubscription {
     @Autowired
     PositionOpenService positionOpenService;
 
+    @Autowired
+    BinanceClient binanceClient;
+
     public void symbolBookTickSubscription(String symbol){
 
-        BinanceClient.spotSubsptClient.onBookTickerEvent(symbol,bookTickerEvent -> {
+        binanceClient.getSpotSubsptClient().onBookTickerEvent(symbol, bookTickerEvent -> {
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,bookTickerEvent.getAskPrice());
             map.put(BeanConstant.BEST_ASK_Qty,bookTickerEvent.getAskQuantity());
@@ -79,7 +78,7 @@ public class SpotSubscription {
         getAllBookTicks();
 
         //subscribe bookticker
-        BinanceClient.spotSubsptClient.onAllBookTickersEvent(bookTickerEvent -> {
+        binanceClient.getSpotSubsptClient().onAllBookTickersEvent(bookTickerEvent -> {
             if (!bookTickerEvent.getSymbol().contains("USDT")) return;
 
             HashMap map = new HashMap();
@@ -126,18 +125,18 @@ public class SpotSubscription {
      * @return a listenKey that can be used with the user data streaming API.
      */
     private String initializeAssetBalanceCacheAndStreamSession() {
-        Account account = BinanceClient.spotSyncClient.getAccount();
+        Account account = binanceClient.getSpotSyncClient().getAccount();
         for (AssetBalance assetBalance : account.getBalances()) {
             MarketCache.spotBalanceCache.put(assetBalance.getAsset(), assetBalance);
         }
-        return BinanceClient.spotSyncClient.startUserDataStream();
+        return binanceClient.getSpotSyncClient().startUserDataStream();
     }
 
     /**
      * Begins streaming of agg trades events.
      */
     private void startAccountBalanceEventStreaming(String listenKey) {
-        BinanceClient.spotSubsptClient.onUserDataUpdateEvent(listenKey, response -> {
+        binanceClient.getSpotSubsptClient().onUserDataUpdateEvent(listenKey, response -> {
             if (response.getEventType() == ACCOUNT_POSITION_UPDATE) {
                 // Override cached asset balances
                 for (AssetBalance assetBalance : response.getAccountUpdateEvent().getBalances()) {
@@ -157,7 +156,7 @@ public class SpotSubscription {
                 }
             }
             logger.info("Waiting for spot balance or order events......");
-            BinanceClient.spotSyncClient.keepAliveUserDataStream(listenKey);
+            binanceClient.getSpotSyncClient().keepAliveUserDataStream(listenKey);
         });
      }
 
@@ -172,9 +171,6 @@ public class SpotSubscription {
                  .add(oldPrice.multiply(oldQty))
                  .divide(allqty,3,RoundingMode.HALF_UP));
      }
-
-
-
 }
 
 

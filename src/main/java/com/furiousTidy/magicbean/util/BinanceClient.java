@@ -28,10 +28,10 @@ public class BinanceClient {
 //    public static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
 //    public static BinanceApiMarginRestClient marginRestClient = clientFactory.newMarginRestClient();
 
-    @Value("api_key")
+    @Value("${api_key}")
     String api_key;
 
-    @Value("api_secret")
+    @Value("${api_secret}")
     String secret_key;
 
     //合约rest客户端
@@ -39,6 +39,14 @@ public class BinanceClient {
 
     //合约订阅客户端
     volatile static SubscriptionClient futureSubsptClient;
+
+    volatile static BinanceApiClientFactory clientFactory;
+    volatile static BinanceApiRestClient spotSyncClient;
+
+    volatile static BinanceApiMarginRestClient marginRestClient;
+
+    volatile static BinanceApiWebSocketClient spotSubsptClient;
+
 
     public SyncRequestClient getFutureSyncClient(){
         if(futureSyncClient==null){
@@ -49,22 +57,46 @@ public class BinanceClient {
 
     public SubscriptionClient getFutureSubsptClient(){
         if(futureSubsptClient == null){
-            futureSubsptClient = SubscriptionClient.create(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
+            futureSubsptClient = SubscriptionClient.create(api_key, secret_key);
         }
         return futureSubsptClient;
     }
 
-   public BinanceApiRestClient getSpotSyncClient(){
+    //binance spot client
+    public BinanceApiRestClient getSpotSyncClient(){
+        if(clientFactory == null){
+            clientFactory = BinanceApiClientFactory.newInstance(api_key, secret_key);
+        }
 
+        if( spotSyncClient == null){
+            spotSyncClient = clientFactory.newRestClient();
+        }
+        return spotSyncClient;
    }
 
-    //binance spot client
-    private static BinanceApiClientFactory clientFactory = BinanceApiClientFactory.newInstance(BeanConfig.API_KEY, BeanConfig.SECRET_KEY);
-     static BinanceApiRestClient spotSyncClient = clientFactory.newRestClient();
-    public static BinanceApiMarginRestClient marginRestClient = clientFactory.newMarginRestClient();
+    //binance margin client
+    public BinanceApiMarginRestClient getMarginRestClient(){
+        if(clientFactory == null){
+            clientFactory = BinanceApiClientFactory.newInstance(api_key, secret_key);
+        }
+
+        if( marginRestClient == null){
+            marginRestClient = clientFactory.newMarginRestClient();
+        }
+        return marginRestClient;
+    }
+
+    public BinanceApiWebSocketClient getSpotSubsptClient(){
+        if(clientFactory == null){
+            clientFactory = BinanceApiClientFactory.newInstance(api_key, secret_key);
+        }
+
+        if( spotSubsptClient == null){
+            spotSubsptClient = clientFactory.newWebSocketClient();
+        }
+        return spotSubsptClient;
+    }
 
 
-
-    public static BinanceApiWebSocketClient spotSubsptClient = clientFactory.newWebSocketClient();
 
 }

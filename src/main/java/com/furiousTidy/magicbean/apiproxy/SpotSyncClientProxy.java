@@ -29,10 +29,13 @@ public class SpotSyncClientProxy {
     @Autowired
     ProxyUtil proxyUtil;
 
+    @Autowired
+    BinanceClient binanceClient;
+
     @Retryable(value={SocketTimeoutException.class}, maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public ExchangeInfo getExchangeInfo(){
         log.info("try to get spot exchangeinfo");
-       return  BinanceClient.spotSyncClient.getExchangeInfo();
+       return  binanceClient.getSpotSyncClient().getExchangeInfo();
     }
 
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
@@ -40,7 +43,7 @@ public class SpotSyncClientProxy {
         long start = System.currentTimeMillis();
 
         //make order
-        NewOrderResponse order =  BinanceClient.spotSyncClient.newOrder(newOrder);
+        NewOrderResponse order =  binanceClient.getSpotSyncClient().newOrder(newOrder);
 
         // adjust balance
 //        proxyUtil.addBalance(BeanConfig.STANDARD_TRADE_UNIT.subtract(new BigDecimal(order.getFills().get(0).getPrice()).multiply(new BigDecimal(order.getFills().get(0).getQty()))),"spot");
@@ -65,12 +68,12 @@ public class SpotSyncClientProxy {
 
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public BookTicker getBookTicker(String symbol){
-        return BinanceClient.spotSyncClient.getBookTicker(symbol);
+        return binanceClient.getSpotSyncClient().getBookTicker(symbol);
     }
 
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public List<BookTicker> getAllBookTickers(){
-        return BinanceClient.spotSyncClient.getBookTickers();
+        return binanceClient.getSpotSyncClient().getBookTickers();
     }
 
 

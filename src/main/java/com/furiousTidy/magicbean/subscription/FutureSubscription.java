@@ -189,9 +189,9 @@ public class FutureSubscription {
 //        Thread.sleep(5000);
 //        String symbol = "LTCUSDT";
 //
-//        System.out.println(BinanceClient.futureSyncClient.postOrder(symbol, OrderSide.SELL, null, OrderType.LIMIT, TimeInForce.GTC,
+//        System.out.println(binanceClient.getFutureSyncClient().postOrder(symbol, OrderSide.SELL, null, OrderType.LIMIT, TimeInForce.GTC,
 //                "1", MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE).toString(), null, null, null, null, NewOrderRespType.RESULT));
-//        System.out.println(BinanceClient.futureSyncClient.postOrder(symbol, OrderSide.BUY, null, OrderType.LIMIT, TimeInForce.GTC,
+//        System.out.println(binanceClient.getFutureSyncClient().postOrder(symbol, OrderSide.BUY, null, OrderType.LIMIT, TimeInForce.GTC,
 //                "1", MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE).toString(), null, null, null, null, NewOrderRespType.RESULT));
     }
 

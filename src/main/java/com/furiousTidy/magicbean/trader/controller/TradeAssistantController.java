@@ -63,6 +63,9 @@ public class TradeAssistantController {
 
     @Autowired
     FutureSyncClientProxy futureSyncClientProxy;
+    
+    @Autowired
+    BinanceClient binanceClient;
 
     @RequestMapping("queryOrder")
     public @ResponseBody String queryOrder(){
@@ -78,7 +81,7 @@ public class TradeAssistantController {
 
     @RequestMapping("closeAllPosition")
     public @ResponseBody String closeAllPosition(){
-//        AccountInformation accountInformation =  BinanceClient.futureSyncClient.getAccountInformation();
+//        AccountInformation accountInformation =  binanceClient.getFutureSyncClient().getAccountInformation();
 //        final TreeMap<String,BigDecimal> assetInfo = new TreeMap<>();
 //        accountInformation.getAssets().forEach(asset -> {
 //            if(!asset.getMaxWithdrawAmount().equals(BigDecimal.ZERO)){
@@ -109,10 +112,10 @@ public class TradeAssistantController {
 
     @RequestMapping("futureOrderTest")
     public @ResponseBody String futureOrderTest(){
-        Order order = BinanceClient.futureSyncClient.postOrder("BTCUSDT",OrderSide.BUY,null, OrderType.MARKET, null,"0.001",
+        Order order = binanceClient.getFutureSyncClient().postOrder("BTCUSDT",OrderSide.BUY,null, OrderType.MARKET, null,"0.001",
                 null,null,null,null,null, NewOrderRespType.RESULT);
         log.info("future order={}",order);
-        log.info("get future order={}",BinanceClient.futureSyncClient.getOrder("BTCUSDT",order.getOrderId(),null));
+        log.info("get future order={}",binanceClient.getFutureSyncClient().getOrder("BTCUSDT",order.getOrderId(),null));
         return "success";
     }
 
@@ -123,7 +126,7 @@ public class TradeAssistantController {
                marketSell("BTCUSDT","0.003" ).newOrderRespType(NewOrderResponseType.FULL));
        log.info("spot order={}",newOrderResponse);
        log.info("get spot order={}",
-         BinanceClient.spotSyncClient.getOrderStatus(new OrderStatusRequest("BTCUSDT", newOrderResponse.getOrderId()))
+         binanceClient.getSpotSyncClient().getOrderStatus(new OrderStatusRequest("BTCUSDT", newOrderResponse.getOrderId()))
        );
        return "success";
     }

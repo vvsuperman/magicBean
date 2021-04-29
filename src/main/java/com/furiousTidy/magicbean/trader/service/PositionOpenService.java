@@ -179,9 +179,10 @@ public class PositionOpenService {
 
         countRatio(openRatio);
         //price matched open
-        if( checkMoney()  && tradeUtil.isTradeCanOpen(symbol)
+        if(  tradeUtil.isTradeCanOpen(symbol)
 //                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)
                 && openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0
+                && checkMoney()
                 ){
 
             logger.info("check open ratio success, symbol={}, openRatio={}", symbol, openRatio);

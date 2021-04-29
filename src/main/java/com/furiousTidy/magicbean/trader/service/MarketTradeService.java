@@ -44,6 +44,9 @@ public class MarketTradeService {
     @Autowired
     TradeUtil tradeUtil;
 
+    @Autowired
+    BinanceClient binanceClient;
+
     @Async
     public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize,
                               String direct, String clientOrderId) throws InterruptedException{
@@ -58,7 +61,7 @@ public class MarketTradeService {
             log.info("new  future order begin {}, symbol={},orderside={},positionside={},futurePrice={},futureQty={},clientId={}"
                     ,i++,symbol,orderSide,positionSide,futurePrice,futureQty,clientOrderId);
 //
-            Order order = BinanceClient.futureSyncClient.postOrder(symbol,orderSide,positionSide, OrderType.MARKET, TimeInForce.IOC,futureQty.toString(),
+            Order order = binanceClient.getFutureSyncClient().postOrder(symbol,orderSide,positionSide, OrderType.MARKET, TimeInForce.IOC,futureQty.toString(),
                     null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
 
             log.info("futrue new order return: orderid={},status={},qty={},order={}" , clientOrderId,order.getStatus(),order.getExecutedQty(),order);
