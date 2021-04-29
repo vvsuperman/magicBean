@@ -1,5 +1,6 @@
 package com.furiousTidy.magicbean.config;
 
+import com.furiousTidy.magicbean.util.BeanConstant;
 import lombok.Data;
 
 import java.math.BigDecimal;

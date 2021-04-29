@@ -22,20 +22,23 @@ public class FutureSyncClientProxy {
     @Autowired
     ProxyUtil  proxyUtil;
 
+    @Autowired
+    BinanceClient binanceClient;
+
     @Retryable( maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public ExchangeInformation getExchangeInfo(){
         log.info("try to get future exchangeinfo");
-        return BinanceClient.futureSyncClient.getExchangeInformation();
+        return binanceClient.getFutureSyncClient().getExchangeInformation();
     }
 
     @Retryable( maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public List<SymbolOrderBook> getAllBookTickers(){
-        return BinanceClient.futureSyncClient.getSymbolOrderBookTicker(null);
+        return binanceClient.getFutureSyncClient().getSymbolOrderBookTicker(null);
     }
 
     public Order postOrder(String var1, OrderSide var2, PositionSide var3, OrderType var4, TimeInForce var5, String var6, String var7, String var8, String var9, String var10, WorkingType var11, NewOrderRespType var12){
         long start = System.currentTimeMillis();
-        Order order = BinanceClient.futureSyncClient.postOrder(var1,var2,var3,var4,var5,var6,var7,var8,var9,var10,var11,var12);
+        Order order = binanceClient.getFutureSyncClient().postOrder(var1,var2,var3,var4,var5,var6,var7,var8,var9,var10,var11,var12);
 
         // adjust balance
 //        proxyUtil.addBalance(BeanConfig.STANDARD_TRADE_UNIT.subtract(order.getPrice().multiply(order.getExecutedQty())),"future");

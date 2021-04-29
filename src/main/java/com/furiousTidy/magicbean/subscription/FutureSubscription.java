@@ -4,6 +4,7 @@ package com.furiousTidy.magicbean.subscription;
 * 工具类，缓存行情
 * */
 
+import com.alibaba.druid.sql.visitor.functions.Bin;
 import com.binance.client.SubscriptionErrorHandler;
 import com.binance.client.exception.BinanceApiException;
 import com.binance.client.model.market.MarkPrice;
@@ -53,16 +54,19 @@ public class FutureSubscription {
     @Autowired
     PositionOpenService positionOpenService;
 
+    @Autowired
+    BinanceClient binanceClient;
+
     //subscribe funding rate and store in the tree map
     public void fundingRateSub(){
-        List<MarkPrice> markPriceList = BinanceClient.futureSyncClient.getMarkPrice(null);
+        List<MarkPrice> markPriceList = binanceClient.getFutureSyncClient().getMarkPrice(null);
         markPriceList.stream().filter(markPrice -> markPrice.getSymbol().contains("USDT"))
                 .forEach(markPrice -> {
                     futureRateCache.put(markPrice.getSymbol(), markPrice.getLastFundingRate());
                     MarketCache.fRateSymbolCache.put(markPrice.getLastFundingRate(),markPrice.getSymbol());
                 });
 
-        BinanceClient.futureSubsptClient.subscribeMarkPricesEvent(listMarkPrice -> {
+        binanceClient.getFutureSubsptClient().subscribeMarkPricesEvent(listMarkPrice -> {
             MarketCache.fRateSymbolCache.clear();
             listMarkPrice.forEach(markPriceEvent -> {
                 futureRateCache.put(markPriceEvent.getSymbol(), markPriceEvent.getFundingRate());
@@ -72,7 +76,7 @@ public class FutureSubscription {
     }
 
     public void getAllBookTikcers(){
-        BinanceClient.futureSyncClient.getSymbolOrderBookTicker(null).forEach(symbolOrderBook -> {
+        binanceClient.getFutureSyncClient().getSymbolOrderBookTicker(null).forEach(symbolOrderBook -> {
             HashMap map = new HashMap();
             map.put(BeanConstant.BEST_ASK_PRICE,symbolOrderBook.getAskPrice());
             map.put(BeanConstant.BEST_ASK_Qty,symbolOrderBook.getAskQty());
@@ -85,7 +89,7 @@ public class FutureSubscription {
     //存储合约最佳挂单行情
     public void allBookTickerSubscription(){
         getAllBookTikcers();
-        BinanceClient.futureSubsptClient.subscribeAllBookTickerEvent((symbolBookTickerEvent) -> {
+        binanceClient.getFutureSubsptClient().subscribeAllBookTickerEvent((symbolBookTickerEvent) -> {
             if (!symbolBookTickerEvent.getSymbol().contains("USDT")) return;
 
             HashMap map = new HashMap();
@@ -119,7 +123,7 @@ public class FutureSubscription {
     //initial user's future accout info
     public void processFutureCache(){
         //初始化合约缓存
-        AccountInformation accountInformation = BinanceClient.futureSyncClient.getAccountInformation();
+        AccountInformation accountInformation = binanceClient.getFutureSyncClient().getAccountInformation();
         for(Asset asset: accountInformation.getAssets()){
             BalanceUpdate balanceUpdate = new BalanceUpdate();
             balanceUpdate.setAsset(asset.getAsset());
@@ -141,10 +145,10 @@ public class FutureSubscription {
     public  void userDataUpdateSubscription(){
 
         // Start user data stream
-        String listenKey = BinanceClient.futureSyncClient.startUserDataStream();
+        String listenKey = binanceClient.getFutureSyncClient().startUserDataStream();
         logger.info("获得listenKey: " + listenKey);
 
-        BinanceClient.futureSubsptClient.subscribeUserDataEvent(listenKey, ((event) -> {
+        binanceClient.getFutureSubsptClient().subscribeUserDataEvent(listenKey, ((event) -> {
             //更新资金、持仓信息
             if(event.getEventType().equals("ACCOUNT_UPDATE")){
                 logger.info("future sub account_update event={}",event);
@@ -172,7 +176,7 @@ public class FutureSubscription {
             }else{
                 logger.info("future other event={}",event);
             }
-            BinanceClient.futureSyncClient.keepUserDataStream(listenKey);
+            binanceClient.getFutureSyncClient().keepUserDataStream(listenKey);
         }), null);
     }
 
