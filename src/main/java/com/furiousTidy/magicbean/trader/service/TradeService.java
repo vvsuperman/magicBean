@@ -54,7 +54,7 @@ public class TradeService {
 
     @Async
     public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize,
-                              String direct, String clientOrderId) throws InterruptedException{
+                              String direct, String clientOrderId, BigDecimal ratio) throws InterruptedException{
 
         OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL_OPEN))? OrderSide.SELL:OrderSide.BUY;
 //      PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL_OPEN))?PositionSide.SHORT:PositionSide.LONG;
@@ -103,15 +103,15 @@ public class TradeService {
 
             if( order.getStatus().equals("FILLED")){
 
-                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio);
 
                 return;
                 // order has been partially filled, order status is partially filled, cancel order is null;
             }else if(order.getStatus().equals("PARTIALLY_FILLED" )){
-                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio);
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }else if(order.getStatus().equals("EXPIRED") && order.getExecutedQty().compareTo(BigDecimal.ZERO)>0){
-                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio);
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }
 
@@ -126,7 +126,7 @@ public class TradeService {
     }
 
     @Async
-    public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId) throws InterruptedException{
+    public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId, BigDecimal ratio) throws InterruptedException{
         int i=1;
 
         while( BeanConstant.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
@@ -181,14 +181,14 @@ public class TradeService {
 
 
                 afterOrderService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
-                        ,new BigDecimal(newOrderResponse.getExecutedQty()));
+                        ,new BigDecimal(newOrderResponse.getExecutedQty()),ratio);
 
                 return;
             }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED ){
-                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
+                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()),ratio);
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }else if(newOrderResponse.getStatus() == OrderStatus.EXPIRED && new BigDecimal(newOrderResponse.getExecutedQty()).compareTo(BigDecimal.ZERO)>0){
-                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()));
+                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()),ratio);
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }
 

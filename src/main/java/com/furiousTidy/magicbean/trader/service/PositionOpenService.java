@@ -18,12 +18,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
-import static com.furiousTidy.magicbean.util.BeanConstant.b4;
 
 
 /*
@@ -77,7 +77,7 @@ public class PositionOpenService {
 
     static int counter=0;
 
-    BigDecimal openRatio;
+    BigDecimal origOpenRatio;
 
     /*
     *
@@ -171,27 +171,27 @@ public class PositionOpenService {
         if(futureBidPrice == null || spotAskPrice == null ||
                 futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) return;
 
-        openRatio = futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4);
+        origOpenRatio = futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4);
 
 //            if(openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0){
 //                BeanConstant.openImpactSet.add(symbol+counter);
 //            }
 
-        countRatio(openRatio);
+        countRatio(origOpenRatio);
         //price matched open
         if(  tradeUtil.isTradeCanOpen(symbol)
 //                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)
-                && openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0
+                && origOpenRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0
                 && checkMoney()
                 ){
 
-            logger.info("check open ratio success, symbol={}, openRatio={}", symbol, openRatio);
+            logger.info("check open ratio success, symbol={}, openRatio={}", symbol, origOpenRatio);
 
             clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
             MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
             doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
-                    BeanConstant.FUTURE_SELL_OPEN,clientOrderId);
+                    BeanConstant.FUTURE_SELL_OPEN,clientOrderId,origOpenRatio);
 
         }else {
             if(!tradeUtil.isTradeCanClosed(symbol)) return;
@@ -218,6 +218,8 @@ public class PositionOpenService {
                     BigDecimal futrueQty = tradeInfoModel.getFutureQty();
                     //calculate profit
                     profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice, tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
+
+
 //                    if(profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
 //                        BeanConstant.closeImpactSet.add(symbol+counter);
 //                    }else{
@@ -229,7 +231,7 @@ public class PositionOpenService {
                             ){
 
                         logger.info("check profit success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.closeImpactSet);
-
+                        closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice, 6, RoundingMode.HALF_UP);
                         //add trade to processing set
                         BeanConstant.closeProcessingSet.add(pairsTradeModel.getOpenId());
                         //begin to close the symbol
@@ -243,7 +245,7 @@ public class PositionOpenService {
                         MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                         closeLock.lock();
                         doPairsTradeByQty(symbol, futrueQty,spotQty,futureAskPrice,spotBidPrice,
-                                BeanConstant.FUTURE_SELL_CLOSE,clientOrderId);
+                                BeanConstant.FUTURE_SELL_CLOSE,clientOrderId,closeRatio);
                         //update close id in pairstrade
                         pairsTradeDao.updatePairsTrade(pairsTradeModel);
                         closeLock.unlock();
@@ -275,7 +277,7 @@ public class PositionOpenService {
 
     //do paris trade
     private void doPairsTrade(String symbol, BigDecimal cost, BigDecimal futurePrice, BigDecimal spotPrice,
-                              String direct,String clientOrderId) throws InterruptedException {
+                              String direct,String clientOrderId,BigDecimal ratio) throws InterruptedException {
         //计算合约最小下单位数
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
         //计算合约卖单数量
@@ -285,21 +287,21 @@ public class PositionOpenService {
         //取位数最大的数量，避免精度问题
         BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
 
-        doPairsTradeByQty(symbol,qty,qty,futurePrice,spotPrice,direct,clientOrderId);
+        doPairsTradeByQty(symbol,qty,qty,futurePrice,spotPrice,direct,clientOrderId,ratio);
 
     }
 
     //do paris trade
     private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice,
-                                   String direct,String clientOrderId) throws InterruptedException {
+                                   String direct,String clientOrderId, BigDecimal ratio) throws InterruptedException {
 
 
 
         //计算合约最小下单位数
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
 
-        tradeService.doFutureTrade(symbol, futurePrice, futureQty, stepSize[0], direct, clientOrderId);
-        tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId);
+        tradeService.doFutureTrade(symbol, futurePrice, futureQty, stepSize[0], direct, clientOrderId,ratio);
+        tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId,ratio);
     }
 
     private boolean checkImpactSet(String symbol, int counter, Set<String> impactSet,int n ){
