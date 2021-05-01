@@ -41,7 +41,7 @@ public class AfterOrderService {
     ProxyUtil proxyUtil;
 
     @Async
-    public void processFutureOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty){
+    public void processFutureOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty, BigDecimal ratio){
         log.info(" future store begin,symbol={}, price={},qty={}",symbol,price,qty);
 
         Lock eventLock = null;
@@ -88,7 +88,7 @@ public class AfterOrderService {
                 //calcualte ratio
                 if (tradeInfo.getSpotPrice() != null) {
                     BigDecimal spotPrice = tradeInfo.getSpotPrice();
-                    calculateRatioAndProfit(symbol,clientOrderId,futurePrice,spotPrice,priceSize);
+                    calculateRatioAndProfit(symbol,clientOrderId,futurePrice,spotPrice,priceSize,ratio);
                 }
             }
 
@@ -108,7 +108,7 @@ public class AfterOrderService {
     }
 
     @Async
-    public void processSpotOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty){
+    public void processSpotOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty, BigDecimal orignRatio){
         log.info(" spot store begin,symbol={}, price={},qty={}",symbol,price,qty);
         //we need a lock to lock pairs trade, or insert may exception
         Lock eventLock = MarketCache.eventLockCache.containsKey(clientOrderId)?MarketCache.eventLockCache.get(clientOrderId):null;
@@ -158,7 +158,7 @@ public class AfterOrderService {
                 log.info("spot calculate ratio begin, tradeInfo={}", tradeInfo);
                 if (tradeInfo.getFuturePrice() != null) {
                     BigDecimal futurePrice = tradeInfo.getFuturePrice();
-                    calculateRatioAndProfit(symbol,clientOrderId, futurePrice, spotPrice, priceSize);
+                    calculateRatioAndProfit(symbol,clientOrderId, futurePrice, spotPrice, priceSize,orignRatio);
                 }
             }
         } catch (Exception e) {
@@ -175,7 +175,7 @@ public class AfterOrderService {
 
     }
 
-    private void calculateRatioAndProfit(String symbol, String clientOrderId, BigDecimal futurePrice, BigDecimal spotPrice, int priceSize) {
+    private void calculateRatioAndProfit(String symbol, String clientOrderId, BigDecimal futurePrice, BigDecimal spotPrice, int priceSize,BigDecimal orginRatio) {
         BigDecimal ratio;
         BigDecimal profit;
         log.info("in calucalateRatio, symbol={}, clientorderid={}, futureprice={}, spotprice={}",symbol,clientOrderId,futurePrice,spotPrice);
@@ -188,6 +188,7 @@ public class AfterOrderService {
                 pairsTradeModel.setOpenId(clientOrderId);
                 pairsTradeModel.setOpenRatio(ratio);
                 pairsTradeModel.setCreateTime(BeanConstant.dateFormat.format(new Date()));
+                pairsTradeModel.setOrignOpenRatio(orginRatio);
                 log.info("insert pairstrade,pairsTrade={}",pairsTradeModel);
                 pairsTradeDao.insertPairsTrade(pairsTradeModel);
             }else{
@@ -204,6 +205,7 @@ public class AfterOrderService {
             pairsTradeModel.setProfit(profit);
             pairsTradeModel.setCloseRatio(ratio);
             pairsTradeModel.setUpdateTime(BeanConstant.dateFormat.format(new Date()));
+            pairsTradeModel.setOrignCloseRatio(orginRatio);
             pairsTradeDao.updatePairsTrade(pairsTradeModel);
         }
 
