@@ -16,19 +16,16 @@ public interface PairsTradeDao {
     @Select("Select * from pairs_trade where symbol = #{symbol}")
     List<PairsTradeModel> getPairsTradeBySymbol(String symbol);
 
-    @Insert("INSERT INTO pairs_trade(symbol,openId,closeId,openRatio,closeRatio,orignOpenRatio,orignCloseRatio,createTime) " +
-            "VALUES(#{symbol}, #{openId}, #{closeId},#{openRatio},#{closeRatio},#{orignOpenRatio},#{orignCloseRatio},#{createTime})")
+    @Insert("INSERT INTO pairs_trade(symbol,openId,closeId,openRatio,closeRatio,origOpenRatio,origCloseRatio,createTime) " +
+            "VALUES(#{symbol}, #{openId}, #{closeId},#{openRatio},#{closeRatio},#{origOpenRatio},#{origCloseRatio},#{createTime})")
     Integer insertPairsTrade( PairsTradeModel PairsTradeModel);
 
     @Update("UPDATE pairs_trade SET openId=#{openId},openRatio=#{openRatio}" +
-            ",closeId=#{closeId}, closeRatio=#{closeRatio},profit=#{profit},orignOpenRatio=#{orignOpenRatio},orignCloseRatio=#{orignCloseRatio},updateTime=#{updateTime} WHERE id =#{id}")
+            ",closeId=#{closeId}, closeRatio=#{closeRatio},profit=#{profit},origOpenRatio=#{origOpenRatio},origCloseRatio=#{origCloseRatio},updateTime=#{updateTime} WHERE id =#{id}")
     void updatePairsTrade(PairsTradeModel pairsTradeModel);
 
     @Update("UPDATE pairs_trade SET openRatio=#{openRatio} WHERE openId =#{openId}")
     void updateOpenRatioByOpenId(@Param("openId") String openId, @Param("openRatio") BigDecimal openRatio);
-
-    @Update("UPDATE pairs_trade SET closeRatio=#{closeRatio} WHERE closeId =#{closeId}")
-    void updateCloseRatioByCloseId( @Param("closeId") String closeId, @Param("closeRatio") BigDecimal closeRatio);
 
     @Select("select * from pairs_trade where closeId is null")
     List<PairsTradeModel> getPairsTradeOpen();

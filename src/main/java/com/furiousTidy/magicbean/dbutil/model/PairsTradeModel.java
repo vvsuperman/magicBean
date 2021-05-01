@@ -19,7 +19,7 @@ public class PairsTradeModel {
     BigDecimal profit;
     String createTime;
     String updateTime;
-    BigDecimal orignOpenRatio;
-    BigDecimal orignCloseRatio;
+    BigDecimal origOpenRatio;
+    BigDecimal origCloseRatio;
 
 }

@@ -25,16 +25,17 @@ service mysqld start
 mysql -u root -p
 
 mysqldump --single-transaction -u root -p magic_bean pairs_trade > '/home/sqldump/pairs_trade.sql'
-create index idx_openId on pairs_trade(openId);
-create index idx_closeId on pairs_trade(closeId);
+
 
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'Fw123456*' WITH GRANT OPTION;
 
 flush privileges
 
 
-echo "obase=16;15434" | bc
+echo "obase=16;hid" | bc
 top -H -p pid
+3200
+jstack pid |grep -A 10 hid
 
 
  select sum(profit) from pairs_trade where closeId like "%2021_4_23%";

@@ -97,7 +97,7 @@ public class TradeScheduleService {
             Order order = binanceClient.getFutureSyncClient().getOrder(symbol,null,clientOrderId);
             log.info("get futrure  order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(), order);
             if(order.getStatus().equals("FILLED")){
-                afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty());
+                afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty(),null);
                 MarketCache.futureOrderCache.remove(order.getClientOrderId());
             }
         }
@@ -108,7 +108,7 @@ public class TradeScheduleService {
             com.binance.api.client.domain.account.Order order = binanceClient.getSpotSyncClient().getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
             log.info("get spot order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(),order);
             if(order.getStatus() == OrderStatus.FILLED){
-                afterOrderService.processSpotOrder(symbol, clientOrderId, new BigDecimal(order.getPrice()), new BigDecimal(order.getExecutedQty()));
+                afterOrderService.processSpotOrder(symbol, clientOrderId, new BigDecimal(order.getPrice()), new BigDecimal(order.getExecutedQty()),null);
                 MarketCache.spotOrderCache.remove(order.getClientOrderId());
             }
         }

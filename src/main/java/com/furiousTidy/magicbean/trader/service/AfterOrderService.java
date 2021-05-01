@@ -1,6 +1,5 @@
 package com.furiousTidy.magicbean.trader.service;
 
-import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
@@ -11,12 +10,9 @@ import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.beans.beancontext.BeanContextChild;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
@@ -188,7 +184,7 @@ public class AfterOrderService {
                 pairsTradeModel.setOpenId(clientOrderId);
                 pairsTradeModel.setOpenRatio(ratio);
                 pairsTradeModel.setCreateTime(BeanConstant.dateFormat.format(new Date()));
-                pairsTradeModel.setOrignOpenRatio(orginRatio);
+                pairsTradeModel.setOrigOpenRatio(orginRatio);
                 log.info("insert pairstrade,pairsTrade={}",pairsTradeModel);
                 pairsTradeDao.insertPairsTrade(pairsTradeModel);
             }else{
@@ -205,7 +201,7 @@ public class AfterOrderService {
             pairsTradeModel.setProfit(profit);
             pairsTradeModel.setCloseRatio(ratio);
             pairsTradeModel.setUpdateTime(BeanConstant.dateFormat.format(new Date()));
-            pairsTradeModel.setOrignCloseRatio(orginRatio);
+            pairsTradeModel.setOrigCloseRatio(orginRatio);
             pairsTradeDao.updatePairsTrade(pairsTradeModel);
         }
 
