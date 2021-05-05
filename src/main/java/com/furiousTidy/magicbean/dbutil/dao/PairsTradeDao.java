@@ -30,6 +30,9 @@ public interface PairsTradeDao {
     @Select("select * from pairs_trade where closeId is null")
     List<PairsTradeModel> getPairsTradeOpen();
 
+    @Select("select * from pairs_trade where closeId is null and createTime < #{createTime}")
+    List<PairsTradeModel> getPairsTradeOpenByDate(@Param("createTime") String createTime);
+
     @Select("select * from pairs_trade where openId = #{openId}")
     PairsTradeModel getPairsTradeByOpenId(String openId);
 

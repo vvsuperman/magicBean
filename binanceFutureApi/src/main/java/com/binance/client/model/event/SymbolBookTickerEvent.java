@@ -5,6 +5,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.math.BigDecimal;
 
+
 public class SymbolBookTickerEvent {
 
     private Long orderBookUpdateId;
@@ -18,6 +19,24 @@ public class SymbolBookTickerEvent {
     private BigDecimal bestAskPrice;
 
     private BigDecimal bestAskQty;
+
+    private long eventTime;
+
+    private long tradeTime;
+
+    private long localTime;
+
+    public long getEventTime(){return eventTime;}
+
+    public void setEventTime(long eventTime){ this.eventTime = eventTime;}
+
+    public long getTradeTime(){return tradeTime;}
+
+    public void setTradeTime(long tradeTime){ this.tradeTime = tradeTime;}
+
+    public long getLocalTime(){return localTime;}
+
+    public void setLocalTime(long localTime){this.localTime = localTime;}
 
     public Long getOrderBookUpdateId() {
         return orderBookUpdateId;
@@ -72,6 +91,7 @@ public class SymbolBookTickerEvent {
         return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
                 .append("orderBookUpdateId", orderBookUpdateId).append("symbol", symbol)
                 .append("bestBidPrice", bestBidPrice).append("bestBidQty", bestBidQty)
-                .append("bestAskPrice", bestAskPrice).append("bestAskQty", bestAskQty).toString();
+                .append("bestAskPrice", bestAskPrice).append("bestAskQty", bestAskQty)
+                .append("eventTime",eventTime).append("tradeTime", tradeTime).toString();
     }
 }

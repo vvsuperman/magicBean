@@ -115,11 +115,11 @@ public class TradeService {
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }
 
-            if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-            }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-            }
+//            if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
+//                futurePrice =  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+//            }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
+//                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+//            }
 
             log.info("future's next order info,bidPrice={}, futureQty={}",futurePrice,futureQty);
         }

@@ -67,6 +67,12 @@ public class TradeAssistantController {
     @Autowired
     BinanceClient binanceClient;
 
+    @RequestMapping("closedTrade3DaysAgo")
+    public @ResponseBody String closedTrade3DaysAgo(){
+        tradeSchedule.closedTrade3DaysAgo();
+        return "sucess";
+    }
+
     @RequestMapping("queryOrder")
     public @ResponseBody String queryOrder(){
         tradeSchedule.queryOrder();

@@ -7,6 +7,7 @@ package com.furiousTidy.magicbean.subscription;
 import com.alibaba.druid.sql.visitor.functions.Bin;
 import com.binance.client.SubscriptionErrorHandler;
 import com.binance.client.exception.BinanceApiException;
+import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Asset;
@@ -82,43 +83,70 @@ public class FutureSubscription {
             map.put(BeanConstant.BEST_ASK_Qty,symbolOrderBook.getAskQty());
             map.put(BeanConstant.BEST_BID_PRICE,symbolOrderBook.getBidPrice());
             map.put(BeanConstant.BEST_BID_QTY,symbolOrderBook.getBidQty());
-            MarketCache.futureTickerMap.put(symbolOrderBook.getSymbol(),map);
+//            MarketCache.futureTickerMap.put(symbolOrderBook.getSymbol(),map);
+            SymbolBookTickerEvent symbolBookTickerEvent = new SymbolBookTickerEvent();
+            symbolBookTickerEvent.setBestAskPrice(symbolOrderBook.getAskPrice());
+            symbolBookTickerEvent.setBestAskQty(symbolOrderBook.getAskQty());
+            symbolBookTickerEvent.setBestBidPrice(symbolOrderBook.getBidPrice());
+            symbolBookTickerEvent.setBestBidQty(symbolOrderBook.getBidQty());
+            symbolBookTickerEvent.setLocalTime(System.currentTimeMillis());
+
+            MarketCache.futureTickerMap.put(symbolOrderBook.getSymbol(),symbolBookTickerEvent);
+
         });
     }
 
-    //存储合约最佳挂单行情
-    public void allBookTickerSubscription(){
-        getAllBookTikcers();
-        binanceClient.getFutureSubsptClient().subscribeAllBookTickerEvent((symbolBookTickerEvent) -> {
-            if (!symbolBookTickerEvent.getSymbol().contains("USDT")) return;
-
-            HashMap map = new HashMap();
-            map.put(BeanConstant.BEST_ASK_PRICE, symbolBookTickerEvent.getBestAskPrice());
-            map.put(BeanConstant.BEST_ASK_Qty, symbolBookTickerEvent.getBestAskQty());
-            map.put(BeanConstant.BEST_BID_PRICE, symbolBookTickerEvent.getBestBidPrice());
-            map.put(BeanConstant.BEST_BID_QTY, symbolBookTickerEvent.getBestBidQty());
-            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(), map);
-//            if (BeanConstant.watchdog
-//                    &&symbolBookTickerEvent.getBestBidPrice()!=null && symbolBookTickerEvent.getBestAskPrice()!= null
-//                    && MarketCache.spotTickerMap.containsKey(symbolBookTickerEvent.getSymbol())) {
-//                try {
-//
-//                    positionOpenService.processPairsTrade(symbolBookTickerEvent.getSymbol(),symbolBookTickerEvent.getBestBidPrice(), symbolBookTickerEvent.getBestAskPrice()
-//                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
-//                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE));
-//                } catch (Exception e) {
-//                    logger.error("do future pairs trade exception={}", e);
-//                }
-//            }
-
-
-        }, new SubscriptionErrorHandler() {
-            @Override
-            public void onError(BinanceApiException exception) {
-                logger.error("future sub all tick exctpion={}",exception);
+    public void allBookTickerSub(){
+        MarketCache.futureTickerMap.forEach((symbol,symbolmap)->{
+            if(symbol.contains("USDT")){
+                binanceClient.getFutureSubsptClient().subscribeSymbolBookTickerEvent(symbol,symbolBookTickerEvent->{
+                    MarketCache.futureTickerMap.put(symbol,symbolBookTickerEvent);
+                }, new SubscriptionErrorHandler() {
+                    @Override
+                    public void onError(BinanceApiException exception) {
+                        logger.error("future sub all tick exctpion={}",exception);
+                    }
+                });
             }
         });
     }
+
+
+//    //存储合约最佳挂单行情
+//    public void allBookTickerSubscription(){
+//        getAllBookTikcers();
+//
+//
+//        binanceClient.getFutureSubsptClient().subscribeAllBookTickerEvent((symbolBookTickerEvent) -> {
+//            if (!symbolBookTickerEvent.getSymbol().contains("USDT")) return;
+//
+//            HashMap map = new HashMap();
+//            map.put(BeanConstant.BEST_ASK_PRICE, symbolBookTickerEvent.getBestAskPrice());
+//            map.put(BeanConstant.BEST_ASK_Qty, symbolBookTickerEvent.getBestAskQty());
+//            map.put(BeanConstant.BEST_BID_PRICE, symbolBookTickerEvent.getBestBidPrice());
+//            map.put(BeanConstant.BEST_BID_QTY, symbolBookTickerEvent.getBestBidQty());
+//            MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(), map);
+////            if (BeanConstant.watchdog
+////                    &&symbolBookTickerEvent.getBestBidPrice()!=null && symbolBookTickerEvent.getBestAskPrice()!= null
+////                    && MarketCache.spotTickerMap.containsKey(symbolBookTickerEvent.getSymbol())) {
+////                try {
+////
+////                    positionOpenService.processPairsTrade(symbolBookTickerEvent.getSymbol(),symbolBookTickerEvent.getBestBidPrice(), symbolBookTickerEvent.getBestAskPrice()
+////                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_BID_PRICE)
+////                            , MarketCache.spotTickerMap.get(symbolBookTickerEvent.getSymbol()).get(BeanConstant.BEST_ASK_PRICE));
+////                } catch (Exception e) {
+////                    logger.error("do future pairs trade exception={}", e);
+////                }
+////            }
+//
+//
+//        }, new SubscriptionErrorHandler() {
+//            @Override
+//            public void onError(BinanceApiException exception) {
+//                logger.error("future sub all tick exctpion={}",exception);
+//            }
+//        });
+//    }
 
     //initial user's future accout info
     public void processFutureCache(){

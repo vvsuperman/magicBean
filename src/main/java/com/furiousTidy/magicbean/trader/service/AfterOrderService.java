@@ -1,6 +1,7 @@
 package com.furiousTidy.magicbean.trader.service;
 
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
+import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
@@ -172,7 +173,7 @@ public class AfterOrderService {
     }
 
     private void calculateRatioAndProfit(String symbol, String clientOrderId, BigDecimal futurePrice, BigDecimal spotPrice, int priceSize,BigDecimal orginRatio) {
-        BigDecimal ratio;
+        BigDecimal ratio = BigDecimal.ZERO;
         BigDecimal profit;
         log.info("in calucalateRatio, symbol={}, clientorderid={}, futureprice={}, spotprice={}",symbol,clientOrderId,futurePrice,spotPrice);
         if (clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)) {
@@ -185,12 +186,13 @@ public class AfterOrderService {
                 pairsTradeModel.setOpenRatio(ratio);
                 pairsTradeModel.setCreateTime(BeanConstant.dateFormat.format(new Date()));
                 pairsTradeModel.setOrigOpenRatio(orginRatio);
-                log.info("insert pairstrade,pairsTrade={}",pairsTradeModel);
+//                log.info("insert pairstrade,pairsTrade={}",pairsTradeModel);
                 pairsTradeDao.insertPairsTrade(pairsTradeModel);
             }else{
-                log.info("update pairstrade,pairsTrade={}",pairsTradeModel);
+//                log.info("update pairstrade,pairsTrade={}",pairsTradeModel);
                 pairsTradeDao.updateOpenRatioByOpenId(clientOrderId, ratio);
             }
+
 
         } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
 
@@ -205,7 +207,16 @@ public class AfterOrderService {
             pairsTradeDao.updatePairsTrade(pairsTradeModel);
         }
 
+        //if origRatio has big gap of the ratio, then sleep for a monent
+        doAveraging(clientOrderId,orginRatio,ratio);
 //        tradeUtil.checkUSDEnough();
+    }
+
+    private void doAveraging(String clientOrderId,BigDecimal orginRatio, BigDecimal ratio) {
+        if(orginRatio.subtract(ratio).compareTo(BeanConfig.ratioTolerate)>0 && ratio.compareTo(BeanConfig.OPEN_PRICE_GAP)<0 ){
+            BeanConstant.GAP_2_BIG = true;
+            log.info("gap too big,stop trade clientOrderId={}, orignRatio = {}, ratio ={}", clientOrderId,orginRatio,ratio);
+        }
     }
 
 

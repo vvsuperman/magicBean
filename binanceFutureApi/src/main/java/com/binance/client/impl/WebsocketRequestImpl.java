@@ -316,6 +316,8 @@ class WebsocketRequestImpl {
             result.setBestBidQty(jsonWrapper.getBigDecimal("B"));
             result.setBestAskPrice(jsonWrapper.getBigDecimal("a"));
             result.setBestAskQty(jsonWrapper.getBigDecimal("A"));
+            result.setEventTime(jsonWrapper.getLong("E"));
+            result.setTradeTime(jsonWrapper.getLong("T"));
             return result;
         };
         return request;
@@ -338,6 +340,8 @@ class WebsocketRequestImpl {
             result.setBestBidQty(jsonWrapper.getBigDecimal("B"));
             result.setBestAskPrice(jsonWrapper.getBigDecimal("a"));
             result.setBestAskQty(jsonWrapper.getBigDecimal("A"));
+            result.setEventTime(jsonWrapper.getLong("E"));
+            result.setTradeTime(jsonWrapper.getLong("T"));
             return result;
         };
         return request;

@@ -1,5 +1,7 @@
 package com.furiousTidy.magicbean.subscription;
 
+import com.binance.client.model.event.SymbolBookTickerEvent;
+import com.binance.client.model.event.SymbolTickerEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.ExchangeInformation;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
@@ -74,11 +76,15 @@ public class PreTradeService {
             BatchPoints batchPoints = BatchPoints.database("magic_bean").retentionPolicy("autogen").
                     consistency(InfluxDB.ConsistencyLevel.ALL).build();
             ratioMap.clear();
-            for(Map.Entry<String, HashMap<String, BigDecimal>> entrySet:MarketCache.futureTickerMap.entrySet()){
-                symbol = entrySet.getKey();
+//            for(Map.Entry<String, HashMap<String, BigDecimal>> entrySet:MarketCache.futureTickerMap.entrySet()){
+            for(Map.Entry<String, SymbolBookTickerEvent> entrySet:MarketCache.futureTickerMap.entrySet()){
+
+                    symbol = entrySet.getKey();
                 if(!symbol.contains("USDT")) continue;
-                futureBidPrice = entrySet.getValue().get(BeanConstant.BEST_BID_PRICE);
-                futureAskPrice = entrySet.getValue().get(BeanConstant.BEST_ASK_PRICE);
+//                futureBidPrice = entrySet.getValue().get(BeanConstant.BEST_BID_PRICE);
+//                futureAskPrice = entrySet.getValue().get(BeanConstant.BEST_ASK_PRICE);
+                futureBidPrice = entrySet.getValue().getBestBidPrice();
+                futureAskPrice = entrySet.getValue().getBestAskPrice();
                 if(!MarketCache.spotTickerMap.containsKey(symbol))  continue;
                 spotAskPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                 spotBidPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);

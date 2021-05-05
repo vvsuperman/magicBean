@@ -162,7 +162,8 @@ public class PositionOpenController {
                 List<BigDecimal> ratioList = new LinkedList<>();
                 //re-compare the price in the cache
                 for(String symbol : symbols){
-                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+//                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).getBestBidPrice();
                     BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
                     ratioList.add(futurePrice.subtract(spotPrice).divide(spotPrice,4));
                     Thread.sleep(200);
@@ -173,40 +174,40 @@ public class PositionOpenController {
         else if(listSymbol.equals("all")){
             TreeMap<BigDecimal,String > ratioMap = new TreeMap<>(
                     (o1, o2) -> o2.compareTo(o1));
-            do{
-                ratioMap.clear();
-                for(Map.Entry<String, HashMap<String, BigDecimal>> entrySet:MarketCache.futureTickerMap.entrySet()){
-                    BigDecimal futurePrice = entrySet.getValue().get(BeanConstant.BEST_BID_PRICE);
-                    if(!MarketCache.spotTickerMap.containsKey(entrySet.getKey()))  continue;
-                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(entrySet.getKey()).get(BeanConstant.BEST_ASK_PRICE);
-                    BigDecimal ratio = futurePrice.subtract(spotPrice).divide(spotPrice,4);
-                    String symbol = entrySet.getKey();
-                    BigDecimal fundingRate = MarketCache.futureRateCache.get(symbol);
-                    BigDecimal totalRatio = ratio.add(fundingRate);
-                    String value = symbol+":"+ratio+":"+fundingRate;
-                    ratioMap.put(totalRatio,value);
-                }
-                log.info("ratio:{}",ratioMap);
-                Thread.sleep(1000);
-            }while (BeanConstant.watchdog);
+//            do{
+//                ratioMap.clear();
+//                for(Map.Entry<String, HashMap<String, BigDecimal>> entrySet:MarketCache.futureTickerMap.entrySet()){
+//                    BigDecimal futurePrice = entrySet.getValue().get(BeanConstant.BEST_BID_PRICE);
+//                    if(!MarketCache.spotTickerMap.containsKey(entrySet.getKey()))  continue;
+//                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(entrySet.getKey()).get(BeanConstant.BEST_ASK_PRICE);
+//                    BigDecimal ratio = futurePrice.subtract(spotPrice).divide(spotPrice,4);
+//                    String symbol = entrySet.getKey();
+//                    BigDecimal fundingRate = MarketCache.futureRateCache.get(symbol);
+//                    BigDecimal totalRatio = ratio.add(fundingRate);
+//                    String value = symbol+":"+ratio+":"+fundingRate;
+//                    ratioMap.put(totalRatio,value);
+//                }
+//                log.info("ratio:{}",ratioMap);
+//                Thread.sleep(1000);
+//            }while (BeanConstant.watchdog);
         }
     }
 
     @RequestMapping("spotfutureratio/{listSymbol}")
     public @ResponseBody void spotfutureratio(@PathVariable String listSymbol) throws InterruptedException {
 
-            do{
-                String[] symbols = listSymbol.split("-");
-                List<BigDecimal> ratioList = new LinkedList<>();
-                //re-compare the price in the cache
-                for(String symbol : symbols){
-                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                    ratioList.add(spotPrice.subtract(futurePrice).divide(futurePrice,4));
-                    Thread.sleep(200);
-                }
-                log.info("ratio:{}",ratioList);
-            } while(BeanConstant.watchdog);
+//            do{
+//                String[] symbols = listSymbol.split("-");
+//                List<BigDecimal> ratioList = new LinkedList<>();
+//                //re-compare the price in the cache
+//                for(String symbol : symbols){
+//                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+//                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+//                    ratioList.add(spotPrice.subtract(futurePrice).divide(futurePrice,4));
+//                    Thread.sleep(200);
+//                }
+//                log.info("ratio:{}",ratioList);
+//            } while(BeanConstant.watchdog);
 
     }
 
@@ -266,7 +267,8 @@ public class PositionOpenController {
 //        spotSubscription.processBalanceCache();
 
         //subscribe bookticker info
-        futureSubscription.allBookTickerSubscription();
+//        futureSubscription.allBookTickerSubscription();
+        futureSubscription.allBookTickerSub();
         spotSubscription.allBookTickSubscription();
 
         //get pairs trade gap
@@ -279,15 +281,15 @@ public class PositionOpenController {
         return "success";
     }
 
-    @RequestMapping(value = "testcache/{symbol}", method = RequestMethod.GET)
-    public @ResponseBody String testCache(@PathVariable String symbol) {
-        String str = MarketCache.spotTickerMap.containsKey(symbol)+":"+ MarketCache.futureTickerMap.containsKey(symbol);
-        return str;
-    }
+//    @RequestMapping(value = "testcache/{symbol}", method = RequestMethod.GET)
+//    public @ResponseBody String testCache(@PathVariable String symbol) {
+////        String str = MarketCache.spotTickerMap.containsKey(symbol)+":"+ MarketCache.futureTickerMap.containsKey(symbol);
+////        return str;
+//    }
 
 
     @RequestMapping(value = "doopen/{symbol}/{pty}/{direct}", method = RequestMethod.GET)
     public void doOpen(@PathVariable String symbol, @PathVariable String pty, @PathVariable String direct) throws InterruptedException {
-        positionOpenService.doTrade(symbol, new BigDecimal(pty) ,direct);
+//        positionOpenService.doTrade(symbol, new BigDecimal(pty) ,direct);
     }
 }

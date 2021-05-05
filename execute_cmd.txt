@@ -14,6 +14,11 @@ scp ./target/application.properties root@8.209.248.166:/home/admin/application/c
 ssh root@8.209.248.166
 . /home/admin/application/deploy.sh restart
 
+
+scp ./target/magicbean-0.0.1.jar root@47.245.35.226:/home/admin/application/target
+
+
+
 #退出sqlite
 .quit
 
@@ -31,10 +36,8 @@ GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'Fw123456*' WITH GRANT O
 
 flush privileges
 
-
-echo "obase=16;hid" | bc
 top -H -p pid
-3200
+echo "obase=16;hid" | bc
 jstack pid |grep -A 10 hid
 
 

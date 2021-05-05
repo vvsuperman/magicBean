@@ -15,6 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BeanConstant {
 
     public static final String USER_NAME = "LAOMA";
+    public static boolean GAP_2_BIG = false;
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
 

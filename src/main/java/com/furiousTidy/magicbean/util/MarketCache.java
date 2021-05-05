@@ -8,6 +8,7 @@ import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.MarkPriceEvent;
+import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.MarkPrice;
 import com.binance.client.model.trade.AccountInformation;
@@ -59,7 +60,8 @@ public class MarketCache {
 
 
     //合约最佳挂单
-    public static Map<String,HashMap<String,BigDecimal>> futureTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
+//    public static Map<String,HashMap<String,BigDecimal>> futureTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
+    public static HashMap<String, SymbolBookTickerEvent> futureTickerMap = new HashMap<>();
 
 //    //实时资金费率
 //    public static List<MarkPrice> markPriceList = new LinkedList<>();

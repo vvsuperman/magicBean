@@ -83,17 +83,17 @@ public class PositionOpenService {
     *
     * 实际下单数量，用最小交易单元来交易
     * */
-    public void doTradeSymbol(String symbol, BigDecimal totalCost, String direct) throws InterruptedException {
-        BigDecimal standardTradeUnit = BeanConfig.STANDARD_TRADE_UNIT;
-        while(totalCost.compareTo(standardTradeUnit) > 0){
-            doTrade(symbol,standardTradeUnit,direct);
-            totalCost = totalCost.subtract(standardTradeUnit);
-            Thread.sleep(1000);
-        }
-        if(totalCost.compareTo(BigDecimal.ZERO) > 0){
-            doTrade(symbol,totalCost,direct);
-        }
-    }
+//    public void doTradeSymbol(String symbol, BigDecimal totalCost, String direct) throws InterruptedException {
+//        BigDecimal standardTradeUnit = BeanConfig.STANDARD_TRADE_UNIT;
+//        while(totalCost.compareTo(standardTradeUnit) > 0){
+//            doTrade(symbol,standardTradeUnit,direct);
+//            totalCost = totalCost.subtract(standardTradeUnit);
+//            Thread.sleep(1000);
+//        }
+//        if(totalCost.compareTo(BigDecimal.ZERO) > 0){
+//            doTrade(symbol,totalCost,direct);
+//        }
+//    }
 
     /*
     * 下单，总价为cost, divide the total cost
@@ -101,34 +101,34 @@ public class PositionOpenService {
     * @Param cost 下单量的usdt
     *
     * */
-    public void doTrade(String symbol, BigDecimal cost, String direct) throws InterruptedException {
-        logger.info("doTrade start...........");
-        BigDecimal futurePrice, spotPrice = BigDecimal.ZERO;
-
-        if(direct.equals(BeanConstant.FUTURE_SELL)){
-            do{
-                //re-compare the price in the cache
-                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice+":"+direct);
-                Thread.sleep(200);
-                //TODO not support pairs now
-            } while(futurePrice.subtract(spotPrice).divide(spotPrice,4)
-                    .compareTo(BeanConfig.OPEN_PRICE_GAP)<0);
-        }else{
-            do{
-                //re-compare the price in the cache
-                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
-                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice+":"+direct);
-                Thread.sleep(200);
-                //TODO not support pairs now
-            } while(spotPrice.subtract(futurePrice).divide(futurePrice,4)
-                    .compareTo(BeanConfig.OPEN_PRICE_GAP)<0);
-        }
-
-//        doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
-    }
+//    public void doTrade(String symbol, BigDecimal cost, String direct) throws InterruptedException {
+//        logger.info("doTrade start...........");
+//        BigDecimal futurePrice, spotPrice = BigDecimal.ZERO;
+//
+//        if(direct.equals(BeanConstant.FUTURE_SELL)){
+//            do{
+//                //re-compare the price in the cache
+//                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+//                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+//                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice+":"+direct);
+//                Thread.sleep(200);
+//                //TODO not support pairs now
+//            } while(futurePrice.subtract(spotPrice).divide(spotPrice,4)
+//                    .compareTo(BeanConfig.OPEN_PRICE_GAP)<0);
+//        }else{
+//            do{
+//                //re-compare the price in the cache
+//                futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+//                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+//                logger.info("futurePrice："+ futurePrice +" spotprice："+spotPrice+":"+direct);
+//                Thread.sleep(200);
+//                //TODO not support pairs now
+//            } while(spotPrice.subtract(futurePrice).divide(futurePrice,4)
+//                    .compareTo(BeanConfig.OPEN_PRICE_GAP)<0);
+//        }
+//
+////        doPairsTrade(symbol, cost, futurePrice, spotPrice,direct);
+//    }
 
     //the central control to control the pair trade
     @Async
@@ -335,9 +335,11 @@ public class PositionOpenService {
     private BigDecimal getFutureTickPrice(String symbol,String type) {
         if(MarketCache.futureTickerMap.containsKey(symbol)){
             if(type.equals("bid")){
-                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+//                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                return MarketCache.futureTickerMap.get(symbol).getBestBidPrice();
             }else {
-                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+//                return  MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                return  MarketCache.futureTickerMap.get(symbol).getBestAskPrice();
             }
         }else{
             return null;
@@ -382,10 +384,6 @@ public class PositionOpenService {
         }
         return symbolPairsTradeList;
     }
-
-
-
-
 
 
     public static void main(String[] args) {

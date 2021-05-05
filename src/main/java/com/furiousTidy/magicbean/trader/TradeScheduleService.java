@@ -11,6 +11,7 @@ import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
+import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.trader.service.AfterOrderService;
@@ -27,6 +28,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -89,6 +91,19 @@ public class TradeScheduleService {
         positionOpenService.sortPairsTradeList(BeanConstant.pairsTradeList);
     }
 
+
+
+    @Scheduled(cron = "0 0 1 * * ?")
+    public void closedTrade3DaysAgo(){
+        LocalDate closeDay = LocalDate.now().minusDays(3);
+        String strDay = closeDay.getYear()+"/"+closeDay.getMonthValue()+"/"+closeDay.getDayOfMonth();
+        List<PairsTradeModel> pairsTradeModels = pairsTradeDao.getPairsTradeOpenByDate(strDay);
+        tradeUtil.closePairsTradeList(pairsTradeModels);
+    }
+
+
+
+    // query all manul close order's status
     @Scheduled(cron = "0 0/5 * * * ?")
     public void queryOrder(){
         for(Map.Entry <String, String> entry :MarketCache.futureOrderCache.entrySet()){
@@ -140,7 +155,7 @@ public class TradeScheduleService {
         preTradeService.changeLeverageLevel(1);
     }
 
-    //change gap according to future rate
+    //change gap according to future rate, set
     @Scheduled(cron = "0 0/10 * * * ?")
     public void changePairsGap(){
         MarketCache.futureRateCache.entrySet().stream().filter(entry -> entry.getKey().contains("USDT")).forEach(entry ->{
@@ -151,9 +166,12 @@ public class TradeScheduleService {
                             :BeanConfig.OPEN_PRICE_GAP);
                 }
         );
+
+        BeanConstant.GAP_2_BIG = false;
     }
 
     //future and spot balance and synchronize the local balance with the binance exchange
+    // clear the event lock list
     @Scheduled(cron = "0 0/5 * * * ?")
     public void doFutureSpotBalance() throws InterruptedException {
         BeanConstant.watchdog =false;
@@ -169,8 +187,8 @@ public class TradeScheduleService {
                 .forEach(assetBalance -> {
                     balances[1] = new BigDecimal(assetBalance.getFree());
                 });
-        log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
-                ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
+//        log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
+//                ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
 
 
         if(balances[0].subtract(balances[1]).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0){
@@ -196,6 +214,8 @@ public class TradeScheduleService {
             while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1]));
         }
 
+        //clear the eventLock
+        MarketCache.eventLockCache.clear();
 
         //spot account will take a delay for transfer money
         Thread.sleep(30000);
@@ -274,10 +294,7 @@ public class TradeScheduleService {
     }
 
     public static void main(String[] args){
-        MarketCache.spotBalance = new AtomicReference<BigDecimal>(new BigDecimal("2"));
-        while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),new BigDecimal("10")));
-        System.out.println(MarketCache.spotBalance);
-
+        TradeScheduleService tradeScheduleService = new TradeScheduleService();
 
     }
 

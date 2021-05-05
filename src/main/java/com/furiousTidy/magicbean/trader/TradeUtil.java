@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoField;
@@ -72,6 +71,15 @@ public class TradeUtil {
                 pairsTradeModels.add(pairsTradeDao.getPairsTradeByOpenId(openId));
             }
         }
+        closePairsTradeList(pairsTradeModels);
+
+    }
+
+    public void closePairsTradeList(List<PairsTradeModel> pairsTradeModels) {
+        String futurePrice;
+        String futureQty;
+        String spotPrice;
+        String spotQty;
         for (PairsTradeModel pairsTradeModel : pairsTradeModels) {
             String symbol = pairsTradeModel.getSymbol();
             String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
@@ -79,7 +87,8 @@ public class TradeUtil {
             pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
             TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
-            futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString();
+//            futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString();
+            futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).getBestBidPrice().toString();
             futureQty = tradeInfoModel.getFutureQty().toString();
             log.info("close trade for future ordeid={}, price={}, qty={}", clientOrderId,futurePrice,futureQty);
             Order order =futureSyncClientProxy.postOrder(tradeInfoModel.getSymbol(), OrderSide.BUY,null, OrderType.LIMIT, TimeInForce.GTC
@@ -97,7 +106,6 @@ public class TradeUtil {
             MarketCache.futureOrderCache.put(clientOrderId, pairsTradeModel.getSymbol());
             MarketCache.spotOrderCache.put(clientOrderId,pairsTradeModel.getSymbol());
         }
-
     }
 
 
@@ -146,13 +154,19 @@ public class TradeUtil {
 
     public boolean isTradeCanOpen(String symbol){
 
+        //just stop open new pair trade
         if(Boolean.valueOf(BeanConfig.STOP_TRADE)){
             return false;
         }
 
-        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_OPEN)) {
-            return true;
+        //orginal open ratio has big gap with real open ratio
+        if(Boolean.valueOf(BeanConstant.GAP_2_BIG)){
+            return false;
         }
+
+//        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_OPEN)) {
+//            return true;
+//        }
 
         if(futureRateCache.containsKey(symbol) && futureRateCache.get(symbol).compareTo(BigDecimal.ZERO) > 0){
             return true;
@@ -164,8 +178,13 @@ public class TradeUtil {
 
     public boolean isTradeCanClosed(String symbol){
 
-        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_CLOSE)) {
-            return true;
+//        if(Boolean.valueOf(BeanConfig.TRADE_ALWAYS_CLOSE)) {
+//            return true;
+//        }
+
+        //orginal open ratio has big gap with real open ratio
+        if(Boolean.valueOf(BeanConstant.GAP_2_BIG)){
+            return false;
         }
 
         //not in top 10 fundrate list && fundrate < 0.001
@@ -230,8 +249,8 @@ public class TradeUtil {
     public static String getCurrentTime(){
         LocalDate today = LocalDate.now();
         LocalTime time = LocalTime.now();
-        return today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
-                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND)+"_"+Thread.currentThread().getId();
+        return today.getYear()+"_"+today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
+                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND)+"_";
     }
 
 

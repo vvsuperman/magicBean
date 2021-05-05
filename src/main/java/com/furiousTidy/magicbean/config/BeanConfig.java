@@ -8,6 +8,7 @@ import java.math.RoundingMode;
 
 @Data
 public class BeanConfig {
+    public static BigDecimal ratioTolerate = new BigDecimal("0.003");
     public static  boolean STOP_TRADE = false;
     public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.0036"); //交易条件，千分之五
     public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
