@@ -1,5 +1,6 @@
 package com.furiousTidy.magicbean.trader.service;
 
+import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
@@ -156,22 +157,23 @@ public class PositionOpenService {
             //compare the price in the cache
             symbol = entry.getKey();
             if(!symbol.contains("USDT")) continue;
-            futureBidPrice = getFutureTickPrice(symbol,"bid");
-            futureAskPrice = getFutureTickPrice(symbol,"ask");
+//            futureBidPrice = getFutureTickPrice(symbol,"bid");
+//            futureAskPrice = getFutureTickPrice(symbol,"ask");
+            SymbolBookTickerEvent symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
+            symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
             spotBidPrice = getSpotTickPrice(symbol,"bid");
             spotAskPrice= getSpotTickPrice(symbol,"ask");
-            processPairsTrade(symbol,futureBidPrice,futureAskPrice,spotBidPrice,spotAskPrice);
+            processPairsTrade(symbol,symbolBookTickerEvent,spotBidPrice,spotAskPrice);
         }
     }
 
     @Async
-    public void processPairsTrade(String symbol, BigDecimal futureBidPrice, BigDecimal futureAskPrice,
+    public void processPairsTrade(String symbol,SymbolBookTickerEvent symbolBookTickerEvent,
                                   BigDecimal spotBidPrice, BigDecimal spotAskPrice) throws InterruptedException {
 
-        if(futureBidPrice == null || spotAskPrice == null ||
-                futureBidPrice.compareTo(BigDecimal.ZERO)==0 || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) return;
+        if(symbolBookTickerEvent == null || spotAskPrice == null || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) return;
 
-        origOpenRatio = futureBidPrice.subtract(spotAskPrice).divide(spotAskPrice,4);
+        origOpenRatio = symbolBookTickerEvent.getBestBidPrice().subtract(spotAskPrice).divide(spotAskPrice,4);
 
 //            if(openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0){
 //                BeanConstant.openImpactSet.add(symbol+counter);
@@ -190,7 +192,7 @@ public class PositionOpenService {
             clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
             MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-            doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,futureBidPrice,spotAskPrice,
+            doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,symbolBookTickerEvent,spotAskPrice,
                     BeanConstant.FUTURE_SELL_OPEN,clientOrderId,origOpenRatio);
 
         }else {
@@ -225,6 +227,7 @@ public class PositionOpenService {
 //                    }else{
 //                        continue;
 //                    }
+                    futureAskPrice = symbolBookTickerEvent.getBestAskPrice();
                     if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
 //                            && checkImpactSet(symbol,counter, BeanConstant.closeImpactSet, BeanConfig.CLOSE_IMPACT_COUNTER)
                             && profit.compareTo(BeanConfig.TRADE_PROFIT) > 0
@@ -244,7 +247,7 @@ public class PositionOpenService {
                         Lock closeLock = new ReentrantLock();
                         MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                         closeLock.lock();
-                        doPairsTradeByQty(symbol, futrueQty,spotQty,futureAskPrice,spotBidPrice,
+                        doPairsTradeByQty(symbol, futrueQty,spotQty,symbolBookTickerEvent,spotBidPrice,
                                 BeanConstant.FUTURE_SELL_CLOSE,clientOrderId,closeRatio);
                         //update close id in pairstrade
                         pairsTradeDao.updatePairsTrade(pairsTradeModel);
@@ -276,23 +279,23 @@ public class PositionOpenService {
     }
 
     //do paris trade
-    private void doPairsTrade(String symbol, BigDecimal cost, BigDecimal futurePrice, BigDecimal spotPrice,
+    private void doPairsTrade(String symbol, BigDecimal cost, SymbolBookTickerEvent symbolBookTickerEvent, BigDecimal spotPrice,
                               String direct,String clientOrderId,BigDecimal ratio) throws InterruptedException {
         //计算合约最小下单位数
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
         //计算合约卖单数量
-        BigDecimal futureQuantity =  cost.divide(futurePrice, stepSize[0], BigDecimal.ROUND_HALF_UP);
+        BigDecimal futureQuantity =  cost.divide(symbolBookTickerEvent.getBestBidPrice(), stepSize[0], BigDecimal.ROUND_HALF_UP);
         //计算现货买单数量
         BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
         //取位数最大的数量，避免精度问题
         BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
 
-        doPairsTradeByQty(symbol,qty,qty,futurePrice,spotPrice,direct,clientOrderId,ratio);
+        doPairsTradeByQty(symbol,qty,qty,symbolBookTickerEvent,spotPrice,direct,clientOrderId,ratio);
 
     }
 
     //do paris trade
-    private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty, BigDecimal futurePrice, BigDecimal spotPrice,
+    private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty,SymbolBookTickerEvent symbolBookTickerEvent, BigDecimal spotPrice,
                                    String direct,String clientOrderId, BigDecimal ratio) throws InterruptedException {
 
 
@@ -300,7 +303,7 @@ public class PositionOpenService {
         //计算合约最小下单位数
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
 
-        tradeService.doFutureTrade(symbol, futurePrice, futureQty, stepSize[0], direct, clientOrderId,ratio);
+        tradeService.doFutureTrade(symbol, symbolBookTickerEvent, futureQty, stepSize[0], direct, clientOrderId,ratio);
         tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId,ratio);
     }
 

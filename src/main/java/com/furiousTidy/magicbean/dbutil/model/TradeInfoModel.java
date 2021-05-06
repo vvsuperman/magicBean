@@ -16,4 +16,6 @@ public class TradeInfoModel {
     BigDecimal spotQty;
     String createTime;
     String updateTime;
+    long futureTickDelayTime;
+    long spotTickDelayTime;
 }

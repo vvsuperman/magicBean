@@ -5,6 +5,7 @@ import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.client.model.enums.*;
+import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
@@ -53,15 +54,16 @@ public class TradeService {
 
 
     @Async
-    public void doFutureTrade(String symbol, BigDecimal futurePrice, BigDecimal futureQty, int futureStepSize,
+    public void doFutureTrade(String symbol, SymbolBookTickerEvent symbolBookTickerEvent, BigDecimal futureQty, int futureStepSize,
                               String direct, String clientOrderId, BigDecimal ratio) throws InterruptedException{
 
         OrderSide orderSide =(direct.equals(BeanConstant.FUTURE_SELL_OPEN))? OrderSide.SELL:OrderSide.BUY;
+        BigDecimal futurePrice = (direct.equals(BeanConstant.FUTURE_SELL_OPEN))? symbolBookTickerEvent.getBestBidPrice():symbolBookTickerEvent.getBestAskPrice();
 //      PositionSide positionSide = (direct.equals(BeanConstant.FUTURE_SELL_OPEN))?PositionSide.SHORT:PositionSide.LONG;
         PositionSide positionSide = null;
         int i=1;
 
-        while (BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && futurePrice.multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+        while (BeanConstant.watchdog && futureQty.compareTo(BigDecimal.ZERO)>0 && symbolBookTickerEvent.getBestBidPrice().multiply(futureQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
 
             if(!BeanConstant.ENOUGH_MONEY.get() && direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 log.info("future trade detect not enough money,not trade");
@@ -103,15 +105,15 @@ public class TradeService {
 
             if( order.getStatus().equals("FILLED")){
 
-                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio,symbolBookTickerEvent.getFutureTickDelayTime());
 
                 return;
                 // order has been partially filled, order status is partially filled, cancel order is null;
             }else if(order.getStatus().equals("PARTIALLY_FILLED" )){
-                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio,symbolBookTickerEvent.getFutureTickDelayTime());
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }else if(order.getStatus().equals("EXPIRED") && order.getExecutedQty().compareTo(BigDecimal.ZERO)>0){
-                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio,symbolBookTickerEvent.getFutureTickDelayTime());
                 futureQty = futureQty.subtract(order.getExecutedQty().setScale(futureStepSize, RoundingMode.HALF_UP));
             }
 

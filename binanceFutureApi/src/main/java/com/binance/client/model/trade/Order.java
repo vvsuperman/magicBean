@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 
 public class Order {
 
+    private BigDecimal avgPrice;
+
     private String clientOrderId;
 
     private BigDecimal cumQuote;
@@ -38,8 +40,6 @@ public class Order {
     private Long updateTime;
 
     private String workingType;
-
-    private BigDecimal avgPrice;
 
     public BigDecimal getAvgPrice(){ return avgPrice;}
 

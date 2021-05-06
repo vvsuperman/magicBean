@@ -1,11 +1,13 @@
 package com.binance.client.model.event;
 
 import com.binance.client.constant.BinanceApiConstants;
+import lombok.Data;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.math.BigDecimal;
 
 
+@Data
 public class SymbolBookTickerEvent {
 
     private Long orderBookUpdateId;
@@ -20,78 +22,12 @@ public class SymbolBookTickerEvent {
 
     private BigDecimal bestAskQty;
 
+    private long futureTickDelayTime;
+
     private long eventTime;
 
     private long tradeTime;
 
     private long localTime;
 
-    public long getEventTime(){return eventTime;}
-
-    public void setEventTime(long eventTime){ this.eventTime = eventTime;}
-
-    public long getTradeTime(){return tradeTime;}
-
-    public void setTradeTime(long tradeTime){ this.tradeTime = tradeTime;}
-
-    public long getLocalTime(){return localTime;}
-
-    public void setLocalTime(long localTime){this.localTime = localTime;}
-
-    public Long getOrderBookUpdateId() {
-        return orderBookUpdateId;
-    }
-
-    public void setOrderBookUpdateId(Long orderBookUpdateId) {
-        this.orderBookUpdateId = orderBookUpdateId;
-    }
-
-    public String getSymbol() {
-        return symbol;
-    }
-
-    public void setSymbol(String symbol) {
-        this.symbol = symbol;
-    }
-
-    public BigDecimal getBestBidPrice() {
-        return bestBidPrice;
-    }
-
-    public void setBestBidPrice(BigDecimal bestBidPrice) {
-        this.bestBidPrice = bestBidPrice;
-    }
-
-    public BigDecimal getBestBidQty() {
-        return bestBidQty;
-    }
-
-    public void setBestBidQty(BigDecimal bestBidQty) {
-        this.bestBidQty = bestBidQty;
-    }
-
-    public BigDecimal getBestAskPrice() {
-        return bestAskPrice;
-    }
-
-    public void setBestAskPrice(BigDecimal bestAskPrice) {
-        this.bestAskPrice = bestAskPrice;
-    }
-
-    public BigDecimal getBestAskQty() {
-        return bestAskQty;
-    }
-
-    public void setBestAskQty(BigDecimal bestAskQty) {
-        this.bestAskQty = bestAskQty;
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-                .append("orderBookUpdateId", orderBookUpdateId).append("symbol", symbol)
-                .append("bestBidPrice", bestBidPrice).append("bestBidQty", bestBidQty)
-                .append("bestAskPrice", bestAskPrice).append("bestAskQty", bestAskQty)
-                .append("eventTime",eventTime).append("tradeTime", tradeTime).toString();
-    }
 }

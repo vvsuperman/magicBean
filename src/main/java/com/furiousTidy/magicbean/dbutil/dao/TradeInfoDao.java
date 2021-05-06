@@ -14,11 +14,11 @@ public interface TradeInfoDao {
     @Select("Select * from trade_info where orderId = #{orderId}")
     TradeInfoModel getTradeInfoByOrderId(@Param("orderId") String orderId);
 
-    @Insert("INSERT INTO trade_info(orderId,symbol,futurePrice,futureQty,spotPrice,spotQty,createTime) " +
-            "VALUES(#{orderId}, #{symbol}, #{futurePrice}, #{futureQty},#{spotPrice},#{spotQty},#{createTime})")
+    @Insert("INSERT INTO trade_info(orderId,symbol,futurePrice,futureQty,futureTickDelayTime,spotPrice,spotQty,createTime) " +
+            "VALUES(#{orderId}, #{symbol}, #{futurePrice}, #{futureQty},#{futureTickDelayTime},#{spotPrice},#{spotQty},#{createTime})")
     Integer insertTradeInfo(TradeInfoModel tradeInfoModel);
 
     @Update("UPDATE trade_info SET futurePrice=#{futurePrice},futureQty=#{futureQty}" +
-            ",spotPrice=#{spotPrice},spotQty=#{spotQty},updateTime=#{updateTime} WHERE orderId =#{orderId}")
+            ",futureTickDelayTime=#{futureTickDelayTime},spotPrice=#{spotPrice},spotQty=#{spotQty},updateTime=#{updateTime} WHERE orderId =#{orderId}")
     void updateTradeInfoById(TradeInfoModel tradeInfoModel);
 }

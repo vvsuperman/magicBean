@@ -11,6 +11,8 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TickerEvent {
 
+    private long spotTickDelayTime;
+
     @JsonProperty("e")
     private String eventType;
 
@@ -79,6 +81,12 @@ public class TickerEvent {
 
     @JsonProperty("n")
     private long totalNumberOfTrades;
+
+    public long getSpotTickDelayTime(){return spotTickDelayTime;}
+
+    public void setSpotTickDelayTime(long spotTickDelayTime){
+        this.spotTickDelayTime = spotTickDelayTime;
+    }
 
     public String getEventType() {
         return eventType;

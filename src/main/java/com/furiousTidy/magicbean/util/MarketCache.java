@@ -6,6 +6,7 @@ package com.furiousTidy.magicbean.util;
 
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
+import com.binance.api.client.domain.event.TickerEvent;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.event.SymbolBookTickerEvent;
@@ -77,7 +78,7 @@ public class MarketCache {
 
 
     //现货最佳挂单
-    public static Map<String,HashMap<String,BigDecimal>> spotTickerMap = new HashMap<String, HashMap<String, BigDecimal>>();
+    public static Map<String, TickerEvent> spotTickerMap = new HashMap<>();
 
 
     // 现货用户持仓信息
