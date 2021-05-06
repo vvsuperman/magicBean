@@ -61,7 +61,7 @@ public class TradeUtil {
     }
 
 
-    public void closeTrade(List<String> openIds){
+    public void closeTrade(List<String> openIds) throws InterruptedException {
         String futurePrice, futureQty, spotPrice, spotQty;
         List<PairsTradeModel> pairsTradeModels = new ArrayList<>() ;
         if(openIds.get(0).equals("all")) {
@@ -75,7 +75,7 @@ public class TradeUtil {
 
     }
 
-    public void closePairsTradeList(List<PairsTradeModel> pairsTradeModels) {
+    public void closePairsTradeList(List<PairsTradeModel> pairsTradeModels) throws InterruptedException {
         String futurePrice;
         String futureQty;
         String spotPrice;
@@ -105,6 +105,7 @@ public class TradeUtil {
 
             MarketCache.futureOrderCache.put(clientOrderId, pairsTradeModel.getSymbol());
             MarketCache.spotOrderCache.put(clientOrderId,pairsTradeModel.getSymbol());
+            Thread.sleep(50);
         }
     }
 
@@ -250,7 +251,7 @@ public class TradeUtil {
         LocalDate today = LocalDate.now();
         LocalTime time = LocalTime.now();
         return today.getYear()+"_"+today.getMonthValue()+"_"+today.getDayOfMonth()+"_"
-                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND)+"_";
+                +time.getHour()+"_"+time.getMinute()+"_"+time.getSecond()+"_"+time.get(ChronoField.MILLI_OF_SECOND);
     }
 
 

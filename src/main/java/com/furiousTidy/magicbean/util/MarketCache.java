@@ -78,7 +78,7 @@ public class MarketCache {
 
 
     //现货最佳挂单
-    public static Map<String, TickerEvent> spotTickerMap = new HashMap<>();
+    public static Map<String, HashMap<String, BigDecimal>> spotTickerMap = new HashMap<>();
 
 
     // 现货用户持仓信息

@@ -78,18 +78,17 @@ public class FutureSubscription {
 
     public void getAllBookTikcers(){
         binanceClient.getFutureSyncClient().getSymbolOrderBookTicker(null).forEach(symbolOrderBook -> {
-            HashMap map = new HashMap();
-            map.put(BeanConstant.BEST_ASK_PRICE,symbolOrderBook.getAskPrice());
-            map.put(BeanConstant.BEST_ASK_Qty,symbolOrderBook.getAskQty());
-            map.put(BeanConstant.BEST_BID_PRICE,symbolOrderBook.getBidPrice());
-            map.put(BeanConstant.BEST_BID_QTY,symbolOrderBook.getBidQty());
+//            HashMap map = new HashMap();
+//            map.put(BeanConstant.BEST_ASK_PRICE,symbolOrderBook.getAskPrice());
+//            map.put(BeanConstant.BEST_ASK_Qty,symbolOrderBook.getAskQty());
+//            map.put(BeanConstant.BEST_BID_PRICE,symbolOrderBook.getBidPrice());
+//            map.put(BeanConstant.BEST_BID_QTY,symbolOrderBook.getBidQty());
 //            MarketCache.futureTickerMap.put(symbolOrderBook.getSymbol(),map);
             SymbolBookTickerEvent symbolBookTickerEvent = new SymbolBookTickerEvent();
             symbolBookTickerEvent.setBestAskPrice(symbolOrderBook.getAskPrice());
             symbolBookTickerEvent.setBestAskQty(symbolOrderBook.getAskQty());
             symbolBookTickerEvent.setBestBidPrice(symbolOrderBook.getBidPrice());
             symbolBookTickerEvent.setBestBidQty(symbolOrderBook.getBidQty());
-            symbolBookTickerEvent.setLocalTime(System.currentTimeMillis());
 
             MarketCache.futureTickerMap.put(symbolOrderBook.getSymbol(),symbolBookTickerEvent);
 
@@ -97,19 +96,22 @@ public class FutureSubscription {
     }
 
     public void allBookTickerSub(){
-        MarketCache.futureTickerMap.forEach((symbol,symbolmap)->{
-            if(symbol.contains("USDT")){
-                binanceClient.getFutureSubsptClient().subscribeSymbolBookTickerEvent(symbol,symbolBookTickerEvent->{
-                    MarketCache.futureTickerMap.put(symbol,symbolBookTickerEvent);
-                }, new SubscriptionErrorHandler() {
-                    @Override
-                    public void onError(BinanceApiException exception) {
-                        logger.error("future sub all tick exctpion={}",exception);
-                    }
-                });
+
+        getAllBookTikcers();
+
+        binanceClient.getFutureSubsptClient().subscribeAllBookTickerEvent(symbolBookTickerEvent->{
+            if(symbolBookTickerEvent.getSymbol().contains("USDT")){
+                MarketCache.futureTickerMap.put(symbolBookTickerEvent.getSymbol(),symbolBookTickerEvent);
+            }
+        }, new SubscriptionErrorHandler() {
+            @Override
+            public void onError(BinanceApiException exception) {
+                logger.error("future sub all tick exctpion={}",exception);
             }
         });
     }
+
+
 
 
 //    //存储合约最佳挂单行情

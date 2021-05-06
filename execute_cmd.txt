@@ -40,6 +40,9 @@ top -H -p pid
 echo "obase=16;hid" | bc
 jstack pid |grep -A 10 hid
 
+jmap -dump:live,format=b,file=heapdump.phrof pid
+
+
 
  select sum(profit) from pairs_trade where closeId like "%2021_4_23%";
 

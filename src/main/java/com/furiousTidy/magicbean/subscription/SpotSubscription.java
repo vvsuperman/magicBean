@@ -65,28 +65,27 @@ public class SpotSubscription {
     public void getAllBookTicks(){
         spotSyncClientProxy.getAllBookTickers().forEach(bookTicker -> {
            if(bookTicker.getSymbol().contains("USDT")){
-               TickerEvent tickerEvent = new TickerEvent();
-                tickerEvent.setBestAskPrice(bookTicker.getAskPrice());
-                tickerEvent.setBestAskQuantity(bookTicker.getAskQty());
-                tickerEvent.setBestBidPrice(bookTicker.getBidPrice());
-                tickerEvent.setBestBidQuantity(bookTicker.getBidQty());
-                tickerEvent.setEventTime(System.currentTimeMillis());
-               MarketCache.spotTickerMap.put(bookTicker.getSymbol(),tickerEvent);
+               HashMap map = new HashMap();
+               map.put(BeanConstant.BEST_ASK_PRICE,new BigDecimal(bookTicker.getAskPrice()));
+               map.put(BeanConstant.BEST_ASK_Qty,new BigDecimal(bookTicker.getAskQty()));
+               map.put(BeanConstant.BEST_BID_PRICE,new BigDecimal(bookTicker.getBidPrice()));
+               map.put(BeanConstant.BEST_BID_QTY,new BigDecimal(bookTicker.getBidQty()));
+               MarketCache.spotTickerMap.put(bookTicker.getSymbol(),map);
            }
 
         });
     }
 
-    public void allTickSub(){
-        MarketCache.spotTickerMap.forEach((symbol,map)->{
-            binanceClient.getSpotSubsptClient().onTickerEvent(symbol, tickerEvent->{
-                if(symbol.contains("USDT") || ){
-                    MarketCache.spotTickerMap.put(symbol,tickerEvent);
-                }
-            });
-        });
-
-    }
+//    public void allTickSub(){
+//        MarketCache.spotTickerMap.forEach((symbol,map)->{
+//            binanceClient.getSpotSubsptClient().onTickerEvent(symbol, tickerEvent->{
+//                if(symbol.contains("USDT") || ){
+//                    MarketCache.spotTickerMap.put(symbol,tickerEvent);
+//                }
+//            });
+//        });
+//
+//    }
 
     //订阅现货最新价格
     public void allBookTickSubscription(){
@@ -118,8 +117,6 @@ public class SpotSubscription {
 //                    logger.error("do spot pairs trade exception={}",e);
 //                }
 //            }
-
-
 
             });
 

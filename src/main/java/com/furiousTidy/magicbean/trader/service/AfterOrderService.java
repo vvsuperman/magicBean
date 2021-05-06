@@ -211,7 +211,9 @@ public class AfterOrderService {
         }
 
         //if origRatio has big gap of the ratio, then sleep for a monent
-        doAveraging(clientOrderId,orginRatio,ratio);
+        if(orginRatio != null){
+            doAveraging(clientOrderId,orginRatio,ratio);
+        }
 //        tradeUtil.checkUSDEnough();
     }
 

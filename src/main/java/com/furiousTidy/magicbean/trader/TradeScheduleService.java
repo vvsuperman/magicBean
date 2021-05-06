@@ -94,7 +94,7 @@ public class TradeScheduleService {
 
 
     @Scheduled(cron = "0 0 1 * * ?")
-    public void closedTrade3DaysAgo(){
+    public void closedTrade3DaysAgo() throws InterruptedException {
         LocalDate closeDay = LocalDate.now().minusDays(3);
         String strDay = closeDay.getYear()+"/"+closeDay.getMonthValue()+"/"+closeDay.getDayOfMonth();
         List<PairsTradeModel> pairsTradeModels = pairsTradeDao.getPairsTradeOpenByDate(strDay);
@@ -112,7 +112,7 @@ public class TradeScheduleService {
             Order order = binanceClient.getFutureSyncClient().getOrder(symbol,null,clientOrderId);
             log.info("get futrure  order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(), order);
             if(order.getStatus().equals("FILLED")){
-                afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty(),null);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty(),null,-1);
                 MarketCache.futureOrderCache.remove(order.getClientOrderId());
             }
         }

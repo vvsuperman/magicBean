@@ -68,7 +68,7 @@ public class TradeAssistantController {
     BinanceClient binanceClient;
 
     @RequestMapping("closedTrade3DaysAgo")
-    public @ResponseBody String closedTrade3DaysAgo(){
+    public @ResponseBody String closedTrade3DaysAgo() throws InterruptedException {
         tradeSchedule.closedTrade3DaysAgo();
         return "sucess";
     }
@@ -80,7 +80,7 @@ public class TradeAssistantController {
     }
 
     @RequestMapping("closeTrade/{openIds}")
-    public @ResponseBody String closeTrade(@PathVariable List<String> openIds){
+    public @ResponseBody String closeTrade(@PathVariable List<String> openIds) throws InterruptedException {
          tradeUtil.closeTrade(openIds);
          return "success";
     }

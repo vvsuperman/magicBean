@@ -160,10 +160,13 @@ public class PositionOpenService {
 //            futureBidPrice = getFutureTickPrice(symbol,"bid");
 //            futureAskPrice = getFutureTickPrice(symbol,"ask");
             SymbolBookTickerEvent symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
-            symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
-            spotBidPrice = getSpotTickPrice(symbol,"bid");
-            spotAskPrice= getSpotTickPrice(symbol,"ask");
-            processPairsTrade(symbol,symbolBookTickerEvent,spotBidPrice,spotAskPrice);
+            if(symbolBookTickerEvent!=null){
+                symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
+                spotBidPrice = getSpotTickPrice(symbol,"bid");
+                spotAskPrice= getSpotTickPrice(symbol,"ask");
+                processPairsTrade(symbol,symbolBookTickerEvent,spotBidPrice,spotAskPrice);
+            }
+
         }
     }
 
@@ -214,7 +217,7 @@ public class PositionOpenService {
                         logger.info("get  model from DB is null ,opnenId={}", openId);
                         if(tradeInfoModel == null) return;
                     }
-
+                    futureAskPrice = symbolBookTickerEvent.getBestAskPrice();
                     //get qty form trade info
                     BigDecimal spotQty = tradeInfoModel.getSpotQty();
                     BigDecimal futrueQty = tradeInfoModel.getFutureQty();
@@ -227,7 +230,7 @@ public class PositionOpenService {
 //                    }else{
 //                        continue;
 //                    }
-                    futureAskPrice = symbolBookTickerEvent.getBestAskPrice();
+
                     if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
 //                            && checkImpactSet(symbol,counter, BeanConstant.closeImpactSet, BeanConfig.CLOSE_IMPACT_COUNTER)
                             && profit.compareTo(BeanConfig.TRADE_PROFIT) > 0
