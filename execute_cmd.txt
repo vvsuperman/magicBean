@@ -47,3 +47,6 @@ jmap -dump:live,format=b,file=heapdump.phrof pid
  select sum(profit) from pairs_trade where closeId like "%2021_4_23%";
 
  grep "TOMOUSDT_FSC_4_25_22_32_12_891_51" /home/admin/application/logs/start.log
+
+
+ 从05/05开始，现货滑点极为严重，损失套利空间，原因未知，直接全部改成限价单

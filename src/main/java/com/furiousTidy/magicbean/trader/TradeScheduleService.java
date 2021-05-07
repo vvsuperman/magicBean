@@ -97,8 +97,10 @@ public class TradeScheduleService {
     public void closedTrade3DaysAgo() throws InterruptedException {
         LocalDate closeDay = LocalDate.now().minusDays(3);
         String strDay = closeDay.getYear()+"/"+closeDay.getMonthValue()+"/"+closeDay.getDayOfMonth();
+        log.info("strday..............{}", strDay);
         List<PairsTradeModel> pairsTradeModels = pairsTradeDao.getPairsTradeOpenByDate(strDay);
-        tradeUtil.closePairsTradeList(pairsTradeModels);
+        log.info("pairstrademodels................{}",pairsTradeModels);
+//        tradeUtil.closePairsTradeList(pairsTradeModels);
     }
 
 

@@ -162,9 +162,8 @@ public class PositionOpenService {
             SymbolBookTickerEvent symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
             if(symbolBookTickerEvent!=null){
                 symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
-                spotBidPrice = getSpotTickPrice(symbol,"bid");
                 spotAskPrice= getSpotTickPrice(symbol,"ask");
-                processPairsTrade(symbol,symbolBookTickerEvent,spotBidPrice,spotAskPrice);
+                processPairsTrade(symbol,symbolBookTickerEvent,spotAskPrice);
             }
 
         }
@@ -172,7 +171,7 @@ public class PositionOpenService {
 
     @Async
     public void processPairsTrade(String symbol,SymbolBookTickerEvent symbolBookTickerEvent,
-                                  BigDecimal spotBidPrice, BigDecimal spotAskPrice) throws InterruptedException {
+                                   BigDecimal spotAskPrice) throws InterruptedException {
 
         if(symbolBookTickerEvent == null || spotAskPrice == null || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) return;
 
@@ -205,6 +204,8 @@ public class PositionOpenService {
             if(symbolPairsTradeList.size() != 0){
                 for(PairsTradeModel pairsTradeModel: symbolPairsTradeList){
                     // if trade already in processing set, then skip the trade
+                    String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
+
                     if(BeanConstant.closeProcessingSet.contains(pairsTradeModel.getOpenId())) continue;
 
 //                  closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice,4,BigDecimal.ROUND_HALF_UP);
@@ -217,7 +218,8 @@ public class PositionOpenService {
                         logger.info("get  model from DB is null ,opnenId={}", openId);
                         if(tradeInfoModel == null) return;
                     }
-                    futureAskPrice = symbolBookTickerEvent.getBestAskPrice();
+                    futureAskPrice = getFutureTickPrice(symbol,"ask");
+                    spotBidPrice = getSpotTickPrice(symbol,"bid");
                     //get qty form trade info
                     BigDecimal spotQty = tradeInfoModel.getSpotQty();
                     BigDecimal futrueQty = tradeInfoModel.getFutureQty();
@@ -241,7 +243,6 @@ public class PositionOpenService {
                         //add trade to processing set
                         BeanConstant.closeProcessingSet.add(pairsTradeModel.getOpenId());
                         //begin to close the symbol
-                        String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
                         logger.info("begin to close symbol={},openId={}, closeRatio={}",symbol,clientOrderId,profit);
 
                         pairsTradeModel.setCloseId(clientOrderId);
