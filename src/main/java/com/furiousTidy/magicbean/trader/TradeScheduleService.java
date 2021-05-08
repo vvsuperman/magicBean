@@ -96,11 +96,14 @@ public class TradeScheduleService {
     @Scheduled(cron = "0 0 1 * * ?")
     public void closedTrade3DaysAgo() throws InterruptedException {
         LocalDate closeDay = LocalDate.now().minusDays(3);
-        String strDay = closeDay.getYear()+"/"+closeDay.getMonthValue()+"/"+closeDay.getDayOfMonth();
+        String year = closeDay.getYear()+"";
+        String month = closeDay.getMonthValue()>=10?closeDay.getMonthValue()+"":"0"+closeDay.getMonthValue();
+        String day = closeDay.getDayOfMonth()>=10 ? closeDay.getDayOfMonth()+"":"0"+closeDay.getDayOfMonth();
+        String strDay = year+"/"+month+"/"+day;
         log.info("strday..............{}", strDay);
         List<PairsTradeModel> pairsTradeModels = pairsTradeDao.getPairsTradeOpenByDate(strDay);
         log.info("pairstrademodels................{}",pairsTradeModels);
-//        tradeUtil.closePairsTradeList(pairsTradeModels);
+        tradeUtil.closePairsTradeList(pairsTradeModels);
     }
 
 
@@ -125,7 +128,7 @@ public class TradeScheduleService {
             com.binance.api.client.domain.account.Order order = binanceClient.getSpotSyncClient().getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
             log.info("get spot order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(),order);
             if(order.getStatus() == OrderStatus.FILLED){
-                afterOrderService.processSpotOrder(symbol, clientOrderId, new BigDecimal(order.getPrice()), new BigDecimal(order.getExecutedQty()),null);
+                afterOrderService.processSpotOrder(symbol, clientOrderId, new BigDecimal(order.getPrice()), new BigDecimal(order.getExecutedQty()),null,-1);
                 MarketCache.spotOrderCache.remove(order.getClientOrderId());
             }
         }
@@ -236,8 +239,8 @@ public class TradeScheduleService {
                 .forEach(assetBalance -> {
                     String symbol = assetBalance.getAsset()+"USDT";
                     if(MarketCache.spotTickerMap.containsKey(symbol)){
-                        BigDecimal askPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                        BigDecimal bidPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                        BigDecimal askPrice = MarketCache.spotTickerMap.get(symbol).getAskPrice();
+                        BigDecimal bidPrice = MarketCache.spotTickerMap.get(symbol).getBidPrice();
                         spotBalance[0] = spotBalance[0].add(new BigDecimal(assetBalance.getFree()).multiply(askPrice.add(bidPrice).divide(new BigDecimal(2))));
                     }else if(assetBalance.getAsset().equals("USDT")){
                         spotBalance[0] = spotBalance[0].add(new BigDecimal(assetBalance.getFree()));
@@ -277,7 +280,7 @@ public class TradeScheduleService {
                 .forEach(assetBalance -> {
                     balances[1] = new BigDecimal(assetBalance.getFree());
                 });
-        BigDecimal bnbPrice = MarketCache.spotTickerMap.get("BNBUSDT").get(BeanConstant.BEST_ASK_PRICE);
+        BigDecimal bnbPrice = MarketCache.spotTickerMap.get("BNBUSDT").getAskPrice();
         Integer[] stepSize = tradeUtil.getStepSize("BNBUSDT");
 
         log.info("future bnb={}, spot bnb={}", balances[0],balances[1]);

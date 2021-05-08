@@ -111,7 +111,7 @@ public class BinanceApiRestClientImpl implements BinanceApiRestClient {
   }
 
   @Override
-  public BookTicker getBookTicker(String symbol) {
+  public List<BookTicker> getBookTicker(String symbol) {
     return executeSync(binanceApiService.getBookTicker(symbol));
   }
 

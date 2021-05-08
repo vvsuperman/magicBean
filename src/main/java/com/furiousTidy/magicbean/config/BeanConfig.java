@@ -8,11 +8,12 @@ import java.math.RoundingMode;
 
 @Data
 public class BeanConfig {
+    public static long SPOT_SLEEP_TIME = 60;
     public static BigDecimal ratioTolerate = new BigDecimal("0.003");
     public static  boolean STOP_TRADE = false;
-    public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.0036"); //交易条件，千分之五
+    public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.005"); //交易条件，千分之五
     public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
-    public static BigDecimal TRADE_PROFIT = BeanConfig.STANDARD_TRADE_UNIT.divide(BigDecimal.valueOf(500),3,RoundingMode.HALF_UP);
+    public static BigDecimal TRADE_PROFIT = BeanConfig.STANDARD_TRADE_UNIT.divide(BigDecimal.valueOf(250),3,RoundingMode.HALF_UP);
 
     public static  int OPEN_IMPACT_COUNTER = 2;
     public static  int CLOSE_IMPACT_COUNTER = 2;

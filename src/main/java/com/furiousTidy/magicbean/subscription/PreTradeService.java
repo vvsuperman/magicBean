@@ -86,8 +86,8 @@ public class PreTradeService {
                 futureBidPrice = entrySet.getValue().getBestBidPrice();
                 futureAskPrice = entrySet.getValue().getBestAskPrice();
                 if(!MarketCache.spotTickerMap.containsKey(symbol))  continue;
-                spotAskPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
-                spotBidPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                spotAskPrice = MarketCache.spotTickerMap.get(symbol).getAskPrice();
+                spotBidPrice = MarketCache.spotTickerMap.get(symbol).getBidPrice();
 
                 fundingRate = MarketCache.futureRateCache.containsKey(symbol)?
                         MarketCache.futureRateCache.get(symbol):BigDecimal.ZERO;

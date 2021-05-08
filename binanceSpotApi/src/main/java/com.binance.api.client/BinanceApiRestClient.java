@@ -157,7 +157,7 @@ public interface BinanceApiRestClient {
   /**
    * Get best price/qty on a symbols.
    */
-  BookTicker getBookTicker(String symbol);
+  List<BookTicker> getBookTicker(String symbol);
 
   // Account endpoints
 

@@ -8,6 +8,7 @@ import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BookTickerModel;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,7 +109,8 @@ public class AfterOrderService {
     }
 
     @Async
-    public void processSpotOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty, BigDecimal orignRatio){
+    public void processSpotOrder(String symbol, String clientOrderId, BigDecimal price, BigDecimal qty
+            , BigDecimal orignRatio, long spotTickDelayTime){
         log.info(" spot store begin,symbol={}, price={},qty={}",symbol,price,qty);
         //we need a lock to lock pairs trade, or insert may exception
         Lock eventLock = MarketCache.eventLockCache.containsKey(clientOrderId)?MarketCache.eventLockCache.get(clientOrderId):null;
@@ -128,6 +130,7 @@ public class AfterOrderService {
                 tradeInfo.setSpotPrice(price);
                 tradeInfo.setSpotQty(qty);
                 tradeInfo.setCreateTime(BeanConstant.dateFormat.format(new Date()));
+                tradeInfo.setSpotTickDelayTime(spotTickDelayTime);
                 log.info("spot store process insert, tradeInfo {}",tradeInfo);
 
                 tradeInfoDao.insertTradeInfo(tradeInfo);
@@ -151,6 +154,7 @@ public class AfterOrderService {
                 tradeInfo.setSpotQty(spotQty);
                 tradeInfo.setSpotPrice(spotPrice);
                 tradeInfo.setUpdateTime(BeanConstant.dateFormat.format(new Date()));
+                tradeInfo.setSpotTickDelayTime(spotTickDelayTime);
                 log.info("spot store process update, tradeInfo {}",tradeInfo);
                 tradeInfoDao.updateTradeInfoById(tradeInfo);
 

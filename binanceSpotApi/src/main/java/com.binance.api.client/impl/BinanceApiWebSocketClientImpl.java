@@ -14,6 +14,7 @@ import java.io.Closeable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.binance.api.client.impl.BinanceApiServiceGenerator.getSharedClient;
@@ -33,6 +34,26 @@ public class BinanceApiWebSocketClientImpl implements BinanceApiWebSocketClient,
     public BinanceApiWebSocketClientImpl() {
         this.client = getSharedClient().newBuilder().pingInterval(3, TimeUnit.MINUTES).build();
     }
+
+    @Override
+    public Closeable onTradeEvent(String symbols, BinanceApiCallback<TradeEvent> callback) {
+        final String channel = Arrays.stream(symbols.split(","))
+                .map(String::trim)
+                .map(s -> String.format("%s@trade", s))
+                .collect(Collectors.joining("/"));
+        return createNewWebSocket(channel, new BinanceApiWebSocketListener<>(callback, TradeEvent.class));
+    }
+
+    @Override
+    public Closeable onAllTradeEvent(String symbols, BinanceApiCallback<List<TradeEvent>> callback) {
+        final String channel = Arrays.stream(symbols.split(","))
+                .map(String::trim)
+                .map(s -> String.format("%s@trade", s))
+                .collect(Collectors.joining("/"));
+        System.out.print("channel="+channel);
+        return createNewWebSocket(channel, new BinanceApiWebSocketListener<>(callback,  new TypeReference<List<TradeEvent>>(){}));
+
+        }
 
     @Override
     public Closeable onDepthEvent(String symbols, BinanceApiCallback<DepthEvent> callback) {

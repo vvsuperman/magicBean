@@ -5,18 +5,10 @@ package com.furiousTidy.magicbean.util;
 
 
 import com.binance.api.client.domain.account.AssetBalance;
-import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
-import com.binance.api.client.domain.event.TickerEvent;
 import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.client.model.event.MarkPriceEvent;
 import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
-import com.binance.client.model.market.MarkPrice;
-import com.binance.client.model.trade.AccountInformation;
-import com.binance.client.model.trade.Asset;
 import com.binance.client.model.user.BalanceUpdate;
-import com.binance.client.model.user.OrderUpdate;
-import com.binance.client.model.user.UserDataUpdateEvent;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -78,7 +70,7 @@ public class MarketCache {
 
 
     //现货最佳挂单
-    public static Map<String, HashMap<String, BigDecimal>> spotTickerMap = new HashMap<>();
+    public static Map<String, BookTickerModel> spotTickerMap = new HashMap<>();
 
 
     // 现货用户持仓信息

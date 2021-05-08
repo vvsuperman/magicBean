@@ -164,7 +164,7 @@ public class PositionOpenController {
                 for(String symbol : symbols){
 //                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                     BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).getBestBidPrice();
-                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                    BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).getAskPrice();
                     ratioList.add(futurePrice.subtract(spotPrice).divide(spotPrice,4));
                     Thread.sleep(200);
                 }
@@ -213,7 +213,7 @@ public class PositionOpenController {
 
     @RequestMapping("spotbookticker/{symbol}")
     public @ResponseBody BookTicker getSpotBookTicker(@PathVariable String symbol){
-        return binanceClient.getSpotSyncClient().getBookTicker(symbol);
+        return binanceClient.getSpotSyncClient().getBookTicker(symbol).get(0);
     }
 
     @RequestMapping("futurebookticker/{symbol}")
@@ -248,7 +248,7 @@ public class PositionOpenController {
 
 
     @RequestMapping("docache")
-    public @ResponseBody String doCache(){
+    public @ResponseBody String doCache() throws InterruptedException {
 
         //set the position side
 //        binanceClient.getFutureSyncClient().changePositionSide(true);
@@ -269,7 +269,8 @@ public class PositionOpenController {
         //subscribe bookticker info
 //        futureSubscription.allBookTickerSubscription();
         futureSubscription.allBookTickerSub();
-        spotSubscription.allBookTickSubscription();
+//        spotSubscription.allBookTickSubscription();
+        spotSubscription.subAllTickByTrade();
 
         //get pairs trade gap
         tradeScheduleService.changePairsGap();

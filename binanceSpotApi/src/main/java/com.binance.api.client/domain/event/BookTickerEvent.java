@@ -18,6 +18,8 @@ public class BookTickerEvent {
     @JsonProperty("s")
     private String symbol;
 
+    private long tradeTime;
+
     @JsonProperty("b")
     private String bidPrice;
 
@@ -53,6 +55,10 @@ public class BookTickerEvent {
         this.askPrice = askPrice;
         this.askQuantity = askQuantity;
     }
+
+    public long getTradeTime(){return tradeTime;}
+
+    public void setTradeTime(long tradeTime){this.tradeTime = tradeTime;}
 
     public long getUpdateId() {
         return updateId;

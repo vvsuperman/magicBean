@@ -15,6 +15,7 @@ import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BookTickerModel;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,16 +129,19 @@ public class TradeService {
     }
 
     @Async
-    public void doSpotTrade(String symbol, BigDecimal spotPrice, BigDecimal spotQty, int spotStepSize,String direct,String clientOrderId, BigDecimal ratio) throws InterruptedException{
+    public void doSpotTrade(String symbol, BookTickerModel bookTickerModel, BigDecimal spotQty, int spotStepSize, String direct, String clientOrderId, BigDecimal ratio) throws InterruptedException{
         int i=1;
 
         while( BeanConstant.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
-                spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
+                bookTickerModel.getBidPrice().multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0
+        ) {
 
             if(!BeanConstant.ENOUGH_MONEY.get() && direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 log.info("spot trade detect not enough money,not trade");
                 return;
             }
+            BigDecimal spotPrice = (direct.equals(BeanConstant.FUTURE_SELL_OPEN))? bookTickerModel.getAskPrice():bookTickerModel.getBidPrice();
+
 
             NewOrderResponse newOrderResponse = null;
             log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={},futureBalance={},spotBalance={}"
@@ -183,21 +187,21 @@ public class TradeService {
 
 
                 afterOrderService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
-                        ,new BigDecimal(newOrderResponse.getExecutedQty()),ratio);
+                        ,new BigDecimal(newOrderResponse.getExecutedQty()),ratio,bookTickerModel.getSpotTickDelayTime());
 
                 return;
             }else if(newOrderResponse.getStatus() == OrderStatus.PARTIALLY_FILLED ){
-                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()),ratio);
+                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()),ratio,bookTickerModel.getSpotTickDelayTime());
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }else if(newOrderResponse.getStatus() == OrderStatus.EXPIRED && new BigDecimal(newOrderResponse.getExecutedQty()).compareTo(BigDecimal.ZERO)>0){
-                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()),ratio);
+                afterOrderService.processSpotOrder(symbol,clientOrderId,spotPrice,new BigDecimal(newOrderResponse.getExecutedQty()),ratio,bookTickerModel.getSpotTickDelayTime());
                 spotQty = spotQty.subtract(new BigDecimal(newOrderResponse.getExecutedQty()).setScale(spotStepSize, RoundingMode.HALF_UP));
             }
 
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
-                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                spotPrice = MarketCache.spotTickerMap.get(symbol).getAskPrice();
             }else if(direct.equals(BeanConstant.FUTURE_SELL_CLOSE)){
-                spotPrice = MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                spotPrice = MarketCache.spotTickerMap.get(symbol).getBidPrice();
             }
 
             log.info("spot's next order info,spotPrice={}, spotQty={}", spotPrice, spotQty);

@@ -11,6 +11,7 @@ import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
+import com.furiousTidy.magicbean.util.BookTickerModel;
 import com.furiousTidy.magicbean.util.MarketCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,10 +161,11 @@ public class PositionOpenService {
 //            futureBidPrice = getFutureTickPrice(symbol,"bid");
 //            futureAskPrice = getFutureTickPrice(symbol,"ask");
             SymbolBookTickerEvent symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
+            BookTickerModel bookTickerModel = MarketCache.spotTickerMap.get(symbol);
             if(symbolBookTickerEvent!=null){
                 symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
-                spotAskPrice= getSpotTickPrice(symbol,"ask");
-                processPairsTrade(symbol,symbolBookTickerEvent,spotAskPrice);
+                bookTickerModel.setSpotTickDelayTime(System.currentTimeMillis() - bookTickerModel.getTradeTime());
+                processPairsTrade(symbol,symbolBookTickerEvent,bookTickerModel);
             }
 
         }
@@ -171,11 +173,12 @@ public class PositionOpenService {
 
     @Async
     public void processPairsTrade(String symbol,SymbolBookTickerEvent symbolBookTickerEvent,
-                                   BigDecimal spotAskPrice) throws InterruptedException {
+                                   BookTickerModel bookTickerModel) throws InterruptedException {
 
-        if(symbolBookTickerEvent == null || spotAskPrice == null || spotAskPrice.compareTo(BigDecimal.ZERO)==0 ) return;
+        if(symbolBookTickerEvent == null || bookTickerModel == null ) return;
 
-        origOpenRatio = symbolBookTickerEvent.getBestBidPrice().subtract(spotAskPrice).divide(spotAskPrice,4);
+        origOpenRatio = symbolBookTickerEvent.getBestBidPrice()
+                .subtract(bookTickerModel.getAskPrice()).divide(bookTickerModel.getAskPrice(),4);
 
 //            if(openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0){
 //                BeanConstant.openImpactSet.add(symbol+counter);
@@ -194,7 +197,7 @@ public class PositionOpenService {
             clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
             MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-            doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,symbolBookTickerEvent,spotAskPrice,
+            doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,symbolBookTickerEvent,bookTickerModel,
                     BeanConstant.FUTURE_SELL_OPEN,clientOrderId,origOpenRatio);
 
         }else {
@@ -218,13 +221,21 @@ public class PositionOpenService {
                         logger.info("get  model from DB is null ,opnenId={}", openId);
                         if(tradeInfoModel == null) return;
                     }
-                    futureAskPrice = getFutureTickPrice(symbol,"ask");
-                    spotBidPrice = getSpotTickPrice(symbol,"bid");
+                     symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
+                     bookTickerModel = MarketCache.spotTickerMap.get(symbol);
+                    if(symbolBookTickerEvent==null || bookTickerModel == null) return;
+
+                    symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
+                    bookTickerModel.setSpotTickDelayTime(System.currentTimeMillis() - bookTickerModel.getTradeTime());
+
+                    futureAskPrice = symbolBookTickerEvent.getBestAskPrice();
+                    spotBidPrice = bookTickerModel.getBidPrice();
                     //get qty form trade info
                     BigDecimal spotQty = tradeInfoModel.getSpotQty();
                     BigDecimal futrueQty = tradeInfoModel.getFutureQty();
                     //calculate profit
-                    profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice, tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
+                    profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(), futureAskPrice
+                            , tradeInfoModel.getSpotPrice(),spotBidPrice,spotQty);
 
 
 //                    if(profit.compareTo(BeanConfig.TRADE_PROFIT) > 0){
@@ -251,7 +262,7 @@ public class PositionOpenService {
                         Lock closeLock = new ReentrantLock();
                         MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
                         closeLock.lock();
-                        doPairsTradeByQty(symbol, futrueQty,spotQty,symbolBookTickerEvent,spotBidPrice,
+                        doPairsTradeByQty(symbol, futrueQty,spotQty,symbolBookTickerEvent,bookTickerModel,
                                 BeanConstant.FUTURE_SELL_CLOSE,clientOrderId,closeRatio);
                         //update close id in pairstrade
                         pairsTradeDao.updatePairsTrade(pairsTradeModel);
@@ -283,23 +294,23 @@ public class PositionOpenService {
     }
 
     //do paris trade
-    private void doPairsTrade(String symbol, BigDecimal cost, SymbolBookTickerEvent symbolBookTickerEvent, BigDecimal spotPrice,
+    private void doPairsTrade(String symbol, BigDecimal cost, SymbolBookTickerEvent symbolBookTickerEvent, BookTickerModel bookTickerModel,
                               String direct,String clientOrderId,BigDecimal ratio) throws InterruptedException {
         //计算合约最小下单位数
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
         //计算合约卖单数量
         BigDecimal futureQuantity =  cost.divide(symbolBookTickerEvent.getBestBidPrice(), stepSize[0], BigDecimal.ROUND_HALF_UP);
         //计算现货买单数量
-        BigDecimal spotQuantity = cost.divide(spotPrice, stepSize[1], BigDecimal.ROUND_HALF_UP);
+        BigDecimal spotQuantity = cost.divide(bookTickerModel.getAskPrice(), stepSize[1], BigDecimal.ROUND_HALF_UP);
         //取位数最大的数量，避免精度问题
         BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
 
-        doPairsTradeByQty(symbol,qty,qty,symbolBookTickerEvent,spotPrice,direct,clientOrderId,ratio);
+        doPairsTradeByQty(symbol,qty,qty,symbolBookTickerEvent,bookTickerModel,direct,clientOrderId,ratio);
 
     }
 
     //do paris trade
-    private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty,SymbolBookTickerEvent symbolBookTickerEvent, BigDecimal spotPrice,
+    private void doPairsTradeByQty(String symbol, BigDecimal futureQty, BigDecimal spotQty,SymbolBookTickerEvent symbolBookTickerEvent, BookTickerModel bookTickerModel,
                                    String direct,String clientOrderId, BigDecimal ratio) throws InterruptedException {
 
 
@@ -308,7 +319,7 @@ public class PositionOpenService {
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
 
         tradeService.doFutureTrade(symbol, symbolBookTickerEvent, futureQty, stepSize[0], direct, clientOrderId,ratio);
-        tradeService.doSpotTrade(symbol, spotPrice, spotQty, stepSize[1], direct, clientOrderId,ratio);
+        tradeService.doSpotTrade(symbol, bookTickerModel, spotQty, stepSize[1], direct, clientOrderId,ratio);
     }
 
     private boolean checkImpactSet(String symbol, int counter, Set<String> impactSet,int n ){
@@ -356,9 +367,9 @@ public class PositionOpenService {
     private BigDecimal getSpotTickPrice(String symbol,String type) {
         if(MarketCache.spotTickerMap.containsKey(symbol)){
             if(type.equals("bid")){
-                return  MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
+                return  MarketCache.spotTickerMap.get(symbol).getBidPrice();
             }else{
-                return  MarketCache.spotTickerMap.get(symbol).get(BeanConstant.BEST_ASK_PRICE);
+                return  MarketCache.spotTickerMap.get(symbol).getAskPrice();
 
             }
         }else{

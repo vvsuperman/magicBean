@@ -95,7 +95,7 @@ public class TradeUtil {
                     ,futureQty,  futurePrice
                     ,null,clientOrderId,null,null, NewOrderRespType.RESULT);
 
-            spotPrice = MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_ASK_PRICE).toString();
+            spotPrice = MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).getAskPrice().toString();
             spotQty =  tradeInfoModel.getSpotQty().toString();
             log.info("close trade for spot ordeid={}, price={}, qty={}", clientOrderId,spotPrice,spotQty);
             NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
