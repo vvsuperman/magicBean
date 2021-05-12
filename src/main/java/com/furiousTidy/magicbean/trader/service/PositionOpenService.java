@@ -189,9 +189,10 @@ public class PositionOpenService {
         if(  tradeUtil.isTradeCanOpen(symbol)
 //                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)
                 && origOpenRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0
-                && checkMoney()
-                && checkDelay(symbolBookTickerEvent,bookTickerModel)
+//                && checkDelay(symbolBookTickerEvent,bookTickerModel)
                 ){
+
+            if(!checkMoney()) return;
 
             logger.info("check open ratio success, symbol={}, openRatio={}", symbol, origOpenRatio);
 
@@ -203,7 +204,11 @@ public class PositionOpenService {
 
         }else {
             if(!tradeUtil.isTradeCanClosed(symbol)
-                    || ! checkDelay(symbolBookTickerEvent,bookTickerModel)) return;
+//                    || ! checkDelay(symbolBookTickerEvent,bookTickerModel)
+                )
+            {
+                return;
+            }
             if(BeanConstant.pairsTradeList == null || BeanConstant.pairsTradeList.size() == 0) return;
             symbolPairsTradeList = getPairsTradeInList(symbol,BeanConstant.pairsTradeList);
             if(symbolPairsTradeList.size() != 0){
@@ -223,12 +228,12 @@ public class PositionOpenService {
                         logger.info("get  model from DB is null ,opnenId={}", openId);
                         if(tradeInfoModel == null) return;
                     }
-                     symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
-                     bookTickerModel = MarketCache.spotTickerMap.get(symbol);
-                    if(symbolBookTickerEvent==null || bookTickerModel == null) return;
-
-                    symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
-                    bookTickerModel.setSpotTickDelayTime(System.currentTimeMillis() - bookTickerModel.getTradeTime());
+//                     symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
+//                     bookTickerModel = MarketCache.spotTickerMap.get(symbol);
+//                    if(symbolBookTickerEvent==null || bookTickerModel == null) return;
+//
+//                    symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
+//                    bookTickerModel.setSpotTickDelayTime(System.currentTimeMillis() - bookTickerModel.getTradeTime());
 
                     futureAskPrice = symbolBookTickerEvent.getBestAskPrice();
                     spotBidPrice = bookTickerModel.getBidPrice();
@@ -278,6 +283,7 @@ public class PositionOpenService {
     }
 
     private boolean checkDelay(SymbolBookTickerEvent symbolBookTickerEvent, BookTickerModel bookTickerModel) {
+
             if(symbolBookTickerEvent.getFutureTickDelayTime() < 20 && bookTickerModel.getSpotTickDelayTime() <20 ){
                 return true;
             }

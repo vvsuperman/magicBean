@@ -8,6 +8,7 @@ import java.math.RoundingMode;
 
 @Data
 public class BeanConfig {
+    public static final long N_DAY = 7;
     public static long SPOT_SLEEP_TIME = 60;
     public static BigDecimal ratioTolerate = new BigDecimal("0.003");
     public static  boolean STOP_TRADE = false;

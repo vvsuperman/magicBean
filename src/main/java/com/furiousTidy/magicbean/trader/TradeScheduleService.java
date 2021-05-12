@@ -98,8 +98,8 @@ public class TradeScheduleService {
 
 
     @Scheduled(cron = "0 0 1 * * ?")
-    public void closedTrade3DaysAgo() throws InterruptedException {
-        LocalDate closeDay = LocalDate.now().minusDays(3);
+    public void closedTradeNDaysAgo() throws InterruptedException {
+        LocalDate closeDay = LocalDate.now().minusDays(BeanConfig.N_DAY);
         String year = closeDay.getYear()+"";
         String month = closeDay.getMonthValue()>=10?closeDay.getMonthValue()+"":"0"+closeDay.getMonthValue();
         String day = closeDay.getDayOfMonth()>=10 ? closeDay.getDayOfMonth()+"":"0"+closeDay.getDayOfMonth();
@@ -196,8 +196,8 @@ public class TradeScheduleService {
                 .forEach(assetBalance -> {
                     balances[1] = new BigDecimal(assetBalance.getFree());
                 });
-//        log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
-//                ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
+        log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
+                ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
 
 
         if(balances[0].subtract(balances[1]).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0){
@@ -205,23 +205,28 @@ public class TradeScheduleService {
             if(transferUSDT.compareTo(BigDecimal.ZERO)==0) return;
             binanceClient.getMarginRestClient().transfer("USDT",transferUSDT.toString(),TransferType.UMFUTURE_MAIN);
             //synchronize local cache
-            while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].subtract(transferUSDT)));
-            while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].add(transferUSDT)));
+            MarketCache.futureBalance.set(balances[0].subtract(transferUSDT));
+            MarketCache.spotBalance.set(balances[1].add(transferUSDT));
+
         }else if(balances[1].subtract(balances[0]).compareTo(BeanConfig.STANDARD_TRADE_UNIT)>0){
-            log.info("before do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
-                    ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
 
 
             BigDecimal transferUSDT = balances[1].subtract(balances[0]).divide(new BigDecimal(2),2,RoundingMode.HALF_DOWN);
             if(transferUSDT.compareTo(BigDecimal.ZERO)==0) return;
             binanceClient.getMarginRestClient().transfer("USDT",transferUSDT.toString(),TransferType.MAIN_UMFUTURE);
             //synchronize local cache
-            while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0].add(transferUSDT)));
-            while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1].subtract(transferUSDT)));
+            MarketCache.futureBalance.set(balances[0].add(transferUSDT));
+            MarketCache.spotBalance.set(balances[1].subtract(transferUSDT));
+
         }else{
-            while (!MarketCache.futureBalance.compareAndSet(MarketCache.futureBalance.get(),balances[0]));
-            while (!MarketCache.spotBalance.compareAndSet(MarketCache.spotBalance.get(),balances[1]));
+
+            MarketCache.futureBalance.set(balances[0]);
+            MarketCache.spotBalance.set(balances[1]);
         }
+
+        log.info("after do balance origin future balance={}, spot balance={},real future balance={}, spot balance={}"
+                ,MarketCache.futureBalance.get(),MarketCache.spotBalance.get(), balances[0],balances[1]);
+
 
         //clear the eventLock
         MarketCache.eventLockCache.clear();
@@ -266,7 +271,6 @@ public class TradeScheduleService {
 
         influxDbConnection.insert("balance_info",tagMap,fileMap);
 
-
         return spotBalance[0].add(futureBalance);
     }
 
@@ -296,6 +300,7 @@ public class TradeScheduleService {
                     marketBuy("BNBUSDT",
                             bnbQty.toString()).newOrderRespType(NewOrderResponseType.FULL));
         }
+
         //transfer some bnb to u coin
         if(balances[0].multiply(bnbPrice).compareTo(new BigDecimal(10))<0){
             binanceClient.getMarginRestClient().transfer("BNB",balances[1].divide(new BigDecimal(2),4,RoundingMode.HALF_DOWN).toString(),TransferType.MAIN_UMFUTURE);

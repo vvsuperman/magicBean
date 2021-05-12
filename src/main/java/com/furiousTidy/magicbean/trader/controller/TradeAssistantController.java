@@ -69,7 +69,7 @@ public class TradeAssistantController {
 
     @RequestMapping("closedTrade3DaysAgo")
     public @ResponseBody String closedTrade3DaysAgo() throws InterruptedException {
-        tradeSchedule.closedTrade3DaysAgo();
+        tradeSchedule.closedTradeNDaysAgo();
         return "sucess";
     }
 

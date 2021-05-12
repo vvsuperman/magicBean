@@ -269,9 +269,9 @@ public class PositionOpenController {
         //subscribe bookticker info
 //        futureSubscription.allBookTickerSubscription();
         futureSubscription.allBookTickerSub();
-//        spotSubscription.allBookTickSubscription();
+        spotSubscription.allBookTickSubscription();
 //        spotSubscription.subAllTickByTrade();
-        spotSubscription.subAllTickByDepth();
+//        spotSubscription.subAllTickByDepth();
 
         //get pairs trade gap
         tradeScheduleService.changePairsGap();
