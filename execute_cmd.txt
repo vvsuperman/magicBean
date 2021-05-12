@@ -17,6 +17,9 @@ ssh root@8.209.248.166
 
 scp ./target/magicbean-0.0.1.jar root@47.245.35.226:/home/admin/application/target
 
+scp -i "aws-magicbean.pem" ./target/magicbean-0.0.1.jar ec2-user@ec2-18-181-240-157.ap-northeast-1.compute.amazonaws.com:/home/ec2-user/application/target
+
+ssh -i "aws-magicbean.pem" ec2-user@ec2-18-181-240-157.ap-northeast-1.compute.amazonaws.com
 
 
 #退出sqlite
@@ -41,6 +44,8 @@ echo "obase=16;hid" | bc
 jstack pid |grep -A 10 hid
 
 jmap -dump:live,format=b,file=heapdump.phrof pid
+
+ssh -i "aws-magicbean.pem" ec2-user@ec2-18-181-240-157.ap-northeast-1.compute.amazonaws.com
 
 
 

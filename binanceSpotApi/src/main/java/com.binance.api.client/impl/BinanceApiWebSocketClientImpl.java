@@ -39,6 +39,7 @@ public class BinanceApiWebSocketClientImpl implements BinanceApiWebSocketClient,
     public Closeable onTradeEvent(String symbols, BinanceApiCallback<TradeEvent> callback) {
         final String channel = Arrays.stream(symbols.split(","))
                 .map(String::trim)
+                .map(s -> s.toLowerCase())
                 .map(s -> String.format("%s@trade", s))
                 .collect(Collectors.joining("/"));
         return createNewWebSocket(channel, new BinanceApiWebSocketListener<>(callback, TradeEvent.class));
@@ -48,6 +49,7 @@ public class BinanceApiWebSocketClientImpl implements BinanceApiWebSocketClient,
     public Closeable onAllTradeEvent(String symbols, BinanceApiCallback<List<TradeEvent>> callback) {
         final String channel = Arrays.stream(symbols.split(","))
                 .map(String::trim)
+                .map(s -> s.toLowerCase())
                 .map(s -> String.format("%s@trade", s))
                 .collect(Collectors.joining("/"));
         System.out.print("channel="+channel);
@@ -59,8 +61,10 @@ public class BinanceApiWebSocketClientImpl implements BinanceApiWebSocketClient,
     public Closeable onDepthEvent(String symbols, BinanceApiCallback<DepthEvent> callback) {
         final String channel = Arrays.stream(symbols.split(","))
                 .map(String::trim)
-                .map(s -> String.format("%s@depth", s))
+                .map(s -> s.toLowerCase())
+                .map(s -> String.format("%s@depth@100ms", s))
                 .collect(Collectors.joining("/"));
+        System.out.println(channel);
         return createNewWebSocket(channel, new BinanceApiWebSocketListener<>(callback, DepthEvent.class));
     }
 

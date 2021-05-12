@@ -162,7 +162,7 @@ public class PositionOpenService {
 //            futureAskPrice = getFutureTickPrice(symbol,"ask");
             SymbolBookTickerEvent symbolBookTickerEvent = MarketCache.futureTickerMap.get(symbol);
             BookTickerModel bookTickerModel = MarketCache.spotTickerMap.get(symbol);
-            if(symbolBookTickerEvent!=null){
+            if(symbolBookTickerEvent!=null && bookTickerModel!=null){
                 symbolBookTickerEvent.setFutureTickDelayTime(System.currentTimeMillis() - symbolBookTickerEvent.getTradeTime());
                 bookTickerModel.setSpotTickDelayTime(System.currentTimeMillis() - bookTickerModel.getTradeTime());
                 processPairsTrade(symbol,symbolBookTickerEvent,bookTickerModel);
@@ -190,6 +190,7 @@ public class PositionOpenService {
 //                    && checkImpactSet(symbol,counter, BeanConstant.openImpactSet, BeanConfig.OPEN_IMPACT_COUNTER)
                 && origOpenRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0
                 && checkMoney()
+                && checkDelay(symbolBookTickerEvent,bookTickerModel)
                 ){
 
             logger.info("check open ratio success, symbol={}, openRatio={}", symbol, origOpenRatio);
@@ -201,7 +202,8 @@ public class PositionOpenService {
                     BeanConstant.FUTURE_SELL_OPEN,clientOrderId,origOpenRatio);
 
         }else {
-            if(!tradeUtil.isTradeCanClosed(symbol)) return;
+            if(!tradeUtil.isTradeCanClosed(symbol)
+                    || ! checkDelay(symbolBookTickerEvent,bookTickerModel)) return;
             if(BeanConstant.pairsTradeList == null || BeanConstant.pairsTradeList.size() == 0) return;
             symbolPairsTradeList = getPairsTradeInList(symbol,BeanConstant.pairsTradeList);
             if(symbolPairsTradeList.size() != 0){
@@ -247,6 +249,7 @@ public class PositionOpenService {
                     if( futureAskPrice.compareTo(BigDecimal.ZERO)>0 && spotBidPrice.compareTo(BigDecimal.ZERO)>0
 //                            && checkImpactSet(symbol,counter, BeanConstant.closeImpactSet, BeanConfig.CLOSE_IMPACT_COUNTER)
                             && profit.compareTo(BeanConfig.TRADE_PROFIT) > 0
+                            && checkDelay(symbolBookTickerEvent,bookTickerModel)
                             ){
 
                         logger.info("check profit success, symbol={},counter={}, set={}", symbol, counter, BeanConstant.closeImpactSet);
@@ -272,6 +275,14 @@ public class PositionOpenService {
                 }
             }
         }
+    }
+
+    private boolean checkDelay(SymbolBookTickerEvent symbolBookTickerEvent, BookTickerModel bookTickerModel) {
+            if(symbolBookTickerEvent.getFutureTickDelayTime() < 20 && bookTickerModel.getSpotTickDelayTime() <20 ){
+                return true;
+            }
+            return false;
+
     }
 
     private void countRatio(BigDecimal openRatio) {

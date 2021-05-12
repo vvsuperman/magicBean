@@ -213,7 +213,7 @@ public class PositionOpenController {
 
     @RequestMapping("spotbookticker/{symbol}")
     public @ResponseBody BookTicker getSpotBookTicker(@PathVariable String symbol){
-        return binanceClient.getSpotSyncClient().getBookTicker(symbol).get(0);
+        return binanceClient.getSpotSyncClient().getBookTicker(symbol);
     }
 
     @RequestMapping("futurebookticker/{symbol}")
@@ -270,13 +270,16 @@ public class PositionOpenController {
 //        futureSubscription.allBookTickerSubscription();
         futureSubscription.allBookTickerSub();
 //        spotSubscription.allBookTickSubscription();
-        spotSubscription.subAllTickByTrade();
+//        spotSubscription.subAllTickByTrade();
+        spotSubscription.subAllTickByDepth();
 
         //get pairs trade gap
         tradeScheduleService.changePairsGap();
 
         //change leveragelevel to 1
         preTradeService.changeLeverageLevel(1);
+        //buy some bnb
+        tradeScheduleService.buyBNB();
         //set balance
         preTradeService.initialBalance();
         return "success";

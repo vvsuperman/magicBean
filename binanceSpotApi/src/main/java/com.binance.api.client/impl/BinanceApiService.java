@@ -72,7 +72,7 @@ public interface BinanceApiService {
     Call<List<BookTicker>> getBookTickers();
 
     @GET("/api/v3/ticker/bookTicker")
-    Call<List<BookTicker>> getBookTicker(@Query("symbol") String symbol);
+    Call<BookTicker> getBookTicker(@Query("symbol") String symbol);
 
     // Account endpoints
     @Headers(BinanceApiConstants.ENDPOINT_SECURITY_TYPE_SIGNED_HEADER)

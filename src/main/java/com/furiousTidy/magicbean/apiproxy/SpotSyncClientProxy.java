@@ -68,12 +68,12 @@ public class SpotSyncClientProxy {
 
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public BookTicker getBookTicker(String symbol){
-        return binanceClient.getSpotSyncClient().getBookTicker(symbol).get(0);
+        return binanceClient.getSpotSyncClient().getBookTicker(symbol);
     }
 
     @Retryable(value={SocketTimeoutException.class},maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public List<BookTicker> getAllBookTickers(){
-        return binanceClient.getSpotSyncClient().getBookTicker(null);
+        return binanceClient.getSpotSyncClient().getBookTickers();
     }
 
 

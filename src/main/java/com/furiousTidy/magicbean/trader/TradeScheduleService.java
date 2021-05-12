@@ -21,6 +21,7 @@ import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -73,6 +74,9 @@ public class TradeScheduleService {
 
     @Autowired
     BinanceClient binanceClient;
+
+    @Value("${accountName}")
+    String accountName;
 
     //get all the open pairs trade for close
     @Scheduled(cron = "0 0/5 * * * ?")
@@ -257,7 +261,7 @@ public class TradeScheduleService {
         Map<String,String> tagMap = new HashMap<>();
         Map<String,Object> fileMap = new HashMap<>();
 
-        tagMap.put("name", BeanConstant.USER_NAME);
+        tagMap.put("name", accountName);
         fileMap.put("balance",spotBalance[0].add(futureBalance));
 
         influxDbConnection.insert("balance_info",tagMap,fileMap);
@@ -284,10 +288,6 @@ public class TradeScheduleService {
         Integer[] stepSize = tradeUtil.getStepSize("BNBUSDT");
 
         log.info("future bnb={}, spot bnb={}", balances[0],balances[1]);
-        //transfer some bnb to u coin
-        if(balances[0].multiply(bnbPrice).compareTo(new BigDecimal(10))<0){
-            binanceClient.getMarginRestClient().transfer("BNB",balances[1].divide(new BigDecimal(2),4,RoundingMode.HALF_DOWN).toString(),TransferType.MAIN_UMFUTURE);
-        }
 
         // buy some bnb
         if(balances[1].multiply(bnbPrice).compareTo(new BigDecimal(10))<0){
@@ -296,6 +296,12 @@ public class TradeScheduleService {
                     marketBuy("BNBUSDT",
                             bnbQty.toString()).newOrderRespType(NewOrderResponseType.FULL));
         }
+        //transfer some bnb to u coin
+        if(balances[0].multiply(bnbPrice).compareTo(new BigDecimal(10))<0){
+            binanceClient.getMarginRestClient().transfer("BNB",balances[1].divide(new BigDecimal(2),4,RoundingMode.HALF_DOWN).toString(),TransferType.MAIN_UMFUTURE);
+        }
+
+
     }
 
     public static void main(String[] args){

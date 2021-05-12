@@ -25,7 +25,7 @@ public class BookTickerExample {
     BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(SpotConstants.REAL_API_KEY, SpotConstants.REAL_API_SECRET);
     BinanceApiRestClient client = factory.newRestClient();
 
-    List<BookTicker> bookTicker = client.getBookTicker("BTCUSDT");
+    BookTicker bookTicker = client.getBookTicker("BTCUSDT");
     System.out.println(bookTicker);
   }
 
