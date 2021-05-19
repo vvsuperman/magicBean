@@ -6,6 +6,8 @@ import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.market.ExchangeInformation;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
+import com.furiousTidy.magicbean.dbutil.dao.OrderDao;
+import com.furiousTidy.magicbean.dbutil.model.OrderModel;
 import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +42,21 @@ public class PreTradeService {
 
     @Autowired
     BinanceClient binanceClient;
+
+    @Autowired
+    OrderDao orderDao;
+
+    public void getAllOrder(){
+        List<OrderModel> orderModelList = orderDao.getOrders();
+        for(OrderModel orderModel: orderModelList){
+            if(orderModel.getType().equals("future")){
+                MarketCache.futureOrderCache.put(orderModel.getClientOrderId(),orderModel.getSymbol());
+            }else{
+                MarketCache.spotOrderCache.put(orderModel.getClientOrderId(), orderModel.getSymbol());
+            }
+        }
+
+    }
 
 
     public void initialBalance(){

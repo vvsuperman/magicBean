@@ -204,6 +204,10 @@ public class AfterOrderService {
         } else if (clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)) {
 
             PairsTradeModel pairsTradeModel = pairsTradeDao.getPairsTradeByCloseId(clientOrderId);
+            if(pairsTradeModel == null){
+                log.info("exception: get pairs trade null, clientOrderId={}",clientOrderId);
+                return;
+            }
             TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
             profit = tradeUtil.getProfit(tradeInfoModel.getFuturePrice(),tradeInfoModel.getSpotPrice(),futurePrice,spotPrice,tradeInfoModel.getFutureQty());
             ratio = spotPrice.subtract(futurePrice).divide(futurePrice, 6, RoundingMode.HALF_UP);

@@ -3,7 +3,11 @@ package com.furiousTidy.magicbean.trader;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
+import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.OrderStatusRequest;
+import com.binance.client.model.enums.NewOrderRespType;
+import com.binance.client.model.enums.OrderSide;
+import com.binance.client.model.enums.OrderType;
 import com.binance.client.model.trade.AccountInformation;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.ProxyUtil;
@@ -37,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.binance.api.client.domain.TransferType;
 
 import static com.binance.api.client.domain.account.NewOrder.marketBuy;
+import static com.binance.api.client.domain.account.NewOrder.marketSell;
 
 
 // schedule service
@@ -78,6 +83,9 @@ public class TradeScheduleService {
     @Value("${accountName}")
     String accountName;
 
+    @Autowired
+    MarketCache marketCache;
+
     //get all the open pairs trade for close
     @Scheduled(cron = "0 0/5 * * * ?")
     public void getAllOpenOrder(){
@@ -85,6 +93,10 @@ public class TradeScheduleService {
         //store trade_info in the map;
 
         BeanConstant.pairsTradeList.forEach(pairsTradeModel ->{
+            // some bug for closeid
+//            if(pairsTradeModel.getCloseId()!=null){
+//                   pairsTradeDao.setCloseId2Null( pairsTradeModel.getId());
+//            }
             BeanConstant.tradeInfoMap.put(pairsTradeModel.getOpenId()
                     ,tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId()));
             }
@@ -114,51 +126,122 @@ public class TradeScheduleService {
 
     // query all manul close order's status
     @Scheduled(cron = "0 0/5 * * * ?")
-    public void queryOrder(){
+    public void queryAndUpdateOrder(){
         for(Map.Entry <String, String> entry :MarketCache.futureOrderCache.entrySet()){
             String clientOrderId = entry.getKey();
             String symbol = entry.getValue();
-            Order order = binanceClient.getFutureSyncClient().getOrder(symbol,null,clientOrderId);
-            log.info("get futrure  order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(), order);
+            log.info("before get future: clientOrderid={},symbol={}", clientOrderId, symbol);
+            Order order;
+            try{
+                 order = binanceClient.getFutureSyncClient().getOrder(symbol,null,clientOrderId);
+            }catch (Exception ex){
+                log.info("get future exception: clientOrderId={}, ex={}",clientOrderId, ex);
+                continue;
+            }
+
+            log.info("after get futrure  order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(), order);
             if(order.getStatus().equals("FILLED")){
                 afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty(),null,-1);
-                MarketCache.futureOrderCache.remove(order.getClientOrderId());
+                marketCache.deleteOrder(order.getClientOrderId(),"future");
+            }else if(forceCloseCheckFuture(order)){
+                log.info("force close future order:clientOrderid={}, price={},currentPrice={}, qty={}, order={}",clientOrderId,order.getPrice()
+                        ,MarketCache.futureTickerMap.get(symbol).getBestAskPrice(),order.getExecutedQty(), order);
+
+                binanceClient.getFutureSyncClient().cancelOrder(symbol,null,clientOrderId);
+                doFutureMarketOrder(order);
+                marketCache.deleteOrder(clientOrderId,"future");
+
             }
         }
 
         for(Map.Entry <String, String> entry :MarketCache.spotOrderCache.entrySet()){
             String clientOrderId = entry.getKey();
             String symbol = entry.getValue();
-            com.binance.api.client.domain.account.Order order = binanceClient.getSpotSyncClient().getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
-            log.info("get spot order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(),order);
+
+            log.info("before get spot: clientOrderid={},symbol={}", clientOrderId, symbol);
+
+            com.binance.api.client.domain.account.Order order;
+            try{
+                order = binanceClient.getSpotSyncClient().getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
+            }catch (Exception ex){
+                log.info("get spot order clientOrderId={},exception={}",clientOrderId,ex);
+                continue;
+            }
+
+            log.info("get spot order info:clientOrderid={}, price={}, currentprice={},current qty={}, order={}",clientOrderId,order.getPrice()
+                    ,MarketCache.spotTickerMap.get(symbol).getAskPrice(),order.getExecutedQty(),order);
             if(order.getStatus() == OrderStatus.FILLED){
                 afterOrderService.processSpotOrder(symbol, clientOrderId, new BigDecimal(order.getPrice()), new BigDecimal(order.getExecutedQty()),null,-1);
-                MarketCache.spotOrderCache.remove(order.getClientOrderId());
+                marketCache.deleteOrder(order.getClientOrderId(),"spot");
+            }else if(forceCloseCheckSpot(order)){
+                log.info(" force close for spot order: clientOrderid={},order={}",clientOrderId,order);
+                binanceClient.getSpotSyncClient().cancelOrder(new CancelOrderRequest(symbol,clientOrderId));
+                doSpotMarketOrder(order);
+                marketCache.deleteOrder(clientOrderId,"spot");
             }
         }
     }
 
-    //checkNetWork state  test order has no use
-//    @Scheduled(cron = "0 0/10 * * * ?")
-//    public void checkNetWork() throws InterruptedException {
-//        long duration = 0;
-//        int n = 5;
-//        for(int i=0;i<n;i++){
-//            long start = System.currentTimeMillis();
-//            binanceClient.getSpotSyncClient().newOrderTest(marketBuy("BTCUSDT", "0.001").newOrderRespType(NewOrderResponseType.FULL));
-//            duration += System.currentTimeMillis()-start;
-//            Thread.sleep(10);
-//        }
-//
-//        if(duration/n > 50){
-//            BeanConstant.NETWORK_DELAYED = true;
-//            log.info("network delayed, duration={}",duration/n);
-//        }else {
-//            BeanConstant.NETWORK_DELAYED = false;
-//            log.info("network Ok, duration={}",duration/n);
-//        }
-//
-//    }
+    private void doSpotMarketOrder(com.binance.api.client.domain.account.Order order) {
+      String clientOrderId = order.getClientOrderId();
+      String symbol = order.getSymbol();
+      String spotQty = order.getOrigQty();
+
+        NewOrderResponse newOrderResponse = null;
+        try{
+            if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
+                newOrderResponse = spotSyncClientProxy.newOrder(
+                        marketBuy(symbol, spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+            }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
+                newOrderResponse = spotSyncClientProxy.newOrder(
+                        marketSell(symbol,spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+            }
+        }catch (Exception ex){
+            log.info("force close spot error: exception ={}",ex);
+
+        }
+
+        afterOrderService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
+                ,new BigDecimal(newOrderResponse.getExecutedQty()),new BigDecimal(-1),0);
+
+
+    }
+
+    private boolean forceCloseCheckSpot(com.binance.api.client.domain.account.Order order) {
+        BigDecimal currentPrice = MarketCache.spotTickerMap.get(order.getSymbol()).getBidPrice();
+        BigDecimal price = new BigDecimal(order.getPrice());
+        if(price.subtract(currentPrice).divide(price,4,RoundingMode.HALF_UP).abs().compareTo(new BigDecimal("0.1"))>0){
+            return true;
+        }
+        return false;
+    }
+
+    private boolean forceCloseCheckFuture(Order order) {
+        BigDecimal currentPrice = MarketCache.futureTickerMap.get(order.getSymbol()).getBestBidPrice();
+        if(order.getPrice().subtract(currentPrice).divide(order.getPrice(),4,RoundingMode.HALF_UP).abs().compareTo(new BigDecimal("0.1"))>0){
+            return true;
+        }
+        return false;
+    }
+
+    private void doFutureMarketOrder(Order order) {
+
+        OrderSide orderSide =(order.getClientOrderId().contains(BeanConstant.FUTURE_SELL_OPEN))? OrderSide.SELL:OrderSide.BUY;
+
+        try{
+
+           order = binanceClient.getFutureSyncClient().postOrder(order.getSymbol(),orderSide,null, OrderType.MARKET, null,order.getOrigQty().toString(),
+                   null,null,order.getClientOrderId(),null,null, NewOrderRespType.RESULT);
+       }catch (Exception ex){
+           log.info("force close future error: exception ={}",ex);
+       }
+
+       log.info("market order return order={}", order);
+        afterOrderService.processFutureOrder(order.getSymbol(),order.getClientOrderId(),order.getAvgPrice(),order.getExecutedQty(), BigDecimal.valueOf(-1),0);
+
+    }
+
+
     @Scheduled(cron = "0 0 1 * * ?")
     public void changeLeverageLevel(){
         preTradeService.changeLeverageLevel(1);
@@ -183,6 +266,7 @@ public class TradeScheduleService {
     // clear the event lock list
     @Scheduled(cron = "0 0/5 * * * ?")
     public void doFutureSpotBalance() throws InterruptedException {
+        if(!BeanConstant.watchdog) return;
         BeanConstant.watchdog =false;
         // sleep for 5 second, let on the way order finished, avoid incorrect balance in exchange cache
         Thread.sleep(5000);

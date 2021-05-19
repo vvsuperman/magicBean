@@ -9,6 +9,9 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.user.BalanceUpdate;
+import com.furiousTidy.magicbean.dbutil.dao.OrderDao;
+import com.furiousTidy.magicbean.dbutil.model.OrderModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -20,6 +23,36 @@ import java.util.concurrent.locks.Lock;
 
 @Service
 public class MarketCache {
+
+    @Autowired
+    OrderDao orderDao;
+
+    public void saveFutureOrder(String symbol, String clientOrderId){
+        OrderModel orderModel = new OrderModel();
+        orderModel.setSymbol(symbol);
+        orderModel.setClientOrderId(clientOrderId);
+        orderModel.setType("future");
+        orderDao.saveOrder(orderModel);
+        futureOrderCache.put(clientOrderId, symbol);
+    }
+
+    public void saveSpotOrder(String symbol, String clientOrderId){
+        OrderModel orderModel = new OrderModel();
+        orderModel.setSymbol(symbol);
+        orderModel.setClientOrderId(clientOrderId);
+        orderModel.setType("spot");
+        orderDao.saveOrder(orderModel);
+        spotOrderCache.put(clientOrderId, symbol);
+    }
+
+    public void deleteOrder(String clientOrderId, String type){
+        orderDao.deleteOrder(clientOrderId, type);
+        if(type.equals("future")){
+            futureOrderCache.remove(clientOrderId);
+        }else{
+            spotOrderCache.remove(clientOrderId);
+        }
+    }
 
     public static  ConcurrentHashMap<String, String> futureOrderCache = new ConcurrentHashMap();
     public static ConcurrentHashMap<String, String> spotOrderCache = new ConcurrentHashMap ();

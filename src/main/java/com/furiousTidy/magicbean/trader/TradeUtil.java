@@ -53,6 +53,9 @@ public class TradeUtil {
 
     BinanceClient binanceClient;
 
+    @Autowired
+    MarketCache marketCache;
+
     public void testSubDelay(){
         binanceClient.getSpotSubsptClient().onTickerEvent("BTCUSDT", tickEvent->{
             log.info("sub delay time ={}ms",System.currentTimeMillis() - tickEvent.getEventTime());
@@ -102,10 +105,9 @@ public class TradeUtil {
                     limitSell(tradeInfoModel.getSymbol(), com.binance.api.client.domain.TimeInForce.GTC,
                             spotQty,spotPrice)
                             .newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
-
-            MarketCache.futureOrderCache.put(clientOrderId, pairsTradeModel.getSymbol());
-            MarketCache.spotOrderCache.put(clientOrderId,pairsTradeModel.getSymbol());
-            Thread.sleep(50);
+            marketCache.saveFutureOrder(symbol,clientOrderId);
+            marketCache.saveSpotOrder(symbol,clientOrderId);
+            Thread.sleep(100);
         }
     }
 

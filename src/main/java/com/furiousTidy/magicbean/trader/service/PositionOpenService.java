@@ -50,6 +50,8 @@ public class PositionOpenService {
 
     @Autowired
     TradeService tradeService;
+//    @Autowired
+//    LimitTradeService tradeService;
 
     @Autowired
     ProxyUtil proxyUtil;
@@ -106,7 +108,7 @@ public class PositionOpenService {
 //    public void doTrade(String symbol, BigDecimal cost, String direct) throws InterruptedException {
 //        logger.info("doTrade start...........");
 //        BigDecimal futurePrice, spotPrice = BigDecimal.ZERO;
-//
+//s
 //        if(direct.equals(BeanConstant.FUTURE_SELL)){
 //            do{
 //                //re-compare the price in the cache
@@ -167,7 +169,6 @@ public class PositionOpenService {
                 bookTickerModel.setSpotTickDelayTime(System.currentTimeMillis() - bookTickerModel.getTradeTime());
                 processPairsTrade(symbol,symbolBookTickerEvent,bookTickerModel);
             }
-
         }
     }
 
@@ -201,6 +202,7 @@ public class PositionOpenService {
             MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
             doPairsTrade(symbol, BeanConfig.STANDARD_TRADE_UNIT,symbolBookTickerEvent,bookTickerModel,
                     BeanConstant.FUTURE_SELL_OPEN,clientOrderId,origOpenRatio);
+
 
         }else {
             if(!tradeUtil.isTradeCanClosed(symbol)
@@ -261,20 +263,30 @@ public class PositionOpenService {
                         closeRatio = spotBidPrice.subtract(futureAskPrice).divide(futureAskPrice, 6, RoundingMode.HALF_UP);
                         //add trade to processing set
                         BeanConstant.closeProcessingSet.add(pairsTradeModel.getOpenId());
-                        //begin to close the symbol
-                        logger.info("begin to close symbol={},openId={}, closeRatio={}",symbol,clientOrderId,profit);
 
-                        pairsTradeModel.setCloseId(clientOrderId);
+                        if(pairsTradeModel.getCloseId() == null){
+                            //begin to close the symbol
+                            logger.info("begin to close1 symbol={},openId={}, profit={},closeRatio={}",symbol,clientOrderId,profit,closeRatio);
 
-                        //set the lock
-                        Lock closeLock = new ReentrantLock();
-                        MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
-                        closeLock.lock();
-                        doPairsTradeByQty(symbol, futrueQty,spotQty,symbolBookTickerEvent,bookTickerModel,
-                                BeanConstant.FUTURE_SELL_CLOSE,clientOrderId,closeRatio);
-                        //update close id in pairstrade
-                        pairsTradeDao.updatePairsTrade(pairsTradeModel);
-                        closeLock.unlock();
+                            pairsTradeModel.setCloseId(clientOrderId);
+
+                            //set the lock
+                            Lock closeLock = new ReentrantLock();
+                            MarketCache.eventLockCache.put(clientOrderId,closeLock);
+                            closeLock.lock();
+                            doPairsTradeByQty(symbol, futrueQty,spotQty,symbolBookTickerEvent,bookTickerModel,
+                                    BeanConstant.FUTURE_SELL_CLOSE,clientOrderId,closeRatio);
+                            //update close id in pairstrade
+                            pairsTradeDao.updatePairsTrade(pairsTradeModel);
+                            closeLock.unlock();
+                        }else{
+                            clientOrderId = pairsTradeModel.getCloseId();
+                            MarketCache.eventLockCache.put(clientOrderId,new ReentrantLock());
+                            logger.info("begin to close2 symbol={},openId={}, profit={},closeRatio={}",symbol,clientOrderId,profit,closeRatio);
+                            doPairsTradeByQty(symbol, futrueQty,spotQty,symbolBookTickerEvent,bookTickerModel,
+                                    BeanConstant.FUTURE_SELL_CLOSE,clientOrderId,closeRatio);
+                        }
+
 
                     }
                 }

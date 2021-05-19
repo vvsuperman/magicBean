@@ -52,6 +52,9 @@ public class LimitTradeService {
     @Autowired
     ProxyUtil proxyUtil;
 
+    @Autowired
+    MarketCache marketCache;
+
 
 
     @Async
@@ -96,15 +99,14 @@ public class LimitTradeService {
                 BeanConstant.ENOUGH_MONEY.set(false);
                 return;
             }
-            if( order.getStatus().equals("FILLED")){
-                BigDecimal price = order.getAvgPrice();
-                BigDecimal qty = order.getExecutedQty();
-                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio,symbolBookTickerEvent.getFutureTickDelayTime());
-                return;
-                // order has been partially filled, order status is partially filled, cancel order is null;
-            }
-
-            MarketCache.futureOrderCache.put(clientOrderId, symbol);
+//            if( order.getStatus().equals("FILLED")){
+//                BigDecimal price = order.getAvgPrice();
+//                BigDecimal qty = order.getExecutedQty();
+//                afterOrderService.processFutureOrder(symbol,clientOrderId,price,qty,ratio,symbolBookTickerEvent.getFutureTickDelayTime());
+//                return;
+//                // order has been partially filled, order status is partially filled, cancel order is null;
+//            }
+            marketCache.saveFutureOrder(symbol,clientOrderId);
         }
     }
 
@@ -157,17 +159,16 @@ public class LimitTradeService {
                 return;
             }
 
-            log.info("new spot order return,clientid={},price={},qty={},order={}", newOrderResponse.getClientOrderId()
-                    ,newOrderResponse.getFills().get(0).getPrice(),newOrderResponse.getExecutedQty(),newOrderResponse);
+            log.info("new spot order return,clientid={},order={}", newOrderResponse.getClientOrderId(),newOrderResponse);
 
 
-            if(newOrderResponse.getStatus() == OrderStatus.FILLED){
-                afterOrderService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
-                        ,new BigDecimal(newOrderResponse.getExecutedQty()),ratio,bookTickerModel.getSpotTickDelayTime());
-
-                return;
-            }
-            MarketCache.spotOrderCache.put(clientOrderId, symbol);
+//            if(newOrderResponse.getStatus() == OrderStatus.FILLED){
+//                afterOrderService.processSpotOrder(symbol,clientOrderId,new BigDecimal(newOrderResponse.getFills().get(0).getPrice())
+//                        ,new BigDecimal(newOrderResponse.getExecutedQty()),ratio,bookTickerModel.getSpotTickDelayTime());
+//
+//                return;
+//            }
+            marketCache.saveSpotOrder(symbol,clientOrderId);
         }
     }
 

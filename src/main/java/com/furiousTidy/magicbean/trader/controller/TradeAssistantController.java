@@ -75,7 +75,7 @@ public class TradeAssistantController {
 
     @RequestMapping("queryOrder")
     public @ResponseBody String queryOrder(){
-        tradeSchedule.queryOrder();
+        tradeSchedule.queryAndUpdateOrder();
         return "success";
     }
 

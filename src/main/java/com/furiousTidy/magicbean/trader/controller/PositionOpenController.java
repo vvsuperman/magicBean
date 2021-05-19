@@ -20,6 +20,7 @@ import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -61,6 +62,10 @@ public class PositionOpenController {
 
     @Autowired
     BinanceClient binanceClient;
+
+    @Value("${accountName}")
+    String accountName;
+
 
     static boolean robotStart = false;
 
@@ -269,8 +274,13 @@ public class PositionOpenController {
         //subscribe bookticker info
 //        futureSubscription.allBookTickerSubscription();
         futureSubscription.allBookTickerSub();
-        spotSubscription.allBookTickSubscription();
-//        spotSubscription.subAllTickByTrade();
+//        spotSubscription.allBookTickSubscription();
+//        if(accountName.equals("laoma")){
+//            spotSubscription.subAllTickByTrade();
+//        }else{
+            spotSubscription.allBookTickSubscription();
+//        }
+
 //        spotSubscription.subAllTickByDepth();
 
         //get pairs trade gap
@@ -282,6 +292,8 @@ public class PositionOpenController {
         tradeScheduleService.buyBNB();
         //set balance
         preTradeService.initialBalance();
+        //get all orders
+        preTradeService.getAllOrder();
         return "success";
     }
 

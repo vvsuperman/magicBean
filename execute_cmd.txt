@@ -22,6 +22,7 @@ scp -i "aws-magicbean.pem" ./target/magicbean-0.0.1.jar ec2-user@ec2-18-181-240-
 ssh -i "aws-magicbean.pem" ec2-user@ec2-18-181-240-157.ap-northeast-1.compute.amazonaws.com
 
 
+
 #退出sqlite
 .quit
 
@@ -45,7 +46,6 @@ jstack pid |grep -A 10 hid
 
 jmap -dump:live,format=b,file=heapdump.phrof pid
 
-ssh -i "aws-magicbean.pem" ec2-user@ec2-18-181-240-157.ap-northeast-1.compute.amazonaws.com
 
 
 

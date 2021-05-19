@@ -27,7 +27,7 @@ public interface PairsTradeDao {
     @Update("UPDATE pairs_trade SET openRatio=#{openRatio} WHERE openId =#{openId}")
     void updateOpenRatioByOpenId(@Param("openId") String openId, @Param("openRatio") BigDecimal openRatio);
 
-    @Select("select * from pairs_trade where closeId is null")
+    @Select("select * from pairs_trade where closeRatio is null")
     List<PairsTradeModel> getPairsTradeOpen();
 
     @Select("select * from pairs_trade where closeId is null and createTime < #{createTime}")
@@ -38,4 +38,7 @@ public interface PairsTradeDao {
 
     @Select("select * from pairs_trade where closeId = #{closeId}")
     PairsTradeModel getPairsTradeByCloseId(String closeId);
+
+    @Update("update  pairs_trade set closeId=null where id=#{id}")
+    void setCloseId2Null(String id);
 }
