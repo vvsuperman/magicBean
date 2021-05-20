@@ -80,43 +80,43 @@ public class SpotSubscription {
     }
 
 
-    public void subAllTickByTrade(){
-        getAllBookTicks();
-        final String[] symbols ={""};
-        MarketCache.spotTickerMap.forEach((symbol,map)->{
-            symbols[0] += symbol + ",";
-        });
-        binanceClient.getSpotSubsptClient().onTradeEvent(symbols[0], tradeEvent->{
-//            tradeEvents.forEach(tradeEvent -> {
-            BookTickerModel bookTickerModel = new BookTickerModel();
-            bookTickerModel.setTradeTime(tradeEvent.getTradeTime());
-            bookTickerModel.setSymbol(tradeEvent.getSymbol());
-            bookTickerModel.setAskPrice(tradeEvent.getPrice());
-            bookTickerModel.setBidPrice(tradeEvent.getPrice());
-            MarketCache.spotTickerMap.put(bookTickerModel.getSymbol(), bookTickerModel);
-//            });
-        });
-    }
+//    public void subAllTickByTrade(){
+//        getAllBookTicks();
+//        final String[] symbols ={""};
+//        MarketCache.spotTickerMap.forEach((symbol,map)->{
+//            symbols[0] += symbol + ",";
+//        });
+//        binanceClient.getSpotSubsptClient().onTradeEvent(symbols[0], tradeEvent->{
+////            tradeEvents.forEach(tradeEvent -> {
+//            BookTickerModel bookTickerModel = new BookTickerModel();
+//            bookTickerModel.setTradeTime(tradeEvent.getTradeTime());
+//            bookTickerModel.setSymbol(tradeEvent.getSymbol());
+//            bookTickerModel.setAskPrice(tradeEvent.getPrice());
+//            bookTickerModel.setBidPrice(tradeEvent.getPrice());
+//            MarketCache.spotTickerMap.put(bookTickerModel.getSymbol(), bookTickerModel);
+////            });
+//        });
+//    }
 
 
     //使用
-    @Async
-    public void subAllTickByDepth(){
-        getAllBookTicks();
-        final String[] symbols ={""};
-        MarketCache.spotTickerMap.forEach((symbol,map)->{
-            symbols[0] += symbol + ",";
-        });
-        logger.info("symbols={}",symbols);
-        binanceClient.getSpotSubsptClient().onDepthEvent(symbols[0],depthEvent->{
-            BookTickerModel bookTickerModel = new BookTickerModel();
-            bookTickerModel.setSymbol(depthEvent.getSymbol());
-            bookTickerModel.setTradeTime(depthEvent.getEventTime());
-            bookTickerModel.setAskPrice(new BigDecimal(depthEvent.getAsks().get(2).getPrice()));
-            bookTickerModel.setBidPrice(new BigDecimal(depthEvent.getBids().get(2).getPrice()));
-            MarketCache.spotTickerMap.put(bookTickerModel.getSymbol(), bookTickerModel);
-        });
-    }
+//    @Async
+//    public void subAllTickByDepth(){
+//        getAllBookTicks();
+//        final String[] symbols ={""};
+//        MarketCache.spotTickerMap.forEach((symbol,map)->{
+//            symbols[0] += symbol + ",";
+//        });
+//        logger.info("symbols={}",symbols);
+//        binanceClient.getSpotSubsptClient().onDepthEvent(symbols[0],depthEvent->{
+//            BookTickerModel bookTickerModel = new BookTickerModel();
+//            bookTickerModel.setSymbol(depthEvent.getSymbol());
+//            bookTickerModel.setTradeTime(depthEvent.getEventTime());
+//            bookTickerModel.setAskPrice(new BigDecimal(depthEvent.getAsks().get(2).getPrice()));
+//            bookTickerModel.setBidPrice(new BigDecimal(depthEvent.getBids().get(2).getPrice()));
+//            MarketCache.spotTickerMap.put(bookTickerModel.getSymbol(), bookTickerModel);
+//        });
+//    }
 
 
         @Async
@@ -151,10 +151,10 @@ public class SpotSubscription {
             BookTickerModel bookTickerModel = new BookTickerModel();
             bookTickerModel.setSymbol(bookTickerEvent.getSymbol());
             bookTickerModel.setTradeTime(System.currentTimeMillis());
-            bookTickerModel.setAskPrice(new BigDecimal(bookTickerEvent.getAskPrice()));
-            bookTickerModel.setBidPrice(new BigDecimal(bookTickerEvent.getBidPrice()));
-            bookTickerModel.setAskQuantity(new BigDecimal(bookTickerEvent.getAskQuantity()));
-            bookTickerModel.setBidQuantity(new BigDecimal(bookTickerEvent.getBidQuantity()));
+            bookTickerModel.setAskPrice(new BigDecimal(bookTickerEvent.getAskPrice().replaceAll("0+$", "")));
+            bookTickerModel.setBidPrice(new BigDecimal(bookTickerEvent.getBidPrice().replaceAll("0+$", "")));
+            bookTickerModel.setAskQuantity(new BigDecimal(bookTickerEvent.getAskQuantity().replaceAll("0+$", "")));
+            bookTickerModel.setBidQuantity(new BigDecimal(bookTickerEvent.getBidQuantity().replaceAll("0+$", "")));
             MarketCache.spotTickerMap.put(bookTickerEvent.getSymbol(),bookTickerModel);
 
 //            if(BeanConstant.watchdog
@@ -227,14 +227,12 @@ public class SpotSubscription {
 
      public static void main(String[] args) throws InterruptedException {
 
-         String price = "5.031";
-         String qty="2.33";
-         BigDecimal oldPrice =  new BigDecimal("5.03");
-         BigDecimal oldQty = new BigDecimal("0.65");
-         BigDecimal allqty = new BigDecimal("2.98");
-         System.out.println(new BigDecimal(price).multiply(new BigDecimal(qty))
-                 .add(oldPrice.multiply(oldQty))
-                 .divide(allqty,3,RoundingMode.HALF_UP));
+         String price = "5.0310000";
+         String newStr = price.replaceAll("0+$", "");
+         System.out.println(newStr);
+
+
+
      }
 }
 
