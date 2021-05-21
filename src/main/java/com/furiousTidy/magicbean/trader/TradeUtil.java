@@ -93,14 +93,14 @@ public class TradeUtil {
 //            futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString();
             futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).getBestBidPrice().toString();
             futureQty = tradeInfoModel.getFutureQty().toString();
-            log.info("close trade for future ordeid={}, price={}, qty={}", clientOrderId,futurePrice,futureQty);
+            log.info(" force close trade for future ordeid={}, price={}, qty={}", clientOrderId,futurePrice,futureQty);
             Order order =futureSyncClientProxy.postOrder(tradeInfoModel.getSymbol(), OrderSide.BUY,null, OrderType.LIMIT, TimeInForce.GTC
                     ,futureQty,  futurePrice
                     ,null,clientOrderId,null,null, NewOrderRespType.RESULT);
 
             spotPrice = MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).getAskPrice().toString();
             spotQty =  tradeInfoModel.getSpotQty().toString();
-            log.info("close trade for spot ordeid={}, price={}, qty={}", clientOrderId,spotPrice,spotQty);
+            log.info("force close trade for spot ordeid={}, price={}, qty={}", clientOrderId,spotPrice,spotQty);
             NewOrderResponse newOrderResponse = spotSyncClientProxy.newOrder(
                     limitSell(tradeInfoModel.getSymbol(), com.binance.api.client.domain.TimeInForce.GTC,
                             spotQty,spotPrice)
