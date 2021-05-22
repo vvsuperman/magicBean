@@ -135,6 +135,9 @@ public class TradeScheduleService {
             try{
                  order = binanceClient.getFutureSyncClient().getOrder(symbol,null,clientOrderId);
             }catch (Exception ex){
+                if(ex.getMessage().contains("Order does not exist")){
+                    marketCache.deleteOrder(clientOrderId,"future");
+                }
                 log.info("get future exception: clientOrderId={}, ex={}",clientOrderId, ex);
                 continue;
             }
@@ -164,6 +167,9 @@ public class TradeScheduleService {
             try{
                 order = binanceClient.getSpotSyncClient().getOrderStatus(new OrderStatusRequest(symbol,clientOrderId));
             }catch (Exception ex){
+                if(ex.getMessage().contains("Order does not exist")){
+                    marketCache.deleteOrder(clientOrderId,"spot");
+                }
                 log.info("get spot order clientOrderId={},exception={}",clientOrderId,ex);
                 continue;
             }

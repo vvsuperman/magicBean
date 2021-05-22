@@ -67,8 +67,8 @@ public class TradeAssistantController {
     @Autowired
     BinanceClient binanceClient;
 
-    @RequestMapping("closedTrade3DaysAgo")
-    public @ResponseBody String closedTrade3DaysAgo() throws InterruptedException {
+    @RequestMapping("closedTradeNDaysAgo")
+    public @ResponseBody String closedTradeNDaysAgo() throws InterruptedException {
         tradeSchedule.closedTradeNDaysAgo();
         return "sucess";
     }
