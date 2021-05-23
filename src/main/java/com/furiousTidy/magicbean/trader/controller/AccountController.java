@@ -7,6 +7,7 @@ import com.binance.client.model.market.ExchangeInfoEntry;
 import com.binance.client.model.trade.AccountInformation;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.trader.TradeScheduleService;
+import com.furiousTidy.magicbean.trader.service.TradeHelpService;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,9 @@ public class AccountController {
     @Autowired
     BinanceClient binanceClient;
 
+    @Autowired
+    TradeHelpService tradeHelpService;
+
 
     @RequestMapping("testopen")
     public @ResponseBody String testConfig(){
@@ -49,29 +53,13 @@ public class AccountController {
     }
 
     @RequestMapping("info")
-    public @ResponseBody Map getFutureInfo(){
-        AccountInformation accountInformation =  binanceClient.getFutureSyncClient().getAccountInformation();
-        final TreeMap<String,BigDecimal> assetInfo = new TreeMap<>();
-        accountInformation.getAssets().forEach(asset -> {
-            if(!asset.getMaxWithdrawAmount().equals(BigDecimal.ZERO)){
-                assetInfo.put(asset.getAsset(),asset.getMaxWithdrawAmount());
-            }
-        });
+    public @ResponseBody Map getBalanceInfo(){
+       Map rtmap =  tradeHelpService.getBalanceInfo();
 
-        final TreeMap<String, String> positionMap = new TreeMap<>();
-        accountInformation.getPositions().stream().filter(position -> new BigDecimal(position.getPositionAmt()).compareTo(BigDecimal.ZERO)!=0).
-                forEach(position -> positionMap.put(position.getSymbol(),position.getPositionAmt()));
-        HashMap rtmap = new HashMap<>();
-//        rtmap.put("balance",availableBalance);
-        rtmap.put("asset",assetInfo);
-        rtmap.put("position",positionMap);
-
-        final TreeMap<String, String> spotBalanceMap = new TreeMap<>();
-        binanceClient.getSpotSyncClient().getAccount().getBalances().stream().filter(assetBalance -> new BigDecimal(assetBalance.getFree()).compareTo(BigDecimal.ZERO)>0)
-                .forEach(assetBalance -> spotBalanceMap.put(assetBalance.getAsset(),assetBalance.getFree()));
-        rtmap.put("spotBalance",spotBalanceMap);
         rtmap.put("totalBalance",tradeScheduleService.getAllBalance());
+
         return rtmap;
+
     }
 
 //    @RequestMapping("spotbalance")
