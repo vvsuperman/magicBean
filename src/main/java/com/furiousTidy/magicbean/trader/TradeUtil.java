@@ -63,7 +63,6 @@ public class TradeUtil {
 
     }
 
-
     public void closeTrade(List<String> openIds) throws InterruptedException {
         String futurePrice, futureQty, spotPrice, spotQty;
         List<PairsTradeModel> pairsTradeModels = new ArrayList<>() ;
@@ -86,13 +85,23 @@ public class TradeUtil {
         for (PairsTradeModel pairsTradeModel : pairsTradeModels) {
             String symbol = pairsTradeModel.getSymbol();
             String clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_CLOSE+"_"+ getCurrentTime();
-            pairsTradeModel.setCloseId(clientOrderId);
-            pairsTradeDao.updatePairsTrade(pairsTradeModel);
+
 
             TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
 //            futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString();
             futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).getBestBidPrice().toString();
             futureQty = tradeInfoModel.getFutureQty().toString();
+
+            spotPrice = MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).getAskPrice().toString();
+            spotQty =  tradeInfoModel.getSpotQty().toString();
+
+            if(new BigDecimal(futurePrice).multiply(new BigDecimal(futureQty)).compareTo(BeanConfig.MIN_OPEN_UNIT)<0
+            || new BigDecimal(spotPrice).multiply(new BigDecimal(spotQty)).compareTo(BeanConfig.MIN_OPEN_UNIT)<0){
+                log.info("exception: force close small than the  min_open_unit");
+                continue;
+            }
+            pairsTradeModel.setCloseId(clientOrderId);
+            pairsTradeDao.updatePairsTrade(pairsTradeModel);
             log.info("close trade for future ordeid={}, price={}, qty={}", clientOrderId,futurePrice,futureQty);
             Order order;
             try{
@@ -103,8 +112,7 @@ public class TradeUtil {
                 log.info("force close future exception,need manual operation id={}, exception={}",clientOrderId, ex);
             }
 
-            spotPrice = MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).getAskPrice().toString();
-            spotQty =  tradeInfoModel.getSpotQty().toString();
+
             log.info("close trade for spot ordeid={}, price={}, qty={}", clientOrderId,spotPrice,spotQty);
             NewOrderResponse newOrderResponse;
             try {
