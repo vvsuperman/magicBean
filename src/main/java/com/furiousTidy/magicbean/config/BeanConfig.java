@@ -13,7 +13,7 @@ public class BeanConfig {
     public static BigDecimal ratioTolerate = new BigDecimal("0.003");
     public static  boolean STOP_TRADE = false;
     public static  BigDecimal OPEN_PRICE_GAP =new BigDecimal("0.005"); //交易条件，千分之五
-    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("15"); //标准交易单元
+    public static  BigDecimal STANDARD_TRADE_UNIT =new BigDecimal("20"); //标准交易单元
     public static BigDecimal TRADE_PROFIT = BeanConfig.STANDARD_TRADE_UNIT.divide(BigDecimal.valueOf(250),3,RoundingMode.HALF_UP);
 
     public static  int OPEN_IMPACT_COUNTER = 2;
@@ -35,7 +35,7 @@ public class BeanConfig {
 
     public static  int PRIOR_NUM =10;  //资金费率排名前10的
 
-    public static  Long SLEEP_TIME = new Long("10");
+    public static  Long SLEEP_TIME = new Long("5");
 
     //test future api
 //    public static  String FUTURE_API_KEY = "00f8530794fa9da45c5dde274ad8c5121d495d10e53853a089e482e0dcebba68";

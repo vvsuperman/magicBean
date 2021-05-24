@@ -16,9 +16,11 @@ import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.model.SymbolPosition;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
 import com.furiousTidy.magicbean.trader.TradeScheduleService;
 import com.furiousTidy.magicbean.trader.TradeUtil;
+import com.furiousTidy.magicbean.trader.service.TradeHelpService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -67,10 +69,18 @@ public class TradeAssistantController {
     @Autowired
     BinanceClient binanceClient;
 
-    @RequestMapping("closedTrade3DaysAgo")
-    public @ResponseBody String closedTrade3DaysAgo() throws InterruptedException {
+    @Autowired
+    TradeHelpService tradeHelpService;
+
+    @RequestMapping("checkPosition")
+    public @ResponseBody Map  checkPosition(){
+        return tradeHelpService.checkPosition();
+    }
+
+    @RequestMapping("closedTradeNDaysAgo")
+    public @ResponseBody String closedTradeNDaysAgo() throws InterruptedException {
         tradeSchedule.closedTradeNDaysAgo();
-        return "sucess";
+        return "success";
     }
 
     @RequestMapping("queryOrder")

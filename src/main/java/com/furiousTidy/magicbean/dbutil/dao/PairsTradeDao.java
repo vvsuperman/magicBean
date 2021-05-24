@@ -2,6 +2,7 @@ package com.furiousTidy.magicbean.dbutil.dao;
 
 import com.furiousTidy.magicbean.dbutil.mapper.PairsTradeMapper;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
+import com.furiousTidy.magicbean.dbutil.model.SymbolPosition;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,11 @@ import java.util.List;
 @Mapper
 @Component
 public interface PairsTradeDao {
+
+    @Select("select a.symbol as symbol,sum(b.futureQty) as futureQty, sum(b.spotQty) as spotQty\n" +
+            "from pairs_trade a, trade_info b where a.openId = b.orderId and a.closeId is null group by a.symbol;\n")
+    List<SymbolPosition> getSymbolPosition();
+
     @Select("Select * from pairs_trade where symbol = #{symbol}")
     List<PairsTradeModel> getPairsTradeBySymbol(String symbol);
 
@@ -27,7 +33,7 @@ public interface PairsTradeDao {
     @Update("UPDATE pairs_trade SET openRatio=#{openRatio} WHERE openId =#{openId}")
     void updateOpenRatioByOpenId(@Param("openId") String openId, @Param("openRatio") BigDecimal openRatio);
 
-    @Select("select * from pairs_trade where closeRatio is null")
+    @Select("select * from pairs_trade where closeId is null")
     List<PairsTradeModel> getPairsTradeOpen();
 
     @Select("select * from pairs_trade where closeId is null and createTime < #{createTime}")
