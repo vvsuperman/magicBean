@@ -1,3 +1,5 @@
+service mysqld start
+
 sqlite3 /var/lib/grafana/grafana.db;
 update user set password = '59acf18b94d7eb0694c61e60ce44c110c7a683ac6a8f09580d626f90f4a242000746579358d77dd9e570e83fa24faa88a8a6', salt = 'F3FAxVm33R' where login = 'admin';
 
@@ -7,11 +9,12 @@ SELECT (("futureBidPrice"-"spotAskPrice")/"spotAskPrice") as futureRate, (("spot
 
 SELECT (("spotBidPrice"-"futureAskPrice")/"futureAskPrice") as "spotRatio",  (("futureBidPrice"-"spotAskPrice")/"spotAskPrice") as "futureRatio","fundingRate" as "fundingRate" FROM "autogen"."symbol_ticks_info" WHERE ("symbol" = 'BNBUSDT') AND $timeFilter
 
-
+47.245.29.91
 mvn -B clean package -Dmaven.test.skip=true -Dautoconfig.skip
-scp ./target/magicbean-0.0.1.jar root@8.209.248.166:/home/admin/application/target
-scp ./target/application.properties root@8.209.248.166:/home/admin/application/conf
-ssh root@8.209.248.166
+scp ./target/magicbean-0.0.1.jar root@47.245.33.90:/home/admin/application/target
+scp ./target/application.properties root@47.245.33.90:/home/admin/application/conf
+scp ./deploy.sh root@47.245.33.90:/home/admin/application
+ssh root@47.245.33.90
 . /home/admin/application/deploy.sh restart
 
 
@@ -28,7 +31,7 @@ ssh -i "aws-magicbean.pem" ec2-user@ec2-18-181-240-157.ap-northeast-1.compute.am
 
 FUTURE_ORDER_STATUS: PARTIALLY_FILLED
 
-database: Fw123456*
+root/database: Fw123456*
 
 service mysqld start
 mysql -u root -p
@@ -36,7 +39,9 @@ mysql -u root -p
 mysqldump --single-transaction -u root -p magic_bean pairs_trade > '/home/sqldump/pairs_trade.sql'
 
 
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'Fw123456*' WITH GRANT OPTION;
+GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY 'fw123456' WITH GRANT OPTION;
+
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
 
 flush privileges
 
@@ -45,6 +50,11 @@ echo "obase=16;hid" | bc
 jstack pid |grep -A 10 hid
 
 jmap -dump:live,format=b,file=heapdump.phrof pid
+
+mysqllocal
+
+brew services stop mysql
+start
 
 
 
@@ -55,3 +65,8 @@ jmap -dump:live,format=b,file=heapdump.phrof pid
 
 
  从05/05开始，现货滑点极为严重，损失套利空间，原因未知，直接全部改成限价单
+
+sudo systemctl start grafana-server
+
+ scp -i /Users/fw/Documents/bigorange/orange-key.pem ./target/magicbean-0.0.1.jar root@8.209.246.18:/home/admin/application/target
+

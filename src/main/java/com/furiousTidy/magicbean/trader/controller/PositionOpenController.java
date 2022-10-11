@@ -13,7 +13,8 @@ import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.subscription.FutureSubscription;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
 import com.furiousTidy.magicbean.subscription.SpotSubscription;
-import com.furiousTidy.magicbean.trader.TradeScheduleService;
+import com.furiousTidy.magicbean.trader.service.MarketService;
+import com.furiousTidy.magicbean.trader.service.TradeScheduleService;
 import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -65,6 +66,9 @@ public class PositionOpenController {
 
     @Value("${accountName}")
     String accountName;
+
+    @Autowired
+    MarketService marketService;
 
 
     static boolean robotStart = false;
@@ -155,7 +159,7 @@ public class PositionOpenController {
     @RequestMapping("storeallticks")
     public @ResponseBody String storeAllTicks() throws InterruptedException {
         log.info("store all ticks.............");
-        preTradeService.storeTicks();
+//        preTradeService.storeTicks();
         return "store all ticks success";
     }
 
@@ -255,6 +259,12 @@ public class PositionOpenController {
     @RequestMapping("docache")
     public @ResponseBody String doCache() throws InterruptedException {
 
+
+        //set balance
+        preTradeService.initialBalance();
+
+        //change leveragelevel to 1
+        preTradeService.changeLeverageLevel(10);
         //set the position side
 //        binanceClient.getFutureSyncClient().changePositionSide(true);
         //get symbol info
@@ -278,7 +288,7 @@ public class PositionOpenController {
 //        if(accountName.equals("laoma")){
 //            spotSubscription.subAllTickByTrade();
 //        }else{
-            spotSubscription.allBookTickSubscription();
+        spotSubscription.allBookTickSubscription();
 //        }
 
 //        spotSubscription.subAllTickByDepth();
@@ -286,14 +296,19 @@ public class PositionOpenController {
         //get pairs trade gap
         tradeScheduleService.changePairsGap();
 
-        //change leveragelevel to 1
-        preTradeService.changeLeverageLevel(1);
+        marketService.getOpenInterest();
+
+        try {
+            marketService.getAndStoreOrderBook();
+        } catch (Exception e) {
+            log.error("getAndStoreOrderBook:" + e);
+        }
+
+
         //buy some bnb
-        tradeScheduleService.buyBNB();
-        //set balance
-        preTradeService.initialBalance();
+        //tradeScheduleService.buyBNB();
         //get all orders
-        preTradeService.getAllOrder();
+       // preTradeService.getAllOrder();
         return "success";
     }
 

@@ -8,7 +8,33 @@ import java.math.RoundingMode;
 
 @Data
 public class BeanConfig {
-    public static final long N_DAY = 7;
+
+    //持仓统计时间(小时)
+    public static final String OPEN_INTEREST_ARRAY = "[{'gap':'4','threshold':'30'},{'gap':'24','threshold':'80'}]";
+
+
+    //多长时间开始执行 s
+    public static  int NEWS_STARTTIME_GAP = 30;
+    //多长时间结束时间 s
+    public static  int NEWS_ENDTIME_GAP = 10;
+
+    //nanos到ms的乘数
+   // public static final int NANOS_MULTIER = 1000000;
+
+    //每次循环等待时间 ms
+    public static  long NEWS_INTEVL = 500 ;
+    public static  boolean NEW_STOP_FLAG = false;
+    //新闻标题
+    public static String NEWS_NAME="当周初请失业金人数";
+    public static float NEWS_THREHOLD = 0.01f;
+
+    //新闻发布时间，格式如下 2022/08/10 20:30
+    public static String NEWS_TIME = "2022-09-22 02:00";
+    //合约杠杆倍数
+    public static int LEV = 10;
+
+    public static long PROCESS_DELAY_TIME = 50;
+    public static long N_DAY = 7;
     public static long SPOT_SLEEP_TIME = 60;
     public static BigDecimal ratioTolerate = new BigDecimal("0.003");
     public static  boolean STOP_TRADE = false;
@@ -56,8 +82,8 @@ public class BeanConfig {
 //      public static final String SECRET_KEY = "YwV7anMbNSuJakV0nYremw7G1DVUMwPsGme3zIEvZjDKqLd0P53uHNYpQs5eo6uv";
 
     //prd laoma
-    public static final String API_KEY = "ypDfS0pu16G7MrY1LD7PFXeIqNoWUI84l19XDrT2WCq4vQKLtHUfkgiQ3nFO8kX5";
-    public static final String SECRET_KEY = "MWPNHKLB9nMD4L9V7Q1WevicWmswVqMJmPS5hbBwf0XzbxdJNzTFNcEqtEcUJ2kc";
+//    public static final String API_KEY = "ypDfS0pu16G7MrY1LD7PFXeIqNoWUI84l19XDrT2WCq4vQKLtHUfkgiQ3nFO8kX5";
+//    public static final String SECRET_KEY = "MWPNHKLB9nMD4L9V7Q1WevicWmswVqMJmPS5hbBwf0XzbxdJNzTFNcEqtEcUJ2kc";
 
 
     public static void main(String[] args){

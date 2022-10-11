@@ -8,14 +8,14 @@ import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
 import com.furiousTidy.magicbean.dbutil.dao.OrderDao;
 import com.furiousTidy.magicbean.dbutil.model.OrderModel;
-import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
+//import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
-import org.influxdb.InfluxDB;
-import org.influxdb.dto.BatchPoints;
-import org.influxdb.dto.Point;
+//import org.influxdb.InfluxDB;
+//import org.influxdb.dto.BatchPoints;
+//import org.influxdb.dto.Point;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -37,8 +37,8 @@ public class PreTradeService {
     @Autowired
     FutureSyncClientProxy futureSyncClientProxy;
 
-    @Autowired
-    InfluxDbConnection influxDbConnection;
+//    @Autowired
+//    InfluxDbConnection influxDbConnection;
 
     @Autowired
     BinanceClient binanceClient;
@@ -60,6 +60,7 @@ public class PreTradeService {
 
 
     public void initialBalance(){
+        log.info("initialBalance.......");
         final BigDecimal[] balances = new BigDecimal[2];
         binanceClient.getFutureSyncClient().getAccountInformation().getAssets().stream().filter(asset -> asset.getAsset().equals("USDT")).forEach(asset -> {
             balances[0] = asset.getMaxWithdrawAmount();
@@ -76,6 +77,7 @@ public class PreTradeService {
 
     //change the leverage level
     public void changeLeverageLevel(int level){
+        log.info("change levarage to {} ..........", level);
         for(Map.Entry<String,ExchangeInfoEntry> entry: MarketCache.futureInfoCache.entrySet()) {
             binanceClient.getFutureSyncClient().changeInitialLeverage(entry.getKey(),level);
         }
@@ -85,46 +87,44 @@ public class PreTradeService {
     //get all ticks in binance and store in the influxdb
     @Async
     public void storeTicks() throws InterruptedException {
-        TreeMap<BigDecimal,String > ratioMap = new TreeMap<>(
-                (o1, o2) -> o2.compareTo(o1));
-        BigDecimal futureBidPrice,futureAskPrice,spotBidPrice,spotAskPrice,openRatio,closeRatio,fundingRate,premiumRatio;
-        String symbol;
-        Point point;
-        do{
-            BatchPoints batchPoints = BatchPoints.database("magic_bean").retentionPolicy("autogen").
-                    consistency(InfluxDB.ConsistencyLevel.ALL).build();
-            ratioMap.clear();
-//            for(Map.Entry<String, HashMap<String, BigDecimal>> entrySet:MarketCache.futureTickerMap.entrySet()){
-            for(Map.Entry<String, SymbolBookTickerEvent> entrySet:MarketCache.futureTickerMap.entrySet()){
-
-                    symbol = entrySet.getKey();
-                if(!symbol.contains("USDT")) continue;
-//                futureBidPrice = entrySet.getValue().get(BeanConstant.BEST_BID_PRICE);
-//                futureAskPrice = entrySet.getValue().get(BeanConstant.BEST_ASK_PRICE);
-                futureBidPrice = entrySet.getValue().getBestBidPrice();
-                futureAskPrice = entrySet.getValue().getBestAskPrice();
-                if(!MarketCache.spotTickerMap.containsKey(symbol))  continue;
-                spotAskPrice = MarketCache.spotTickerMap.get(symbol).getAskPrice();
-                spotBidPrice = MarketCache.spotTickerMap.get(symbol).getBidPrice();
-
-                fundingRate = MarketCache.futureRateCache.containsKey(symbol)?
-                        MarketCache.futureRateCache.get(symbol):BigDecimal.ZERO;
-                point = Point.measurement(BeanConstant.SYMBOL_TICKS_INFO)
-                        .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                        .tag(BeanConstant.EXCHANGE, BeanConstant.BINANCE)
-                        .tag(BeanConstant.SYMBOL,symbol)
-                        .addField(BeanConstant.FUTURE_BID_RPICE,futureBidPrice)
-                        .addField(BeanConstant.FUTURE_ASK_PRICE,futureAskPrice)
-                        .addField(BeanConstant.SPOT_BID_PRICE,spotBidPrice)
-                        .addField(BeanConstant.SPOT_ASK_PRICE, spotAskPrice)
-                        .addField(BeanConstant.FUNDING_RATE,fundingRate)
-                        .build();
-
-                batchPoints.point(point);
-            }
-            influxDbConnection.batchInsert(batchPoints);
-            Thread.sleep(1000);
-        }while (true);
+//        TreeMap<BigDecimal,String > ratioMap = new TreeMap<>(
+//                (o1, o2) -> o2.compareTo(o1));
+//        BigDecimal futureBidPrice,futureAskPrice,spotBidPrice,spotAskPrice,openRatio,closeRatio,fundingRate,premiumRatio;
+//        String symbol;
+//        Point point;
+//        do{
+//            BatchPoints batchPoints = BatchPoints.database("magic_bean").retentionPolicy("autogen").
+//                    consistency(InfluxDB.ConsistencyLevel.ALL).build();
+//            ratioMap.clear();
+//            for(Map.Entry<String, SymbolBookTickerEvent> entrySet:MarketCache.futureTickerMap.entrySet()){
+//
+//                    symbol = entrySet.getKey();
+//                if(!symbol.contains("USDT")) continue;
+//
+//                futureBidPrice = entrySet.getValue().getBestBidPrice();
+//                futureAskPrice = entrySet.getValue().getBestAskPrice();
+//                if(!MarketCache.spotTickerMap.containsKey(symbol))  continue;
+//                spotAskPrice = MarketCache.spotTickerMap.get(symbol).getAskPrice();
+//                spotBidPrice = MarketCache.spotTickerMap.get(symbol).getBidPrice();
+//
+//                fundingRate = MarketCache.futureRateCache.containsKey(symbol)?
+//                        MarketCache.futureRateCache.get(symbol):BigDecimal.ZERO;
+//                point = Point.measurement(BeanConstant.SYMBOL_TICKS_INFO)
+//                        .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+//                        .tag(BeanConstant.EXCHANGE, BeanConstant.BINANCE)
+//                        .tag(BeanConstant.SYMBOL,symbol)
+//                        .addField(BeanConstant.FUTURE_BID_RPICE,futureBidPrice)
+//                        .addField(BeanConstant.FUTURE_ASK_PRICE,futureAskPrice)
+//                        .addField(BeanConstant.SPOT_BID_PRICE,spotBidPrice)
+//                        .addField(BeanConstant.SPOT_ASK_PRICE, spotAskPrice)
+//                        .addField(BeanConstant.FUNDING_RATE,fundingRate)
+//                        .build();
+//
+//                batchPoints.point(point);
+//            }
+//            influxDbConnection.batchInsert(batchPoints);
+//            Thread.sleep(1000);
+//        }while (true);
     }
 
     //get exchange info for future

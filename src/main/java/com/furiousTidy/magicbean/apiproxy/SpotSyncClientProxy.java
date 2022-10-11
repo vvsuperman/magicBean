@@ -5,6 +5,8 @@ import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.market.BookTicker;
+import com.binance.client.model.enums.CandlestickInterval;
+import com.binance.client.model.market.Candlestick;
 import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
@@ -31,6 +33,8 @@ public class SpotSyncClientProxy {
 
     @Autowired
     BinanceClient binanceClient;
+
+
 
     @Retryable(value={SocketTimeoutException.class}, maxAttempts = 5, backoff = @Backoff(delay = 2000, multiplier = 1.5))
     public ExchangeInfo getExchangeInfo(){

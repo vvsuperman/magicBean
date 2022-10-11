@@ -14,6 +14,22 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
 
+    public static long NANO_2_MS= 1000000;
+
+    public static String FED = "美联储利率决定";
+    public static float FED_THRESHOLD = 0.01f;
+
+    public static String CPI = "季调CPI年率";
+    public static float CPI_THRESHOLD = 0.01f;
+
+    public static String JINSHIURL = "https://cdn-rili.jin10.com/data/";
+    public static String JINSHIURL_SUB1 = "/economics.json?_=";
+    public static String JINSHIURL_SUB2 = "&date=";
+    public static String JINSHIURL_SUB3 = "0";
+
+
+    public static AtomicBoolean TradeProcess = new AtomicBoolean(false);
+
     public static boolean GAP_2_BIG = false;
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 

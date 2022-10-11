@@ -34,7 +34,6 @@ class WebsocketRequestImpl {
     WebsocketRequestImpl() {
     }
 
-
     //获取全市场的最新标记价格，资金费率
     WebsocketRequest<List<MarkPriceEvent>> subscribeMarkPricesEvent( SubscriptionListener<List<MarkPriceEvent>> subscriptionListener,
                                                                SubscriptionErrorHandler errorHandler) {
@@ -461,7 +460,7 @@ class WebsocketRequestImpl {
                 .shouldNotNull(symbol, "symbol")
                 .shouldNotNull(subscriptionListener, "listener");
         WebsocketRequest<OrderBookEvent> request = new WebsocketRequest<>(subscriptionListener, errorHandler);
-        request.name = "***Partial Book Depth for " + symbol + "***"; 
+        request.name = "***diff Book Depth for " + symbol + "***";
         request.connectionHandler = (connection) -> connection.send(Channels.diffDepthChannel(symbol));
 
         request.jsonParser = (jsonWrapper) -> {

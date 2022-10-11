@@ -1,6 +1,6 @@
 package com.furiousTidy.magicbean;
 
-import com.furiousTidy.magicbean.trader.TradeScheduleService;
+import com.furiousTidy.magicbean.trader.service.TradeScheduleService;
 import com.furiousTidy.magicbean.trader.controller.PositionOpenController;
 import org.junit.Test;
 import org.junit.runner.RunWith;

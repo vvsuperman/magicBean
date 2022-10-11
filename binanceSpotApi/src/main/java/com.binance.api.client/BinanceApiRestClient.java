@@ -39,6 +39,7 @@ public interface BinanceApiRestClient {
    */
   void ping();
 
+
   /**
    * Test connectivity to the Rest API and get the current server time.
    *

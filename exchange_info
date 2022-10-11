@@ -22,3 +22,5 @@ select sum(profit) from pairs_trade where openId like "%2021_4_22%";
 
 
 
+
+

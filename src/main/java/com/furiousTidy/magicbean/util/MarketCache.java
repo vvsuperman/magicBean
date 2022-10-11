@@ -8,9 +8,11 @@ import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
+import com.binance.client.model.market.OrderBook;
 import com.binance.client.model.user.BalanceUpdate;
 import com.furiousTidy.magicbean.dbutil.dao.OrderDao;
 import com.furiousTidy.magicbean.dbutil.model.OrderModel;
+import com.furiousTidy.magicbean.trader.TradeDto.MarketOrderBook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +55,8 @@ public class MarketCache {
             spotOrderCache.remove(clientOrderId);
         }
     }
+
+    public static ConcurrentHashMap<String, MarketOrderBook> orderBookCache = new ConcurrentHashMap<String, MarketOrderBook>();
 
     public static  ConcurrentHashMap<String, String> futureOrderCache = new ConcurrentHashMap();
     public static ConcurrentHashMap<String, String> spotOrderCache = new ConcurrentHashMap ();

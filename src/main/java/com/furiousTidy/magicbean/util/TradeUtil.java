@@ -1,5 +1,6 @@
-package com.furiousTidy.magicbean.trader;
+package com.furiousTidy.magicbean.util;
 
+import com.alibaba.fastjson.JSONObject;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.NewOrderResponseType;
 import com.binance.api.client.domain.general.FilterType;
@@ -7,7 +8,6 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.client.model.enums.NewOrderRespType;
 import com.binance.client.model.enums.OrderSide;
 import com.binance.client.model.enums.OrderType;
-import com.binance.client.model.enums.TimeInForce;
 import com.binance.client.model.trade.Order;
 import com.furiousTidy.magicbean.apiproxy.FutureSyncClientProxy;
 import com.furiousTidy.magicbean.apiproxy.SpotSyncClientProxy;
@@ -16,12 +16,17 @@ import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
-import com.furiousTidy.magicbean.util.BeanConstant;
-import com.furiousTidy.magicbean.util.BinanceClient;
-import com.furiousTidy.magicbean.util.MarketCache;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -32,7 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.binance.api.client.domain.account.NewOrder.limitSell;
+import static com.binance.api.client.domain.account.NewOrder.marketSell;
 import static com.furiousTidy.magicbean.util.MarketCache.futureRateCache;
 
 @Service
@@ -55,6 +60,32 @@ public class TradeUtil {
 
     @Autowired
     MarketCache marketCache;
+
+    @Autowired
+    RestTemplate restTemplate;
+
+    static String DING_URL = "https://oapi.dingtalk.com/robot/send?access_token=0fc54d420d499d5c42b060abc53a6141517b7820812bf121c2894db6f2484dd1";
+
+
+    public void dingdingSend(String title, String msg){
+
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept", "application/json");
+
+
+        String content = "[antalpha消息提醒-" + title+"]:"+ msg;
+
+
+        JSONObject jsonObj = JSONObject.parseObject("{\"msgtype\": \"text\",\"text\": {\"content\":\""+ content +"\"}}");
+
+        HttpEntity entity = new HttpEntity(jsonObj,headers);
+
+        ResponseEntity<String> returnMsg = restTemplate.exchange(DING_URL, HttpMethod.POST,entity,String.class);
+
+        log.info("returnMsg" + returnMsg);
+
+    }
 
     public void testSubDelay(){
         binanceClient.getSpotSubsptClient().onTickerEvent("BTCUSDT", tickEvent->{
@@ -90,28 +121,28 @@ public class TradeUtil {
             pairsTradeDao.updatePairsTrade(pairsTradeModel);
 
             TradeInfoModel tradeInfoModel = tradeInfoDao.getTradeInfoByOrderId(pairsTradeModel.getOpenId());
-//            futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).get(BeanConstant.BEST_BID_PRICE).toString();
-            futurePrice = MarketCache.futureTickerMap.get(tradeInfoModel.getSymbol()).getBestBidPrice().toString();
             futureQty = tradeInfoModel.getFutureQty().toString();
-            log.info("close trade for future ordeid={}, price={}, qty={}", clientOrderId,futurePrice,futureQty);
+            OrderSide orderSide =clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)? OrderSide.SELL:OrderSide.BUY;
+
+            log.info("close trade for future ordeid={}, qty={}", clientOrderId,futureQty);
             Order order;
             try{
-                 order =futureSyncClientProxy.postOrder(tradeInfoModel.getSymbol(), OrderSide.BUY,null, OrderType.LIMIT, TimeInForce.GTC
-                        ,futureQty,  futurePrice
-                        ,null,clientOrderId,null,null, NewOrderRespType.RESULT);
+//                order = binanceClient.getFutureSyncClient().postOrder(symbol,orderSide,null, OrderType.MARKET, null,futureQty,
+//                        null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
+
+                order = futureSyncClientProxy.postOrder(symbol,orderSide,null, OrderType.MARKET, null,futureQty.toString(),
+                        null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
+
             }catch (Exception ex){
                 log.info("force close future exception,need manual operation id={}, exception={}",clientOrderId, ex);
             }
 
-            spotPrice = MarketCache.spotTickerMap.get(tradeInfoModel.getSymbol()).getAskPrice().toString();
             spotQty =  tradeInfoModel.getSpotQty().toString();
-            log.info("close trade for spot ordeid={}, price={}, qty={}", clientOrderId,spotPrice,spotQty);
+            log.info("force close trade for spot ordeid={},  qty={}", clientOrderId,spotQty);
             NewOrderResponse newOrderResponse;
             try {
                 newOrderResponse = spotSyncClientProxy.newOrder(
-                        limitSell(tradeInfoModel.getSymbol(), com.binance.api.client.domain.TimeInForce.GTC,
-                                spotQty, spotPrice)
-                                .newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                        marketSell(symbol,spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
             }catch (Exception ex){
                 log.info("force close spot exception,need manual operation id={}, exception={}", clientOrderId, ex);
             }

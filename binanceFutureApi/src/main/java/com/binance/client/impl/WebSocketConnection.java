@@ -92,6 +92,7 @@ public class WebSocketConnection extends WebSocketListener {
     void send(String str) {
         boolean result = false;
         log.debug("[Send]{}", str);
+
         if (webSocket != null) {
             result = webSocket.send(str);
         }

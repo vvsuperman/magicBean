@@ -1,4 +1,4 @@
-package com.furiousTidy.magicbean.trader;
+package com.furiousTidy.magicbean.trader.service;
 
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.NewOrderResponse;
@@ -16,27 +16,22 @@ import com.furiousTidy.magicbean.config.BeanConfig;
 import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
-import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
+//import com.furiousTidy.magicbean.influxdb.InfluxDbConnection;
 import com.furiousTidy.magicbean.subscription.PreTradeService;
-import com.furiousTidy.magicbean.trader.service.AfterOrderService;
-import com.furiousTidy.magicbean.trader.service.PositionOpenService;
+import com.furiousTidy.magicbean.util.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.binance.api.client.domain.TransferType;
 
@@ -46,7 +41,6 @@ import static com.binance.api.client.domain.account.NewOrder.marketSell;
 
 // schedule service
 @Configuration
-@EnableScheduling
 @Slf4j
 public class TradeScheduleService {
 
@@ -68,8 +62,8 @@ public class TradeScheduleService {
     @Autowired
     PreTradeService preTradeService;
 
-    @Autowired
-    InfluxDbConnection influxDbConnection;
+//    @Autowired
+//    InfluxDbConnection influxDbConnection;
 
     @Autowired
     AfterOrderService afterOrderService;
@@ -87,7 +81,7 @@ public class TradeScheduleService {
     MarketCache marketCache;
 
     //get all the open pairs trade for close
-    @Scheduled(cron = "0 0/5 * * * ?")
+   // @Scheduled(cron = "0 0/5 * * * ?")
     public void getAllOpenOrder(){
         BeanConstant.pairsTradeList =  pairsTradeDao.getPairsTradeOpen();
         //store trade_info in the map;
@@ -109,7 +103,7 @@ public class TradeScheduleService {
 
 
 
-    @Scheduled(cron = "0 0 1 * * ?")
+   // @Scheduled(cron = "0 0 1 * * ?")
     public void closedTradeNDaysAgo() throws InterruptedException {
         LocalDate closeDay = LocalDate.now().minusDays(BeanConfig.N_DAY);
         String year = closeDay.getYear()+"";
@@ -125,7 +119,7 @@ public class TradeScheduleService {
 
 
     // query all manul close order's status
-    @Scheduled(cron = "0 0/5 * * * ?")
+   // @Scheduled(cron = "0 0/5 * * * ?")
     public void queryAndUpdateOrder(){
         for(Map.Entry <String, String> entry :MarketCache.futureOrderCache.entrySet()){
             String clientOrderId = entry.getKey();
@@ -147,7 +141,7 @@ public class TradeScheduleService {
 
             log.info("after get futrure  order info:clientOrderid={}, price={}, qty={}, order={}",clientOrderId,order.getPrice(),order.getExecutedQty(), order);
             if(order.getStatus().equals("FILLED")){
-                afterOrderService.processFutureOrder(symbol,clientOrderId,order.getPrice(),order.getExecutedQty(),null,-1);
+                afterOrderService.processFutureOrder(symbol,clientOrderId,order.getAvgPrice(),order.getExecutedQty(),null,-1);
                 marketCache.deleteOrder(order.getClientOrderId(),"future");
             }else if(forceCloseCheckFuture(order)){
                 log.info("force close future order:clientOrderid={}, price={},currentPrice={}, qty={}, order={}",clientOrderId,order.getPrice()
@@ -254,13 +248,13 @@ public class TradeScheduleService {
     }
 
 
-    @Scheduled(cron = "0 0 1 * * ?")
+   // @Scheduled(cron = "0 0 1 * * ?")
     public void changeLeverageLevel(){
         preTradeService.changeLeverageLevel(1);
     }
 
     //change gap according to future rate, set
-    @Scheduled(cron = "0 0/10 * * * ?")
+   // @Scheduled(cron = "0 0/10 * * * ?")
     public void changePairsGap(){
         MarketCache.futureRateCache.entrySet().stream().filter(entry -> entry.getKey().contains("USDT")).forEach(entry ->{
             MarketCache.pairsGapCache.put(entry.getKey()
@@ -276,7 +270,7 @@ public class TradeScheduleService {
 
     //future and spot balance and synchronize the local balance with the binance exchange
     // clear the event lock list
-    @Scheduled(cron = "0 0/5 * * * ?")
+    //@Scheduled(cron = "0 0/5 * * * ?")
     public void doFutureSpotBalance() throws InterruptedException {
         if(!BeanConstant.watchdog) return;
         BeanConstant.watchdog =false;
@@ -333,7 +327,7 @@ public class TradeScheduleService {
     }
 
     //get all balance
-    @Scheduled(cron = "0 0 2 * * ?")
+   // @Scheduled(cron = "0 0 2 * * ?")
     public BigDecimal getAllBalance(){
         final BigDecimal[] spotBalance = new BigDecimal[1];
         spotBalance[0] = BigDecimal.ZERO;
@@ -365,13 +359,13 @@ public class TradeScheduleService {
         tagMap.put("name", accountName);
         fileMap.put("balance",spotBalance[0].add(futureBalance));
 
-        influxDbConnection.insert("balance_info",tagMap,fileMap);
+//        influxDbConnection.insert("balance_info",tagMap,fileMap);
 
         return spotBalance[0].add(futureBalance);
     }
 
     //buy some bnb for exchange charge, check for 1 in the morning
-    @Scheduled(cron = "0 0 1 * * ?")
+    //@Scheduled(cron = "0 0 1 * * ?")
     public void buyBNB(){
         log.info("buy some bnb for exchange charge");
         AccountInformation accountInformation =  binanceClient.getFutureSyncClient().getAccountInformation();

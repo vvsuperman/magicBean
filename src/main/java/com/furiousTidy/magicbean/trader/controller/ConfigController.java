@@ -67,6 +67,9 @@ public class ConfigController {
         }else if(f.getType().getName().contains("long") || f.getType().getName().contains("Long")){
             f.set(o,Long.valueOf(value));
             return "success";
+        }else if(f.getType().getName().contains("float") || f.getType().getName().contains("Float")){
+            f.set(o,Float.valueOf(value));
+            return "success";
         }else if(f.getType().getName().contains("boolean")){
             f.set(o,Boolean.valueOf(value));
             return "success";

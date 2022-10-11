@@ -9,7 +9,7 @@ import com.furiousTidy.magicbean.dbutil.dao.PairsTradeDao;
 import com.furiousTidy.magicbean.dbutil.model.PairsTradeModel;
 import com.furiousTidy.magicbean.dbutil.dao.TradeInfoDao;
 import com.furiousTidy.magicbean.dbutil.model.TradeInfoModel;
-import com.furiousTidy.magicbean.trader.TradeUtil;
+import com.furiousTidy.magicbean.util.TradeUtil;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BookTickerModel;
 import com.furiousTidy.magicbean.util.MarketCache;
@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.furiousTidy.magicbean.trader.TradeUtil.getCurrentTime;
+import static com.furiousTidy.magicbean.util.TradeUtil.getCurrentTime;
 
 
 /*
@@ -195,7 +195,10 @@ public class PositionOpenService {
 
             if(!checkMoney()) return;
 
+            if(setCheckTradeProcessOn()) return;
+
             logger.info("check open ratio success, symbol={}, openRatio={}", symbol, origOpenRatio);
+
 
             clientOrderId = symbol+"_"+BeanConstant.FUTURE_SELL_OPEN+"_"+ getCurrentTime();
 
@@ -292,6 +295,30 @@ public class PositionOpenService {
                 }
             }
         }
+    }
+
+    //a trade already processing on, then stop all the trade
+    private  boolean setCheckTradeProcessOn() {
+
+        if(!BeanConstant.TradeProcess.get()){
+            BeanConstant.TradeProcess.set(true);
+
+            new Thread(() -> {
+                try {
+                    Thread.sleep(BeanConfig.PROCESS_DELAY_TIME);
+                    BeanConstant.TradeProcess.set(false);
+                } catch (InterruptedException e) {
+                    logger.error("process delay time error");
+                } finally {
+                    BeanConstant.TradeProcess.set(false);
+                }
+            }).start();
+
+            return false;
+        }
+
+        return true;
+
     }
 
     private boolean checkDelay(SymbolBookTickerEvent symbolBookTickerEvent, BookTickerModel bookTickerModel) {
