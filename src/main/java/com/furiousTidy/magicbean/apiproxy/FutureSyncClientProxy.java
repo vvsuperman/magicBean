@@ -71,17 +71,17 @@ public class FutureSyncClientProxy {
         //
         long duration = System.currentTimeMillis() - start;
         if(duration > 50){
-            log.info("future network is too slow, stop trade, duration={}",duration);
+            long sleepTime = duration>2000?12*3600*1000:BeanConfig.NET_DELAY_TIME;
+            log.info("future network is too slow, stop trade, duration={}, sleepTime={}",duration,sleepTime);
             BeanConstant.NETWORK_DELAYED = true;
             new Thread(() -> {
                 try {
-                    Thread.sleep(BeanConfig.NET_DELAY_TIME);
+                    Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
                     BeanConstant.NETWORK_DELAYED = false;
                 }
-
             }).start();
         }
         return order;

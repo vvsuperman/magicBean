@@ -56,10 +56,11 @@ public class SpotSyncClientProxy {
         long duration = System.currentTimeMillis() - start;
         if(duration > 50){
             BeanConstant.NETWORK_DELAYED = true;
+            long sleepTime = duration>2000?12*3600*1000:BeanConfig.NET_DELAY_TIME;
             new Thread(() -> {
                 try {
-                    log.info("spot network is too slow, stop trade, duration={}",duration);
-                    Thread.sleep(BeanConfig.NET_DELAY_TIME);
+                    log.info("spot network is too slow, stop trade, duration={}, sleepTime={}",duration, sleepTime);
+                    Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {

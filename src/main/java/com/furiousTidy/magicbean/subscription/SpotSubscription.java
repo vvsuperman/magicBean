@@ -228,8 +228,7 @@ public class SpotSubscription {
      public static void main(String[] args) throws InterruptedException {
 
          String price = "5.0310000";
-         String newStr = price.replaceAll("0+$", "");
-         System.out.println(newStr);
+         System.out.println(new BigDecimal(price.replaceAll("0+$", "")));
 
 
 
