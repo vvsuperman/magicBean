@@ -47,7 +47,7 @@ public class WebSocketStreamClientImpl implements SubscriptionClient {
         }
         WebSocketConnection connection = new WebSocketConnection(apiKey, secretKey, options, request, watchDog,
                 autoClose);
-        if (autoClose == false) {
+        if (!autoClose) {
             connections.add(connection);
         }
         connection.connect();

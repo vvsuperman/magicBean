@@ -319,8 +319,7 @@ public class MarketService {
 
                         askMap.put(orderBookEntry1.getPrice(), orderBookEntry1.getQty());
 
-                        if((orderBookEntry1.getQty().compareTo( BigDecimal.ZERO ) == 0)
-                                && askMap.containsKey(orderBookEntry1.getPrice())){
+                        if((orderBookEntry1.getQty().compareTo( BigDecimal.ZERO ) == 0)){
 
                             askMap.remove(orderBookEntry1.getPrice());
 
@@ -335,8 +334,7 @@ public class MarketService {
 
                         bidMap.put(orderBookEntry2.getPrice(), orderBookEntry2.getQty());
 
-                        if((orderBookEntry2.getQty().compareTo( BigDecimal.ZERO ) == 0)
-                                && bidMap.containsKey(orderBookEntry2.getPrice())) {
+                        if((orderBookEntry2.getQty().compareTo( BigDecimal.ZERO ) == 0)) {
 
                             bidMap.remove(orderBookEntry2.getPrice());
 
@@ -415,9 +413,10 @@ public class MarketService {
 
     public void getAndStoreKLineHis(){
 
-        LocalDateTime localDateTimeStart = LocalDateTime.parse("2020-01-01T00:00:01");
-        LocalDateTime localDateTimeEnd = localDateTimeStart.plusDays(30);
-
+       // LocalDateTime localDateTimeStart = LocalDateTime.parse("2020-01-01T00:00:01");
+       // LocalDateTime localDateTimeEnd = localDateTimeStart.plusDays(30);
+        LocalDateTime localDateTimeStart = LocalDateTime.parse("2022-09-18T00:00:01");
+        LocalDateTime localDateTimeEnd = LocalDateTime.parse("2023-06-07T00:00:01");
         long startTime = localDateTimeStart.toInstant(ZoneOffset.UTC).toEpochMilli();
         long endTime = localDateTimeEnd.toInstant(ZoneOffset.UTC).toEpochMilli();
 
@@ -429,35 +428,35 @@ public class MarketService {
         while ( localDateTimeEnd.isBefore( LocalDateTime.now())){
 
             candList = futureSyncClientProxy.getCandlestickHis("ETHUSDT",
-                    CandlestickInterval.DAILY,startTime,endTime,720);
+                    CandlestickInterval.DAILY,startTime,endTime,72);
 
             for(int i=0;i<candList.size();i++) {
 
                 Candlestick candlestick = candList.get(i);
                 List<Object> data = new ArrayList<>();
                 data.add( LocalDateTime.ofInstant( Instant.ofEpochMilli(candlestick.getCloseTime()+1), ZoneId.systemDefault()).format(formatter));
-                data.add( candlestick.getClose());
+                data.add( candlestick.getOpen());
                 dataList.add(data);
 
             }
 
             localDateTimeStart = localDateTimeEnd;
-            localDateTimeEnd = localDateTimeStart.plusDays(30);
+            localDateTimeEnd = localDateTimeStart.plusDays(3);
             startTime = localDateTimeStart.toInstant(ZoneOffset.UTC).toEpochMilli();
             endTime = localDateTimeEnd.toInstant(ZoneOffset.UTC).toEpochMilli();
 
         }
 
-        List<List<String>> headList = new ArrayList<>();
-        List<String> head0 = new ArrayList<>();
-        head0.add("date");
-        List<String> head1 = new ArrayList<>();
-        head1.add("eth_price");
-        headList.add(head0);
-        headList.add(head1);
-
-        String fileName = "/Users/fw/Documents/arbstrategy/perp/project/perpSimulator.xlsx";
-        EasyExcel.write(fileName).head(headList).sheet("模板").doWrite(dataList);
+//        List<List<String>> headList = new ArrayList<>();
+//        List<String> head0 = new ArrayList<>();
+//        head0.add("date");
+//        List<String> head1 = new ArrayList<>();
+//        head1.add("eth_price");
+//        headList.add(head0);
+//        headList.add(head1);
+//
+//        String fileName = "/Users/fang/Documents/arb_strategy/perp/py_project/data/eth_price_extra.xlsx";
+//        EasyExcel.write(fileName).head(headList).sheet("模板").doWrite(dataList);
 
 
     }
@@ -472,7 +471,7 @@ public class MarketService {
 
         List<Point> pointList = new ArrayList<>();
 
-        for(Map.Entry<String, SymbolBookTickerEvent> entrySet: MarketCache.futureTickerMap.entrySet()){
+        for(Map.Entry<String, ExchangeInfoEntry> entrySet: MarketCache.futureInfoCache.entrySet()){
 
             String symbol = entrySet.getKey();
 
@@ -537,9 +536,7 @@ public class MarketService {
 
 
                String symbol = entrySet.getKey();
-
                List<Point> pointList = new ArrayList<Point>();
-
                List<OpenInterestStat> listOpenInterest =  new ArrayList<>();
 
                int j = 0;
@@ -547,36 +544,24 @@ public class MarketService {
                while(listOpenInterest.isEmpty() && j++ < 6 ){
 
                    try {
-
                        listOpenInterest =  binanceClient
                                .getFutureSyncClient().getOpenInterestStat( symbol, PeriodType._1h, null, null, 1 );
-
                    }catch (Exception ex){
-
                        log.error("get interest error" + ex );
                    }
                }
 
 
                for(OpenInterestStat openInterestStat: listOpenInterest){
-
                    Point point = Point.measurement("symbolData").addTag("symbol", symbol).addField("openInterest", openInterestStat.getSumOpenInterest())
-
                            .addField("openInterestValue", openInterestStat.getSumOpenInterestValue())
-
                            .time(openInterestStat.getTimestamp(), WritePrecision.MS);
-
                    writeApi.writePoint(point);
 
                }
-
-               Thread.sleep(50);
-
+               Thread.sleep(500);
                i++;
-
            }
-           log.info("add symbol finished, sleep now, count={}",i);
-
 
 
            Thread.sleep(60000);
@@ -595,7 +580,7 @@ public class MarketService {
         int maxGap = 0;
 
         for ( int i =0 ;i< jsonArray.size();i++){
-            JSONObject jsonObject = (JSONObject) jsonArray.getJSONObject(i);
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
             Iterator it = jsonObject.keySet().iterator();
 
             int gap = 0;

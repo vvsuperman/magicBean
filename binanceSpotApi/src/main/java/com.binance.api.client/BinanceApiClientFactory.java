@@ -12,12 +12,12 @@ public class BinanceApiClientFactory {
   /**
    * API Key
    */
-  private String apiKey;
+  private final String apiKey;
 
   /**
    * Secret.
    */
-  private String secret;
+  private final String secret;
 
   /**
    * Instantiates a new binance api client factory.

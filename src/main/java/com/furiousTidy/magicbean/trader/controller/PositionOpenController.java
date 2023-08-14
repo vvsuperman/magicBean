@@ -19,6 +19,7 @@ import com.furiousTidy.magicbean.trader.service.PositionOpenService;
 import com.furiousTidy.magicbean.util.BeanConstant;
 import com.furiousTidy.magicbean.util.BinanceClient;
 import com.furiousTidy.magicbean.util.MarketCache;
+import com.furiousTidy.magicbean.util.Perp2SpotUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalTime;
 import java.util.*;
 
@@ -37,6 +39,8 @@ import java.util.*;
 @Slf4j
 public class PositionOpenController {
 
+    @Autowired
+    Perp2SpotUtil perp2SpotUtil;
     @Autowired
     PositionOpenService positionOpenService;
 
@@ -152,7 +156,7 @@ public class PositionOpenController {
 
     @RequestMapping("switchwatchdog")
     public @ResponseBody boolean switchWagchDog(){
-        BeanConstant.watchdog = (BeanConstant.watchdog == true)?false:true;
+        BeanConstant.watchdog = !BeanConstant.watchdog;
         return BeanConstant.watchdog;
     }
 
@@ -174,7 +178,7 @@ public class PositionOpenController {
 //                    BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).get(BeanConstant.BEST_BID_PRICE);
                     BigDecimal futurePrice = MarketCache.futureTickerMap.get(symbol).getBestBidPrice();
                     BigDecimal spotPrice = MarketCache.spotTickerMap.get(symbol).getAskPrice();
-                    ratioList.add(futurePrice.subtract(spotPrice).divide(spotPrice,4));
+                    ratioList.add(futurePrice.subtract(spotPrice).divide(spotPrice, RoundingMode.HALF_UP));
                     Thread.sleep(200);
                 }
                 log.info("ratio:{}",ratioList);
@@ -261,10 +265,10 @@ public class PositionOpenController {
 
 
         //set balance
-        preTradeService.initialBalance();
+//        preTradeService.initialBalance();
 
         //change leveragelevel to 1
-        preTradeService.changeLeverageLevel(10);
+//        preTradeService.changeLeverageLevel(10);
         //set the position side
 //        binanceClient.getFutureSyncClient().changePositionSide(true);
         //get symbol info
@@ -272,37 +276,48 @@ public class PositionOpenController {
         preTradeService.spotExchangeInfo();
 
         //subscribe future ratio
-        futureSubscription.fundingRateSub();
+//        futureSubscription.fundingRateSub();
 
         //get all the open order
-        tradeScheduleService.getAllOpenOrder();
+//        tradeScheduleService.getAllOpenOrder();
 
         //subscribe order update info
 //        futureSubscription.processFutureCache();
 //        spotSubscription.processBalanceCache();
 
         //subscribe bookticker info
-//        futureSubscription.allBookTickerSubscription();
-        futureSubscription.allBookTickerSub();
+//        futureSubscription.allBookTickerSub();
 //        spotSubscription.allBookTickSubscription();
+
+
+
 //        if(accountName.equals("laoma")){
 //            spotSubscription.subAllTickByTrade();
 //        }else{
-        spotSubscription.allBookTickSubscription();
+//        spotSubscription.allBookTickSubscription();
 //        }
 
 //        spotSubscription.subAllTickByDepth();
 
         //get pairs trade gap
-        tradeScheduleService.changePairsGap();
+//        tradeScheduleService.changePairsGap();
 
-        marketService.getOpenInterest();
+        //获取未平仓合约多空比
+//        marketService.getOpenInterest();
 
-        try {
-            marketService.getAndStoreOrderBook();
-        } catch (Exception e) {
-            log.error("getAndStoreOrderBook:" + e);
-        }
+        //获取有合约的现货，以及 所有成交交易
+        spotSubscription.subTradesByMap();
+
+//        try {
+//            marketService.getAndStoreOrderBook();
+//        } catch (Exception e) {
+//            log.error("getAndStoreOrderBook:" + e);
+//        }
+
+        //获取perp的成交记录
+//        perp2SpotUtil.loadPerpCacheFromDB();
+//        log.info("load perp name in to cache from db");
+
 
 
         //buy some bnb

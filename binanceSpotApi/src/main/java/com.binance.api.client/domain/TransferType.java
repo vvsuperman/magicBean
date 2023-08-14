@@ -10,7 +10,7 @@ public enum TransferType {
   SPOT_TO_MARGIN("1"), MARGIN_TO_SPOT("2"),MAIN_UMFUTURE("MAIN_UMFUTURE"),UMFUTURE_MAIN("UMFUTURE_MAIN");
 
 
-  private String value;
+  private final String value;
 
   TransferType(String value) {
     this.value = value;

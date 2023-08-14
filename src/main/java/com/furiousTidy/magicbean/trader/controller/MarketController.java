@@ -1,8 +1,6 @@
 package com.furiousTidy.magicbean.trader.controller;
 
-import com.binance.client.impl.RestApiRequest;
-import com.binance.client.model.enums.PeriodType;
-import com.binance.client.model.market.OpenInterestStat;
+import com.furiousTidy.magicbean.subscription.MxSub;
 import com.furiousTidy.magicbean.trader.service.MarketService;
 import com.furiousTidy.magicbean.util.TradeUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.util.List;
 
 @Controller
 @RequestMapping(path = "/marketInfo")
@@ -26,7 +21,19 @@ public class MarketController {
    @Autowired
    TradeUtil tradeUtil;
 
+   @Autowired
+   MxSub mxSub;
 
+
+    @RequestMapping("subMxTrade")
+    public @ResponseBody String subMxTrade() throws InterruptedException {
+        try {
+            mxSub.subAllSpotTrade();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "getKLineTest";
+    }
     @RequestMapping("getKLineHis")
     public @ResponseBody String getKLineHis() throws InterruptedException {
         try {

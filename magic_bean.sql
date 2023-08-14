@@ -1,4 +1,6 @@
- CREATE TABLE pairs_trade
+create database magic_bean
+
+CREATE TABLE pairs_trade
 (
 id varchar(30),
 openId varchar(30),
@@ -32,5 +34,25 @@ create table trade_order
 symbol varchar(30),
 clientOrderId varchar(30),
 type varchar(30)
+);
+
+CREATE TABLE options
+(
+    symbol varchar(30),
+    tradeId varchar(30),
+    instrumentName varchar(30),
+    price float(10,5),
+    markPrice float(10,5),
+    indexPrice float(10,5),
+    iv float(10,5),
+    amount float(10,5),
+    direction varchar(30),
+    tradeTime datetime,
+    tickDirection int
+);
+
+CREATE TABLE perp2spot
+(
+    name varchar(30)
 );
 

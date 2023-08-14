@@ -59,7 +59,7 @@ public class MarketScheduleService {
         }
     }
 
-    @Scheduled(cron = "0 0 8 * * ?")
+    //@Scheduled(cron = "0 0 8 * * ?")
     public void getGlobalLongShortAccountRatio(){
         try {
             marketService.getGlobalLongShortAccountRatio();
@@ -68,7 +68,7 @@ public class MarketScheduleService {
         }
     }
 
-    @Scheduled(cron = "0 0/1 * * * ?")
+    //@Scheduled(cron = "0 0/1 * * * ?")
     public void calAndStoreDepth(){
         try {
             marketService.calculateDepth();
@@ -78,7 +78,7 @@ public class MarketScheduleService {
         }
     }
 
-    @Scheduled(cron = "0 0 0/1 * * ?")
+    //@Scheduled(cron = "0 0 0/1 * * ?")
     public void getAndStoreDvol(){
         try {
             marketService.getDvol();
@@ -89,7 +89,7 @@ public class MarketScheduleService {
 
 
     //alert interest
-    @Scheduled(cron = "0 0 0/4 * * ?")
+    //@Scheduled(cron = "0 0 0/4 * * ?")
     public void alertOpenInterest(){
         try {
             marketService.alertOpenInterest();

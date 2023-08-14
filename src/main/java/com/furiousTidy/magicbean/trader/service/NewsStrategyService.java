@@ -17,20 +17,34 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 //新闻流套利
 @Component
 @Slf4j
 public class NewsStrategyService {
+
+
+
+    List<String> cpiList = Arrays.asList("2022-11-10 08:30","2022-11-23 21:30","2022-12-13 21:30","2023-01-12 21:30","2023-02-14 21:30","2023-03-14 08:30",
+            "2023-04-14 08:30","2023-05-10 08:30","2023-06-10 08:30","2023-07-12 08:30","2023-08-10 08:30",
+            "2023-06-10 08:30","2023-08-10 08:30","2023-09-13 08:30","2023-10-12 08:30","2023-11-12 08:30",
+            "2023-12-12 08:30");
+
+
+
 
     @Autowired
     BinanceClient binanceClient;
@@ -44,12 +58,12 @@ public class NewsStrategyService {
     static final DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy/MMdd");
     static final DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("yyyyMMddHH");
     static final DateTimeFormatter formatter3 = DateTimeFormatter.ofPattern("mm");
-
     static final DateTimeFormatter formatter4 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-
+    @Async
     public void doNewsStrategy() throws InterruptedException {
 
+        AtomicReference<Float> blCpi= new AtomicReference<Float>();
 
         LocalDateTime newsTime =  LocalDateTime.parse(BeanConfig.NEWS_TIME, formatter4);
         LocalDateTime newsTimeBegin = newsTime.minusSeconds(BeanConfig.NEWS_STARTTIME_GAP );
@@ -58,9 +72,7 @@ public class NewsStrategyService {
         log.info("newsTimeBegin={}, newsTimeEnd={}", newsTimeBegin, newsTimeEnd);
 
         while(true){
-            if(BeanConfig.NEW_STOP_FLAG){
-                return;
-            }
+
             //小于开始时间
             if(LocalDateTime.now().isBefore(newsTimeBegin)){
                 Thread.sleep( BeanConfig.NEWS_INTEVL );
@@ -85,31 +97,43 @@ public class NewsStrategyService {
             //get请求延时 500ms-1s 加个小延时
             Thread.sleep(10);
         }
-
     }
+
+
+
 
     public boolean getInfoThenOrder() {
 
         List<JinShiDto> jinShiList;
         jinShiList = getJinShiDtoList();
+        if (jinShiList == null){
+            return false;
+        }
+
 
 
         for (JinShiDto jinShiDto : jinShiList) {//新闻流策略
-            if (jinShiDto.getName().contains(BeanConfig.NEWS_NAME) && jinShiDto.getActual() != null && jinShiDto.getConsensus() != null) {
+            if (jinShiDto.getName().contains(BeanConfig.NEWS_NAME) && (jinShiDto.getActual() != null || BlCpiGetService.blCpi!=0)
+                    && jinShiDto.getConsensus() != null) {
                 log.info("test 策略开始.......");
                 //实际值
-                float actual = Float.parseFloat(jinShiDto.getActual());
+                float actual;
+                if( BlCpiGetService.blCpi !=0 ){
+                    actual = BlCpiGetService.blCpi;
+                }else{
+                    actual = Float.parseFloat(jinShiDto.getActual());
+                }
                 //预测值
                 float consensus = Float.parseFloat(jinShiDto.getConsensus());
                 float offset = (actual - consensus) / consensus;
 
                 OrderSide orderSide = null;
-                //加息超过预期，做空
+                //指标超过预期，做空
                 if (offset > 0 && offset > BeanConfig.NEWS_THREHOLD ) {
                     log.info(BeanConfig.NEWS_NAME + "指标超过预期，做空" + jinShiDto);
                     doNewsStrategyOrder(OrderSide.SELL);
                 }
-                //加息小于预期，做多
+                //指标小于预期，做多
                 else if (offset < 0 && Math.abs(offset) >  BeanConfig.NEWS_THREHOLD ) {
                     log.info(BeanConfig.NEWS_NAME + "指标小于预期，做多" + jinShiDto);
                     doNewsStrategyOrder(OrderSide.BUY);
@@ -207,7 +231,7 @@ public class NewsStrategyService {
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
         BigDecimal futureQuantity =
           MarketCache.futureBalance.get()
-                  .divide(MarketCache.futureTickerMap.get(symbol).getBestBidPrice(), stepSize[0], BigDecimal.ROUND_HALF_UP)
+                  .divide(MarketCache.futureTickerMap.get(symbol).getBestBidPrice(), stepSize[0], RoundingMode.HALF_UP)
                   .multiply(BigDecimal.valueOf(BeanConfig.LEV));
 
         log.info("order params: futurebalance={},futureQuantity={} ", MarketCache.futureBalance.get(), futureQuantity);
@@ -227,11 +251,11 @@ public class NewsStrategyService {
 
         String pm = String.valueOf(Integer.parseInt(minute.substring(0,1))+1);
 
-        String url = String.valueOf(new StringBuilder().append(BeanConstant.JINSHIURL)
-                .append(dateTime1).append(BeanConstant.JINSHIURL_SUB1)
-                .append(dateTime2).append(BeanConstant.JINSHIURL_SUB3)
-                .append(pm).append(BeanConstant.JINSHIURL_SUB2)
-                .append(OffsetDateTime.now(ZoneOffset.UTC)));
+        String url = String.valueOf(BeanConstant.JINSHIURL +
+                dateTime1 + BeanConstant.JINSHIURL_SUB1 +
+                dateTime2 + BeanConstant.JINSHIURL_SUB3 +
+                pm + BeanConstant.JINSHIURL_SUB2 +
+                OffsetDateTime.now(ZoneOffset.UTC));
         log.info("general URL = {}", url);
 
         return url;
@@ -239,11 +263,9 @@ public class NewsStrategyService {
 
     public static void main(String[] args){
 
-        System.out.println( new NewsStrategyService().generateUrl());
-
+        NewsStrategyService newsStrategyService = new NewsStrategyService();
        // LocalDateTime newsTime =  LocalDateTime.parse(BeanConfig.NEWS_TIME, formatter4);
 
-
-
     }
+
 }

@@ -46,14 +46,14 @@ public class BinanceApiWebSocketClientImpl implements BinanceApiWebSocketClient,
     }
 
     @Override
-    public Closeable onAllTradeEvent(String symbols, BinanceApiCallback<List<TradeEvent>> callback) {
+    public Closeable onAllTradeEvent(String symbols, BinanceApiCallback<TradeEvent> callback) {
         final String channel = Arrays.stream(symbols.split(","))
                 .map(String::trim)
                 .map(s -> s.toLowerCase())
                 .map(s -> String.format("%s@trade", s))
                 .collect(Collectors.joining("/"));
         System.out.print("channel="+channel);
-        return createNewWebSocket(channel, new BinanceApiWebSocketListener<>(callback,  new TypeReference<List<TradeEvent>>(){}));
+        return createNewWebSocket(channel, new BinanceApiWebSocketListener<>(callback,  new TypeReference<TradeEvent>(){}));
 
         }
 

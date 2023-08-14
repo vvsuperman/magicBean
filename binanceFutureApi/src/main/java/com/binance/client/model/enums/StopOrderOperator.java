@@ -6,9 +6,9 @@ public enum StopOrderOperator {
      */
     GTE("gte", "greater than and equal (>=)"), LTE("lte", "less than and equal (<=)");
 
-    private String operator;
+    private final String operator;
 
-    private String desc;
+    private final String desc;
 
     StopOrderOperator(String operator, String desc) {
         this.operator = operator;

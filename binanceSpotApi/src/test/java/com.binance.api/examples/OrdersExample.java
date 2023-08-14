@@ -41,7 +41,7 @@ public class OrdersExample {
 
     // Canceling an order
     try {
-      CancelOrderResponse cancelOrderResponse = client.cancelOrder(new CancelOrderRequest("LINKETH", 756762l));
+      CancelOrderResponse cancelOrderResponse = client.cancelOrder(new CancelOrderRequest("LINKETH", 756762L));
       System.out.println(cancelOrderResponse);
     } catch (BinanceApiException e) {
       System.out.println(e.getError().getMsg());

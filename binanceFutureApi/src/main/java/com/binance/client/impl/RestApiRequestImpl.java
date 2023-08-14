@@ -21,9 +21,9 @@ import org.apache.commons.lang3.StringUtils;
 
 class RestApiRequestImpl {
 
-    private String apiKey;
-    private String secretKey;
-    private String serverUrl;
+    private final String apiKey;
+    private final String secretKey;
+    private final String serverUrl;
 
     RestApiRequestImpl(String apiKey, String secretKey, RequestOptions options) {
         this.apiKey = apiKey;

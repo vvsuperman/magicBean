@@ -40,6 +40,12 @@ public class PositionOpenService {
     SpotSyncClientProxy spotSyncClientProxy;
 
     @Autowired
+    PriceThenOrder2 priceThenOrder2;
+
+    @Autowired
+    PriceThenOrder3 priceThenOrder3;
+
+    @Autowired
     TradeUtil tradeUtil;
 
     @Autowired
@@ -179,7 +185,7 @@ public class PositionOpenService {
         if(symbolBookTickerEvent == null || bookTickerModel == null ) return;
 
         origOpenRatio = symbolBookTickerEvent.getBestBidPrice()
-                .subtract(bookTickerModel.getAskPrice()).divide(bookTickerModel.getAskPrice(),4);
+                .subtract(bookTickerModel.getAskPrice()).divide(bookTickerModel.getAskPrice(), RoundingMode.HALF_UP);
 
 //            if(openRatio.compareTo(tradeUtil.getPairsGap(symbol)) > 0){
 //                BeanConstant.openImpactSet.add(symbol+counter);
@@ -323,10 +329,7 @@ public class PositionOpenService {
 
     private boolean checkDelay(SymbolBookTickerEvent symbolBookTickerEvent, BookTickerModel bookTickerModel) {
 
-            if(symbolBookTickerEvent.getFutureTickDelayTime() < 20 && bookTickerModel.getSpotTickDelayTime() <20 ){
-                return true;
-            }
-            return false;
+        return symbolBookTickerEvent.getFutureTickDelayTime() < 20 && bookTickerModel.getSpotTickDelayTime() < 20;
 
     }
 
@@ -355,9 +358,9 @@ public class PositionOpenService {
         //计算合约最小下单位数
         Integer[] stepSize = tradeUtil.getStepSize(symbol);
         //计算合约卖单数量
-        BigDecimal futureQuantity =  cost.divide(symbolBookTickerEvent.getBestBidPrice(), stepSize[0], BigDecimal.ROUND_HALF_UP);
+        BigDecimal futureQuantity =  cost.divide(symbolBookTickerEvent.getBestBidPrice(), stepSize[0], RoundingMode.HALF_UP);
         //计算现货买单数量
-        BigDecimal spotQuantity = cost.divide(bookTickerModel.getAskPrice(), stepSize[1], BigDecimal.ROUND_HALF_UP);
+        BigDecimal spotQuantity = cost.divide(bookTickerModel.getAskPrice(), stepSize[1], RoundingMode.HALF_UP);
         //取位数最大的数量，避免精度问题
         BigDecimal qty = stepSize[0]<stepSize[1]?futureQuantity:spotQuantity;
 
@@ -436,7 +439,7 @@ public class PositionOpenService {
     public void sortPairsTradeList(List<PairsTradeModel> pairsTradeList) {
         if(pairsTradeList!=null && pairsTradeList.size()>0){
             Collections.sort(pairsTradeList,
-                    (Comparator<PairsTradeModel>) (a, b) -> {
+                    (a, b) -> {
                         if(a.getOpenRatio()!=null && b.getOpenRatio()!=null){
                           return  a.getOpenRatio().compareTo(b.getOpenRatio());
                         }else{

@@ -16,7 +16,7 @@ import java.io.IOException;
  */
 public class BinanceApiWebSocketListener<T> extends WebSocketListener {
 
-  private BinanceApiCallback<T> callback;
+  private final BinanceApiCallback<T> callback;
 
   private static final ObjectMapper mapper = new ObjectMapper();
 

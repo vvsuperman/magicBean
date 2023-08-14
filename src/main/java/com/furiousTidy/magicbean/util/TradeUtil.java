@@ -130,7 +130,7 @@ public class TradeUtil {
 //                order = binanceClient.getFutureSyncClient().postOrder(symbol,orderSide,null, OrderType.MARKET, null,futureQty,
 //                        null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
 
-                order = futureSyncClientProxy.postOrder(symbol,orderSide,null, OrderType.MARKET, null,futureQty.toString(),
+                order = futureSyncClientProxy.postOrder(symbol,orderSide,null, OrderType.MARKET, null, futureQty,
                         null,null,clientOrderId,null,null, NewOrderRespType.RESULT);
 
             }catch (Exception ex){
@@ -142,7 +142,7 @@ public class TradeUtil {
             NewOrderResponse newOrderResponse;
             try {
                 newOrderResponse = spotSyncClientProxy.newOrder(
-                        marketSell(symbol,spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                        marketSell(symbol, spotQty).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
             }catch (Exception ex){
                 log.info("force close spot exception,need manual operation id={}, exception={}", clientOrderId, ex);
             }
@@ -213,11 +213,7 @@ public class TradeUtil {
 //            return true;
 //        }
 
-        if(futureRateCache.containsKey(symbol) && futureRateCache.get(symbol).compareTo(BigDecimal.ZERO) > 0){
-            return true;
-        }
-
-        return false;
+        return futureRateCache.containsKey(symbol) && futureRateCache.get(symbol).compareTo(BigDecimal.ZERO) > 0;
     }
 
 
@@ -233,12 +229,8 @@ public class TradeUtil {
         }
 
         //not in top 10 fundrate list && fundrate < 0.001
-        if(!inFutureRatingList(symbol)
-//                && futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_CLOSE_THRESHOLD)) < 0
-                ){
-            return true;
-        }
-        return false;
+        //                && futureRateCache.get(symbol).compareTo(new BigDecimal(BeanConfig.FUND_RATE_CLOSE_THRESHOLD)) < 0
+        return !inFutureRatingList(symbol);
     }
 
 
@@ -319,27 +311,34 @@ public class TradeUtil {
           if(MarketCache.stepSizeCache.containsKey(symbol)){
               return MarketCache.stepSizeCache.get(symbol);
           }
-          //计算合约最小下单位数
           final String[] stepSize = {"",""};
-          MarketCache.futureInfoCache.get(symbol).getFilters().forEach(list->{
-              final boolean[] lotSizeFilter = {false};
-              list.forEach(stringStringMap -> {
-                  if(stringStringMap.containsKey("filterType") && stringStringMap.get("filterType").equals("LOT_SIZE")){
-                      lotSizeFilter[0] = true;
+          Integer[] rtStepSize ={0,0};
+
+          if(MarketCache.futureInfoCache.containsKey(symbol)){
+              //计算合约最小下单位数
+
+              MarketCache.futureInfoCache.get(symbol).getFilters().forEach(list->{
+                  final boolean[] lotSizeFilter = {false};
+                  list.forEach(stringStringMap -> {
+                      if(stringStringMap.containsKey("filterType") && stringStringMap.get("filterType").equals("LOT_SIZE")){
+                          lotSizeFilter[0] = true;
+                      }
+                  });
+
+                  if(lotSizeFilter[0]){
+                      list.forEach(stringStringMap -> {
+                          if(stringStringMap.containsKey("stepSize")){
+                              stepSize[0] = stringStringMap.get("stepSize");
+                          }
+                      });
                   }
               });
 
-              if(lotSizeFilter[0]){
-                  list.forEach(stringStringMap -> {
-                      if(stringStringMap.containsKey("stepSize")){
-                          stepSize[0] = stringStringMap.get("stepSize");
-                      }
-                  });
-              }
-          });
+              int futureStepSize = stepSize[0].lastIndexOf("1")-stepSize[0].indexOf(".");
+              if(futureStepSize <= 1) futureStepSize = 0;
+              rtStepSize[0] = futureStepSize;
+          }
 
-          int futureStepSize = stepSize[0].lastIndexOf("1")-stepSize[0].indexOf(".");
-          if(futureStepSize <= 1) futureStepSize = 0;
 
           //现货最小下单位数
           for (SymbolFilter symbolFilter : MarketCache.spotInfoCache.get(symbol).getFilters()) {
@@ -351,9 +350,6 @@ public class TradeUtil {
           int spotStepSize = stepSize[1].lastIndexOf("1")-stepSize[1].indexOf(".");
           if(spotStepSize <= 1) spotStepSize = 0;
 
-
-          Integer[] rtStepSize ={0,0};
-          rtStepSize[0] = futureStepSize;
           rtStepSize[1] = spotStepSize;
           MarketCache.stepSizeCache.put(symbol, rtStepSize);
           return rtStepSize;

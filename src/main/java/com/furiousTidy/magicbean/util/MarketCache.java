@@ -5,6 +5,8 @@ package com.furiousTidy.magicbean.util;
 
 
 import com.binance.api.client.domain.account.AssetBalance;
+import com.binance.api.client.domain.event.BookTickerEvent;
+import com.binance.api.client.domain.event.TradeEvent;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.client.model.event.SymbolBookTickerEvent;
 import com.binance.client.model.market.ExchangeInfoEntry;
@@ -13,6 +15,7 @@ import com.binance.client.model.user.BalanceUpdate;
 import com.furiousTidy.magicbean.dbutil.dao.OrderDao;
 import com.furiousTidy.magicbean.dbutil.model.OrderModel;
 import com.furiousTidy.magicbean.trader.TradeDto.MarketOrderBook;
+import com.furiousTidy.magicbean.trader.TradeDto.MxTickerEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -56,6 +59,25 @@ public class MarketCache {
         }
     }
 
+    public static HashSet<String> MX_PERP_SYMBOL = new HashSet<>();
+
+    public static HashSet<String> MX_SPOT_SYMBOL = new HashSet<>();
+
+    public static HashSet<String> MX_SPOT_PERP_SYMBOL = new HashSet<>();
+
+
+
+    public static  Set<String> sendedMsgSet = new HashSet<String>();
+
+    public static  ConcurrentHashMap<String, TradeEvent> mxSpotTradeCache = new ConcurrentHashMap();
+
+
+    public static  ConcurrentHashMap<String, MxTickerEvent> mxPerpTradeCache = new ConcurrentHashMap();
+
+
+    public static  ConcurrentHashMap<String, TradeEvent> spotTradeCache = new ConcurrentHashMap();
+    public static List<String> perp2SpotList = new ArrayList<>();
+
     public static ConcurrentHashMap<String, MarketOrderBook> orderBookCache = new ConcurrentHashMap<String, MarketOrderBook>();
 
     public static  ConcurrentHashMap<String, String> futureOrderCache = new ConcurrentHashMap();
@@ -79,7 +101,7 @@ public class MarketCache {
     public static Map<String, BigDecimal> futureRateCache = new HashMap<>();
     //futurerate-symbol cache store the futurerate and symbol
     public static TreeMap<BigDecimal, String> fRateSymbolCache = new TreeMap<BigDecimal, String>(
-            (Comparator<BigDecimal>) (a, b) -> b.compareTo(a)
+            (a, b) -> b.compareTo(a)
     );
     //step size cache
     public static Map<String, Integer[]> stepSizeCache = new HashMap<>();

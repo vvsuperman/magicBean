@@ -9,12 +9,21 @@ import java.math.RoundingMode;
 @Data
 public class BeanConfig {
 
+    public static String SPOTPERP_GAP_EXCLUDE_LIST = "GODSUSDT,CTCUSDT";
+    public static String EXCLUDE_SYMBOL_LIST = "QIUSDT,GASUSDT,MDTUSDT,MDXUSDT";
+
+    public static float BID_ASK_GAP = 0.01f;
+    public static float SPOT_PERP_GAP = 0.02f;
+
+    public static float MULTI_EXCHANGE_SPOT_GAP = 0.03f;
+
+
     //持仓统计时间(小时)
     public static final String OPEN_INTEREST_ARRAY = "[{'gap':'4','threshold':'30'},{'gap':'24','threshold':'80'}]";
 
 
     //多长时间开始执行 s
-    public static  int NEWS_STARTTIME_GAP = 30;
+    public static  int NEWS_STARTTIME_GAP = 60;
     //多长时间结束时间 s
     public static  int NEWS_ENDTIME_GAP = 10;
 
@@ -29,7 +38,7 @@ public class BeanConfig {
     public static float NEWS_THREHOLD = 0.01f;
 
     //新闻发布时间，格式如下 2022/08/10 20:30
-    public static String NEWS_TIME = "2022-09-22 02:00";
+    public static String NEWS_TIME = "2022-12-13 21:30";
     //合约杠杆倍数
     public static int LEV = 10;
 

@@ -75,7 +75,7 @@ public class MarketTradeService {
         while(BeanConstant.watchdog && spotQty.compareTo(BigDecimal.ZERO)>0 &&
                 spotPrice.multiply(spotQty).compareTo(BeanConfig.MIN_OPEN_UNIT)>0) {
             NewOrderResponse newOrderResponse = null;
-            log.info("new spot order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
+            log.info("new spot market order begin {},symbol={},price={},qty={},direct={},clientid={}",i++,symbol,spotPrice,spotQty,direct,clientOrderId);
             if(direct.equals(BeanConstant.FUTURE_SELL_OPEN)){
                 newOrderResponse = spotSyncClientProxy.newOrder(
                         marketBuy(symbol,spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));

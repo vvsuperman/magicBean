@@ -197,10 +197,10 @@ public class TradeScheduleService {
         try{
             if(clientOrderId.contains(BeanConstant.FUTURE_SELL_OPEN)){
                 newOrderResponse = spotSyncClientProxy.newOrder(
-                        marketBuy(symbol, spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                        marketBuy(symbol, spotQty).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
             }else if(clientOrderId.contains(BeanConstant.FUTURE_SELL_CLOSE)){
                 newOrderResponse = spotSyncClientProxy.newOrder(
-                        marketSell(symbol,spotQty.toString()).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
+                        marketSell(symbol, spotQty).newOrderRespType(NewOrderResponseType.FULL).newClientOrderId(clientOrderId));
             }
         }catch (Exception ex){
             log.info("force close spot error: exception ={}",ex);
@@ -216,18 +216,12 @@ public class TradeScheduleService {
     private boolean forceCloseCheckSpot(com.binance.api.client.domain.account.Order order) {
         BigDecimal currentPrice = MarketCache.spotTickerMap.get(order.getSymbol()).getBidPrice();
         BigDecimal price = new BigDecimal(order.getPrice());
-        if(price.subtract(currentPrice).divide(price,4,RoundingMode.HALF_UP).abs().compareTo(new BigDecimal("0.1"))>0){
-            return true;
-        }
-        return false;
+        return price.subtract(currentPrice).divide(price, 4, RoundingMode.HALF_UP).abs().compareTo(new BigDecimal("0.1")) > 0;
     }
 
     private boolean forceCloseCheckFuture(Order order) {
         BigDecimal currentPrice = MarketCache.futureTickerMap.get(order.getSymbol()).getBestBidPrice();
-        if(order.getPrice().subtract(currentPrice).divide(order.getPrice(),4,RoundingMode.HALF_UP).abs().compareTo(new BigDecimal("0.1"))>0){
-            return true;
-        }
-        return false;
+        return order.getPrice().subtract(currentPrice).divide(order.getPrice(), 4, RoundingMode.HALF_UP).abs().compareTo(new BigDecimal("0.1")) > 0;
     }
 
     private void doFutureMarketOrder(Order order) {

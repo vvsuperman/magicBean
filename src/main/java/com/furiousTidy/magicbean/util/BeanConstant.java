@@ -14,6 +14,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BeanConstant {
 
+
+    public static List<String> MONTH_LIST =Arrays.asList("JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC");
+
     public static long NANO_2_MS= 1000000;
 
     public static String FED = "美联储利率决定";

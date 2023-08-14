@@ -11,10 +11,10 @@ SELECT (("spotBidPrice"-"futureAskPrice")/"futureAskPrice") as "spotRatio",  (("
 
 47.245.29.91
 mvn -B clean package -Dmaven.test.skip=true -Dautoconfig.skip
-scp ./target/magicbean-0.0.1.jar root@47.245.33.90:/home/admin/application/target
+scp ./target/magicbean-0.0.1.jar root@8.210.20.25:/home/admin/application/target
 scp ./target/application.properties root@47.245.33.90:/home/admin/application/conf
 scp ./deploy.sh root@47.245.33.90:/home/admin/application
-ssh root@47.245.33.90
+ssh root@8.210.20.25
 . /home/admin/application/deploy.sh restart
 
 
@@ -68,5 +68,5 @@ start
 
 sudo systemctl start grafana-server
 
- scp -i /Users/fw/Documents/bigorange/orange-key.pem ./target/magicbean-0.0.1.jar root@8.209.246.18:/home/admin/application/target
+scp -i /Users/fw/Documents/bigorange/orange-key.pem ./target/magicbean-0.0.1.jar root@8.209.246.18:/home/admin/application/target
 

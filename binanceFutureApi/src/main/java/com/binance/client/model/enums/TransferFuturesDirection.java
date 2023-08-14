@@ -10,7 +10,7 @@ public enum  TransferFuturesDirection {
   PRO_TO_FUTURES("pro-to-futures")
   ;
 
-  private String direction;
+  private final String direction;
 
   TransferFuturesDirection(String direction) {
     this.direction = direction;

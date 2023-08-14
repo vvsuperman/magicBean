@@ -144,7 +144,7 @@ public class UrlParamsBuilder {
 
     public String buildUrl() {
         Map<String, String> map = new LinkedHashMap<>(paramsMap.map);
-        StringBuilder head = new StringBuilder("");
+        StringBuilder head = new StringBuilder();
         return "?" + AppendUrl(map, head);
 
     }

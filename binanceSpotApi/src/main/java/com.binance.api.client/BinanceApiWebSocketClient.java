@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface BinanceApiWebSocketClient extends Closeable {
 
-    public Closeable onAllTradeEvent(String symbols, BinanceApiCallback<List<TradeEvent>> callback);
+    Closeable onAllTradeEvent(String symbols, BinanceApiCallback<TradeEvent> callback);
 
 
     Closeable onTradeEvent(String symbols, BinanceApiCallback<TradeEvent> callback);

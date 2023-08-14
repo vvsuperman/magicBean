@@ -85,6 +85,6 @@ public class FutureSyncClientProxy {
             }).start();
         }
         return order;
-    };
+    }
 
 }
